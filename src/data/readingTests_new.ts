@@ -1,12 +1,15 @@
 import { ReadingTest, ReadingPassage } from "@/types/ielts";
+import { cambridgePassages } from "./cambridgePassages";
 
-// NOTE: These are original passages created following authentic Cambridge IELTS Academic Reading format:
+// NOTE: This file now includes both original passages and authentic Cambridge IELTS passages:
+// - Cambridge passages are genuine IELTS Academic Reading passages with original questions and answers
+// - Original passages are created following authentic Cambridge IELTS Academic Reading format
 // - Each passage has 13-14 questions
 // - 20 minutes per passage
 // - Topics drawn from authentic academic research across various disciplines
-// - All passages are original content inspired by Cambridge-style academic writing
 
 const passages: ReadingPassage[] = [
+  ...cambridgePassages,
   {
     slug: "sustainable-urban-agriculture",
     title: "Sustainable Urban Agriculture: Feeding Cities of the Future",
@@ -3460,12 +3463,21 @@ const passages: ReadingPassage[] = [
 ];
 
 // Export individual passages as separate tests for flexibility
-export const readingTests: ReadingTest[] = passages.map((passage) => ({
-  slug: passage.slug,
-  title: passage.title,
-  subtitle: passage.subtitle || "Academic Reading Practice",
-  passages: [passage],
-}));
+export const readingTests: ReadingTest[] = passages.map((passage, index) => {
+  // Assign difficulty based on index for variety
+  let difficulty: "easy" | "medium" | "hard" = "medium";
+  if (index % 3 === 0) difficulty = "easy";
+  else if (index % 3 === 1) difficulty = "medium";
+  else difficulty = "hard";
+  
+  return {
+    slug: passage.slug,
+    title: passage.title,
+    subtitle: passage.subtitle || "Academic Reading Practice",
+    passages: [passage],
+    difficulty,
+  };
+});
 
 export function getReadingTest(slug: string): ReadingTest | undefined {
   return readingTests.find((t) => t.slug === slug);

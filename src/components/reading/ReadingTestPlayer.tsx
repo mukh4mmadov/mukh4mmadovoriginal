@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import { ReadingPassage, ReadingQuestion } from "@/types/ielts";
 import Timer from "@/components/shared/Timer";
 import { BookOpen } from "lucide-react";
 import HighlightablePassage from "@/components/reading/HighlightablePassage";
 import ReadingTestResults from "@/components/reading/ReadingTestResults";
+import { saveProgress } from "@/lib/progressTracker";
 
 function allQuestions(passage: ReadingPassage): ReadingQuestion[] {
   return passage.questionGroups.flatMap((g) => g.questions);
@@ -18,6 +19,7 @@ function normalise(s: string) {
 function isCorrect(q: ReadingQuestion, given: string | undefined): boolean {
   if (!given) return false;
   if (q.type === "true-false-not-given") return given === q.answer;
+  if (q.type === "yes-no-not-given") return given === q.answer;
   if (q.type === "matching-headings") return given === q.answer;
   if (q.type === "multiple-choice") return given === q.answer;
   if (q.type === "sentence-completion")
@@ -31,6 +33,17 @@ export default function ReadingTestPlayer({ passage }: { passage: ReadingPassage
   const [submitted, setSubmitted] = useState(false);
   const [timerRunning, setTimerRunning] = useState(true);
   const [activeQ, setActiveQ] = useState<string | null>(null);
+  const [timeSpent, setTimeSpent] = useState(0);
+  const startTimeRef = useRef(Date.now());
+  
+  useEffect(() => {
+    if (timerRunning) {
+      const interval = setInterval(() => {
+        setTimeSpent(Math.floor((Date.now() - startTimeRef.current) / 1000));
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [timerRunning]);
 
   const setAnswer = (id: string, value: string) => {
     if (submitted) return;
@@ -38,8 +51,21 @@ export default function ReadingTestPlayer({ passage }: { passage: ReadingPassage
   };
 
   const handleSubmit = () => {
+    const finalTime = Math.floor((Date.now() - startTimeRef.current) / 1000);
+    setTimeSpent(finalTime);
     setSubmitted(true);
     setTimerRunning(false);
+    
+    // Save progress
+    const correctCount = questions.filter((q) => isCorrect(q, answers[q.id])).length;
+    const score = (correctCount / questions.length) * 100;
+    
+    saveProgress(passage.slug, {
+      completed: true,
+      bestScore: score,
+      attempts: 1,
+      totalTime: finalTime,
+    });
   };
 
   const handleRetry = () => {
@@ -50,7 +76,7 @@ export default function ReadingTestPlayer({ passage }: { passage: ReadingPassage
   };
 
   if (submitted) {
-    return <ReadingTestResults passage={passage} answers={answers} onRetry={handleRetry} />;
+    return <ReadingTestResults passage={passage} answers={answers} onRetry={handleRetry} timeSpent={timeSpent} />;
   }
 
   return (
@@ -147,6 +173,24 @@ export default function ReadingTestPlayer({ passage }: { passage: ReadingPassage
                       {q.type === "true-false-not-given" && (
                         <div className="ml-8 flex flex-wrap gap-2">
                           {(["TRUE", "FALSE", "NOT GIVEN"] as const).map((opt) => (
+                            <button
+                              key={opt}
+                              onClick={() => setAnswer(q.id, opt)}
+                              className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                                given === opt
+                                  ? "border-brand-500 bg-brand-500/20 text-brand-300"
+                                  : "border-white/15 text-slate-300 hover:border-white/30"
+                              }`}
+                            >
+                              {opt}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {q.type === "yes-no-not-given" && (
+                        <div className="ml-8 flex flex-wrap gap-2">
+                          {(["YES", "NO", "NOT GIVEN"] as const).map((opt) => (
                             <button
                               key={opt}
                               onClick={() => setAnswer(q.id, opt)}

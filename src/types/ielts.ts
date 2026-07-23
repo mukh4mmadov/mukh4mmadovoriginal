@@ -2,6 +2,7 @@
 
 export type ReadingQuestionType =
   | "true-false-not-given"
+  | "yes-no-not-given"
   | "matching-headings"
   | "sentence-completion"
   | "multiple-choice";
@@ -11,11 +12,17 @@ export interface BaseQuestion {
   number: number;
   prompt: string;
   explanation?: string;
+  evidence?: string;
 }
 
 export interface TFNGQuestion extends BaseQuestion {
   type: "true-false-not-given";
   answer: "TRUE" | "FALSE" | "NOT GIVEN";
+}
+
+export interface YNNGQuestion extends BaseQuestion {
+  type: "yes-no-not-given";
+  answer: "YES" | "NO" | "NOT GIVEN";
 }
 
 export interface MatchingHeadingsQuestion extends BaseQuestion {
@@ -41,6 +48,7 @@ export interface MultipleChoiceQuestion extends BaseQuestion {
 
 export type ReadingQuestion =
   | TFNGQuestion
+  | YNNGQuestion
   | MatchingHeadingsQuestion
   | SentenceCompletionQuestion
   | MultipleChoiceQuestion;
@@ -68,6 +76,7 @@ export interface ReadingTest {
   title: string;
   subtitle: string;
   passages: ReadingPassage[];
+  difficulty?: "easy" | "medium" | "hard";
 }
 
 export interface ListeningQuestion {

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ReadingPassage, ReadingQuestion } from "@/types/ielts";
 import { scoreToBand } from "@/lib/bandScore";
 import BandGauge from "@/components/shared/BandGauge";
-import { CheckCircle2, XCircle, BookOpen, Lightbulb, X, ArrowLeft, Trophy, Sparkles } from "lucide-react";
+import { CheckCircle2, XCircle, BookOpen, Lightbulb, X, ArrowLeft, Trophy, Sparkles, Clock, Target } from "lucide-react";
 
 function allQuestions(passage: ReadingPassage): ReadingQuestion[] {
   return passage.questionGroups.flatMap((g) => g.questions);
@@ -28,12 +28,14 @@ interface ReadingTestResultsProps {
   passage: ReadingPassage;
   answers: Record<string, string>;
   onRetry: () => void;
+  timeSpent?: number;
 }
 
 export default function ReadingTestResults({
   passage,
   answers,
   onRetry,
+  timeSpent = 0,
 }: ReadingTestResultsProps) {
   const questions = allQuestions(passage);
   const [expandedExplanation, setExpandedExplanation] = useState<string | null>(null);
@@ -41,8 +43,15 @@ export default function ReadingTestResults({
   const [animateIndex, setAnimateIndex] = useState(0);
 
   const correctCount = questions.filter((q) => isCorrect(q, answers[q.id])).length;
+  const incorrectCount = questions.length - correctCount;
   const band = scoreToBand(correctCount, questions.length);
   const percentage = (correctCount / questions.length) * 100;
+  
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   useEffect(() => {
     if (percentage >= 70) {
@@ -97,20 +106,47 @@ export default function ReadingTestResults({
         </div>
       </div>
 
-      <div className="glass-card mb-8 flex flex-col items-center gap-4 md:flex-row md:justify-between animate-fade-in relative overflow-hidden">
+      <div className="glass-card mb-8 animate-fade-in relative overflow-hidden">
         {percentage >= 70 && (
           <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 via-brand-500/10 to-emerald-500/10 animate-pulse" />
         )}
-        <div className="relative z-10 flex items-center gap-3">
-          <BookOpen className="text-brand-400" size={28} />
-          <div>
-            <p className="font-display text-xl font-bold">Results</p>
-            <p className="text-sm text-slate-400">
-              Here&apos;s how you did on {passage.title}.
-            </p>
+        <div className="relative z-10">
+          <div className="mb-6 flex flex-col items-center gap-4 md:flex-row md:justify-between">
+            <div className="flex items-center gap-3">
+              <BookOpen className="text-brand-400" size={28} />
+              <div>
+                <p className="font-display text-xl font-bold">Results</p>
+                <p className="text-sm text-slate-400">
+                  Here&apos;s how you did on {passage.title}.
+                </p>
+              </div>
+            </div>
+            <BandGauge band={band} correct={correctCount} total={questions.length} />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
+              <Target className="mx-auto mb-2 text-emerald-400" size={20} />
+              <p className="text-2xl font-bold text-emerald-400">{correctCount}</p>
+              <p className="text-xs text-slate-400">Correct</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
+              <XCircle className="mx-auto mb-2 text-rose-400" size={20} />
+              <p className="text-2xl font-bold text-rose-400">{incorrectCount}</p>
+              <p className="text-xs text-slate-400">Incorrect</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
+              <Clock className="mx-auto mb-2 text-brand-400" size={20} />
+              <p className="text-2xl font-bold text-brand-400">{formatTime(timeSpent)}</p>
+              <p className="text-xs text-slate-400">Time Spent</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
+              <Trophy className="mx-auto mb-2 text-accent-400" size={20} />
+              <p className="text-2xl font-bold text-accent-400">{percentage.toFixed(0)}%</p>
+              <p className="text-xs text-slate-400">Score</p>
+            </div>
           </div>
         </div>
-        <BandGauge band={band} correct={correctCount} total={questions.length} />
       </div>
 
       <div className="space-y-8">
@@ -260,9 +296,19 @@ export default function ReadingTestResults({
                               <p className="mb-2 text-xs font-semibold text-brand-300 uppercase tracking-wider">
                                 Explanation
                               </p>
-                              <p className="text-sm text-slate-200 leading-relaxed">
+                              <p className="text-sm text-slate-200 leading-relaxed mb-3">
                                 {q.explanation}
                               </p>
+                              {q.evidence && (
+                                <div className="mt-3 rounded-lg border border-white/10 bg-white/5 p-3">
+                                  <p className="mb-1 text-xs font-semibold text-emerald-400 uppercase tracking-wider">
+                                    Evidence from passage
+                                  </p>
+                                  <p className="text-xs text-slate-300 italic leading-relaxed">
+                                    "{q.evidence}"
+                                  </p>
+                                </div>
+                              )}
                             </div>
                           </div>
                         )}

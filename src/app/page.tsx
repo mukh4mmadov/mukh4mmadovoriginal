@@ -90,11 +90,14 @@ export default function Home() {
       {/* Contact Section */}
       <section className="mx-auto max-w-7xl px-4 pb-24">
         <div className="glass-card p-8 text-center">
-          <h2 className="mb-4 font-display text-2xl font-bold text-slate-100">
-            Connect with me
+          <h2 className="mb-2 font-display text-2xl font-bold text-slate-100">
+            Found a bug, mistake, or have suggestions?
           </h2>
-          <p className="mb-8 text-slate-400">
-            Follow for updates, tips, and IELTS resources
+          <p className="mb-6 text-slate-400">
+            Feel free to contact me.
+          </p>
+          <p className="mb-8 text-sm text-slate-300 max-w-2xl mx-auto">
+            If you find any mistakes or have ideas to improve this project, please let me know. I'd love to hear your feedback.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <a
