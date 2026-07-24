@@ -40,8 +40,12 @@ export default function BandGauge({ band, correct, total }: BandGaugeProps) {
   const bgArcEnd = polarToCartesian(endAngle);
 
   return (
-    <div className="flex flex-col items-center">
-      <svg width="220" height="130" viewBox="0 0 220 130">
+    <div
+      className="flex flex-col items-center"
+      role="img"
+      aria-label={`Estimated band ${animated.toFixed(1)} out of 9`}
+    >
+      <svg width="220" height="130" viewBox="0 0 220 130" aria-hidden="true">
         <path
           d={`M ${start.x} ${start.y} A ${radius} ${radius} 0 1 1 ${bgArcEnd.x} ${bgArcEnd.y}`}
           fill="none"

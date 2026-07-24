@@ -3,9 +3,18 @@
 import { useMemo, useState, useRef, useEffect } from "react";
 import { ReadingPassage, ReadingQuestion } from "@/types/ielts";
 import Timer from "@/components/shared/Timer";
-import { BookOpen, Check, AlertTriangle, X, Type, MessageCircle, Instagram, Send } from "lucide-react";
+import {
+  Check,
+  AlertTriangle,
+  Type,
+  MessageCircle,
+  Instagram,
+  Send,
+  GripVertical,
+} from "lucide-react";
 import HighlightablePassage from "@/components/reading/HighlightablePassage";
 import ReadingTestResults from "@/components/reading/ReadingTestResults";
+import AIReadingTutor from "@/components/reading/AIReadingTutor";
 import { saveProgress } from "@/lib/progressTracker";
 
 function allQuestions(passage: ReadingPassage): ReadingQuestion[] {
@@ -27,83 +36,143 @@ function isCorrect(q: ReadingQuestion, given: string | undefined): boolean {
   return false;
 }
 
-export default function ReadingTestPlayer({ passage }: { passage: ReadingPassage }) {
+export default function ReadingTestPlayer({
+  passage,
+}: {
+  passage: ReadingPassage;
+}) {
   const questions = useMemo(() => allQuestions(passage), [passage]);
+  const questionNumbers = useMemo(() => {
+    const map = new Map<string, number>();
+    questions.forEach((question, index) => {
+      map.set(question.id, index + 1);
+    });
+    return map;
+  }, [questions]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [timerRunning, setTimerRunning] = useState(true);
   const [activeQ, setActiveQ] = useState<string | null>(null);
   const [timeSpent, setTimeSpent] = useState(0);
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
-  const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium');
+  const [fontSize, setFontSize] = useState<"small" | "medium" | "large">(
+    "medium",
+  );
   const [panelWidth, setPanelWidth] = useState(65);
   const [isResizing, setIsResizing] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(true);
   const startTimeRef = useRef(Date.now());
   const pausedTimeRef = useRef(0);
   const lastPauseStartRef = useRef<number | null>(null);
   const questionRefs = useRef<Record<string, HTMLDivElement>>({});
 
-  // Auto-save functionality
+  const getElapsedSeconds = (now = Date.now()) => {
+    const elapsed = Math.floor((now - startTimeRef.current) / 1000);
+    return Math.max(0, elapsed - pausedTimeRef.current);
+  };
+
   useEffect(() => {
-    if (submitted) return;
-    
+    const media = window.matchMedia("(min-width: 1024px)");
+    const updateLayout = () => setIsDesktop(media.matches);
+    updateLayout();
+    media.addEventListener("change", updateLayout);
+    return () => media.removeEventListener("change", updateLayout);
+  }, []);
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMove = (event: MouseEvent) => {
+      if (!isDesktop) return;
+      const container = document.getElementById("reading-shell");
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const next = ((event.clientX - rect.left) / rect.width) * 100;
+      const clamped = Math.min(78, Math.max(30, next));
+      setPanelWidth(clamped);
+    };
+
+    const stopResize = () => {
+      setIsResizing(false);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", stopResize);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", stopResize);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [isResizing, isDesktop]);
+
+  useEffect(() => {
+    if (submitted || typeof window === "undefined") return;
+
     const saveData = {
       answers,
       timeSpent,
       timerRunning,
       timestamp: Date.now(),
     };
-    
-    localStorage.setItem(`ielts-reading-${passage.slug}`, JSON.stringify(saveData));
+
+    window.localStorage.setItem(
+      `ielts-reading-${passage.slug}`,
+      JSON.stringify(saveData),
+    );
   }, [answers, timeSpent, timerRunning, submitted, passage.slug]);
 
-  // Load saved data on mount
   useEffect(() => {
-    const savedData = localStorage.getItem(`ielts-reading-${passage.slug}`);
+    if (typeof window === "undefined") return;
+
+    const savedData = window.localStorage.getItem(
+      `ielts-reading-${passage.slug}`,
+    );
     if (savedData) {
       try {
         const parsed = JSON.parse(savedData);
-        // Only restore if it's from the last 24 hours
         if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
           setAnswers(parsed.answers || {});
           setTimeSpent(parsed.timeSpent || 0);
           setTimerRunning(parsed.timerRunning ?? true);
-          // Adjust start time to account for elapsed time
-          startTimeRef.current = Date.now() - (parsed.timeSpent * 1000);
+          startTimeRef.current = Date.now() - parsed.timeSpent * 1000;
         }
       } catch (e) {
-        console.error('Failed to load saved data:', e);
+        console.error("Failed to load saved data:", e);
       }
     }
   }, [passage.slug]);
 
-  // Calculate progress
-  const answeredCount = Object.keys(answers).filter(id => answers[id]).length;
+  const answeredCount = Object.keys(answers).filter((id) => answers[id]).length;
   const remainingCount = questions.length - answeredCount;
   const progress = (answeredCount / questions.length) * 100;
-
-  // Font size mapping
-  const fontSizeClasses = {
-    small: 'text-sm',
-    medium: 'text-base',
-    large: 'text-lg'
-  };
+  const activeQuestion =
+    (activeQ ? questions.find((question) => question.id === activeQ) : null) ??
+    questions[0];
 
   const scrollToQuestion = (questionId: string) => {
     const element = questionRefs.current[questionId];
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
       setActiveQ(questionId);
     }
   };
-  
+
   useEffect(() => {
-    if (timerRunning) {
-      const interval = setInterval(() => {
-        setTimeSpent(Math.floor((Date.now() - startTimeRef.current) / 1000) - pausedTimeRef.current);
-      }, 1000);
-      return () => clearInterval(interval);
-    }
+    if (!timerRunning) return;
+
+    const tick = () => {
+      setTimeSpent(getElapsedSeconds());
+    };
+
+    tick();
+    const interval = window.setInterval(tick, 1000);
+    return () => window.clearInterval(interval);
   }, [timerRunning]);
 
   const handleTimerPause = () => {
@@ -113,7 +182,9 @@ export default function ReadingTestPlayer({ passage }: { passage: ReadingPassage
 
   const handleTimerResume = () => {
     if (lastPauseStartRef.current) {
-      pausedTimeRef.current += Math.floor((Date.now() - lastPauseStartRef.current) / 1000);
+      pausedTimeRef.current += Math.floor(
+        (Date.now() - lastPauseStartRef.current) / 1000,
+      );
       lastPauseStartRef.current = null;
     }
     setTimerRunning(true);
@@ -133,30 +204,27 @@ export default function ReadingTestPlayer({ passage }: { passage: ReadingPassage
   };
 
   const handleSubmit = () => {
-    // Check if there are unanswered questions
     if (remainingCount > 0) {
       setShowSubmitDialog(true);
       return;
     }
-    
-    // Proceed with submission
     performSubmit();
   };
 
   const performSubmit = () => {
-    const finalTime = Math.floor((Date.now() - startTimeRef.current) / 1000);
+    const finalTime = getElapsedSeconds();
     setTimeSpent(finalTime);
     setSubmitted(true);
     setTimerRunning(false);
     setShowSubmitDialog(false);
-    
-    // Clear saved data after submission
+
     localStorage.removeItem(`ielts-reading-${passage.slug}`);
-    
-    // Save progress
-    const correctCount = questions.filter((q) => isCorrect(q, answers[q.id])).length;
+
+    const correctCount = questions.filter((q) =>
+      isCorrect(q, answers[q.id]),
+    ).length;
     const score = (correctCount / questions.length) * 100;
-    
+
     saveProgress(passage.slug, {
       completed: true,
       bestScore: score,
@@ -165,47 +233,85 @@ export default function ReadingTestPlayer({ passage }: { passage: ReadingPassage
     });
   };
 
-  const handleRetry = () => {
+  const resetTestState = () => {
     setAnswers({});
     setSubmitted(false);
     setTimerRunning(true);
     setActiveQ(null);
+    setTimeSpent(0);
+    setShowSubmitDialog(false);
+    startTimeRef.current = Date.now();
+    pausedTimeRef.current = 0;
+    lastPauseStartRef.current = null;
+  };
+
+  const handleRetry = () => {
+    resetTestState();
+  };
+
+  const handleRestartIncorrect = () => {
+    const nextAnswers = { ...answers };
+    questions.forEach((question) => {
+      const given = nextAnswers[question.id];
+      if (given && !isCorrect(question, given)) {
+        delete nextAnswers[question.id];
+      }
+    });
+    setAnswers(nextAnswers);
+    setSubmitted(false);
+    setTimerRunning(true);
+    setActiveQ(null);
+    setTimeSpent(0);
+    setShowSubmitDialog(false);
+    startTimeRef.current = Date.now();
+    pausedTimeRef.current = 0;
+    lastPauseStartRef.current = null;
   };
 
   if (submitted) {
-    return <ReadingTestResults passage={passage} answers={answers} onRetry={handleRetry} timeSpent={timeSpent} />;
+    return (
+      <ReadingTestResults
+        passage={passage}
+        answers={answers}
+        onRetry={handleRetry}
+        onRestartIncorrect={handleRestartIncorrect}
+        onRestartAll={handleRetry}
+        timeSpent={timeSpent}
+      />
+    );
   }
 
   return (
-    <div className="h-screen flex flex-col">
-      {/* Header */}
-      <div className="flex-shrink-0 border-b border-white/10 bg-surface/95 backdrop-blur-sm px-6 py-4">
-        <div className="mx-auto max-w-full flex flex-wrap items-center justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-widest text-brand-400 mb-1">
+    <div className="flex h-screen flex-col bg-surface text-slate-100">
+      <div className="flex-shrink-0 border-b border-white/10 bg-surface/95 px-4 py-3 backdrop-blur-sm md:px-6">
+        <div className="mx-auto flex flex-wrap items-center justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-brand-400">
               {passage.subtitle}
             </p>
-            <h1 className="font-display text-2xl font-bold truncate">{passage.title}</h1>
+            <h1 className="truncate font-display text-xl font-semibold sm:text-2xl">
+              {passage.title}
+            </h1>
           </div>
-          <div className="flex items-center gap-3 flex-shrink-0">
-            {/* Font size selector */}
-            <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1">
+          <div className="flex flex-shrink-0 flex-wrap items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-1">
               <Type size={14} className="text-slate-400" />
-              {(['small', 'medium', 'large'] as const).map((size) => (
+              {(["small", "medium", "large"] as const).map((size) => (
                 <button
                   key={size}
+                  type="button"
                   onClick={() => setFontSize(size)}
-                  className={`w-6 h-6 rounded text-xs font-semibold transition-all ${
+                  className={`h-7 w-7 rounded-full text-[11px] font-semibold transition-all duration-200 ${
                     fontSize === size
-                      ? 'bg-brand-500 text-white'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? "bg-brand-500 text-white shadow-lg shadow-brand-500/20"
+                      : "text-slate-400 hover:bg-white/10 hover:text-slate-200"
                   }`}
                 >
-                  {size === 'small' ? 'S' : size === 'medium' ? 'M' : 'L'}
+                  {size === "small" ? "S" : size === "medium" ? "M" : "L"}
                 </button>
               ))}
             </div>
-            
+
             <Timer
               initialSeconds={20 * 60}
               running={timerRunning}
@@ -215,6 +321,7 @@ export default function ReadingTestPlayer({ passage }: { passage: ReadingPassage
               onReset={handleTimerReset}
             />
             <button
+              type="button"
               className="btn-primary"
               onClick={handleSubmit}
             >
@@ -224,282 +331,393 @@ export default function ReadingTestPlayer({ passage }: { passage: ReadingPassage
         </div>
       </div>
 
-      {/* Main content - Split layout */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Passage panel - 65% width */}
-        <div className={`w-[65%] overflow-y-auto p-8 border-r border-white/10 bg-surface ${fontSizeClasses[fontSize]} custom-scrollbar`}>
-          <div className="max-w-4xl mx-auto">
-            <HighlightablePassage paragraphs={passage.paragraphs} />
+      <div
+        id="reading-shell"
+        className="flex flex-1 flex-col overflow-hidden lg:flex-row"
+      >
+        <div
+          className="flex-shrink-0 overflow-y-auto border-b border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.08),transparent_45%)] px-4 py-4 sm:px-6 sm:py-6 lg:border-b-0 lg:border-r lg:px-8 lg:py-8"
+          style={{ width: isDesktop ? `${panelWidth}%` : "100%" }}
+        >
+          <div className="mx-auto max-w-3xl">
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
+                  Reading passage
+                </p>
+                <p className="text-sm text-slate-400">
+                  Read carefully and highlight key ideas as you work.
+                </p>
+              </div>
+              <div className="rounded-full border border-white/10 bg-surface/60 px-3 py-1 text-xs font-medium text-slate-300">
+                {passage.wordCount ?? "—"} words
+              </div>
+            </div>
+            <HighlightablePassage
+              paragraphs={passage.paragraphs}
+              fontSize={fontSize}
+            />
           </div>
         </div>
 
-        {/* Question panel - 35% width, sticky */}
-        <div className={`w-[35%] overflow-y-auto p-6 bg-surface/50 ${fontSizeClasses[fontSize]} custom-scrollbar`}>
-          {/* Progress and stats */}
-          <div className="mb-6 space-y-4">
-            {/* Progress bar */}
-            <div className="glass-card p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-slate-300">
-                  {answeredCount} of {questions.length} answered
-                </span>
-                <span className="text-xs text-slate-400">{Math.round(progress)}%</span>
+        <div
+          className="hidden lg:flex h-full w-2 flex-shrink-0 cursor-col-resize items-center justify-center transition-colors duration-200 hover:bg-white/10"
+          onMouseDown={() => setIsResizing(true)}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize reading panels"
+        >
+          <div className="h-16 w-1 rounded-full bg-white/20" />
+        </div>
+
+        <div
+          className="flex-1 overflow-y-auto border-t border-white/10 bg-surface/80 px-4 py-4 sm:px-6 sm:py-6 lg:border-t-0 lg:px-6 lg:py-6"
+          style={{ width: isDesktop ? `${100 - panelWidth}%` : "100%" }}
+        >
+          <div className="mx-auto max-w-xl space-y-5">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.16)] backdrop-blur-sm">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
+                    Progress
+                  </p>
+                  <p className="text-sm text-slate-400">
+                    Keep pace and track your completion.
+                  </p>
+                </div>
+                <div className="rounded-full border border-brand-500/20 bg-brand-500/10 px-3 py-1 text-sm font-semibold text-brand-300">
+                  {Math.round(progress)}%
+                </div>
               </div>
-              <div className="h-2 rounded-full bg-white/10 overflow-hidden">
-                <div 
-                  className="h-full rounded-full bg-gradient-to-r from-brand-500 to-accent-500 transition-all duration-500 ease-out"
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-xl border border-white/10 bg-surface/70 p-3">
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500">
+                    Answered
+                  </p>
+                  <p className="mt-1 text-lg font-semibold text-slate-100">
+                    {answeredCount}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-surface/70 p-3">
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500">
+                    Remaining
+                  </p>
+                  <p className="mt-1 text-lg font-semibold text-slate-100">
+                    {remainingCount}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-surface/70 p-3">
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500">
+                    Progress
+                  </p>
+                  <p className="mt-1 text-lg font-semibold text-brand-300">
+                    {Math.round(progress)}%
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-brand-500 via-cyan-400 to-accent-500 transition-all duration-500 ease-out"
                   style={{ width: `${progress}%` }}
                 />
               </div>
             </div>
 
-            {/* Remaining questions */}
-            <div className="glass-card p-3 flex items-center justify-between">
-              <span className="text-sm text-slate-400">Questions Remaining:</span>
-              <span className="text-lg font-bold text-brand-400">{remainingCount}</span>
-            </div>
-
-            {/* Question Navigator */}
-            <div className="glass-card p-4">
-              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">
-                Question Navigator
-              </p>
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.12)] backdrop-blur-sm">
+              <div className="mb-3 flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
+                    Question navigator
+                  </p>
+                  <p className="text-sm text-slate-400">
+                    Jump to any question quickly.
+                  </p>
+                </div>
+                <div className="rounded-full border border-white/10 bg-surface/60 px-3 py-1 text-[11px] font-medium text-slate-300">
+                  {answeredCount}/{questions.length} answered
+                </div>
+              </div>
               <div className="flex flex-wrap gap-2">
-                {questions.map((q, index) => {
-                  const isAnswered = answers[q.id];
+                {questions.map((q) => {
+                  const isAnswered = Boolean(answers[q.id]);
                   const isActive = activeQ === q.id;
-                  const localNumber = index + 1;
-                  
+                  const number = questionNumbers.get(q.id) ?? 1;
+                  let stateClass =
+                    "border-white/10 bg-white/5 text-slate-400 hover:border-white/20 hover:bg-white/10";
+
+                  if (isActive) {
+                    stateClass =
+                      "border-brand-500/40 bg-brand-500/20 text-white shadow-lg shadow-brand-500/20";
+                  } else if (isAnswered) {
+                    stateClass =
+                      "border-emerald-500/30 bg-emerald-500/10 text-emerald-300";
+                  }
+
                   return (
                     <button
+                      type="button"
                       key={q.id}
                       onClick={() => scrollToQuestion(q.id)}
-                      className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all ${
-                        isActive
-                          ? 'bg-brand-500 text-white scale-110 shadow-lg shadow-brand-500/30'
-                          : isAnswered
-                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                          : 'bg-white/5 text-slate-400 border border-white/10 hover:border-white/20'
-                      }`}
-                      title={`Question ${localNumber}`}
+                      className={`flex h-9 w-9 items-center justify-center rounded-full border text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5 ${stateClass}`}
+                      title={`Question ${number}`}
                     >
-                      {isAnswered ? <Check size={14} className="mx-auto" /> : localNumber}
+                      {isAnswered ? <Check size={14} /> : number}
                     </button>
                   );
                 })}
               </div>
             </div>
-          </div>
 
-          <div className="space-y-6">
-            {passage.questionGroups.map((group, gi) => (
-              <div key={gi} className="glass-card">
-                <p className="mb-4 text-sm text-slate-400">{group.instructions}</p>
+            <div className="space-y-4">
+              {passage.questionGroups.map((group, gi) => (
+                <div
+                  key={gi}
+                  className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.1)] backdrop-blur-sm transition-all duration-300 hover:border-white/20 hover:bg-white/10"
+                >
+                  <p className="mb-4 text-sm leading-6 text-slate-400">
+                    {group.instructions}
+                  </p>
 
-                {group.questions[0].type === "matching-headings" && passage.headingBank && (
-                  <div className="mb-4 rounded-xl border border-white/10 bg-white/5 p-4">
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-accent-400">
-                      List of headings
-                    </p>
-                    <ul className="space-y-1 text-sm text-slate-300">
-                      {passage.headingBank.map((h) => (
-                        <li key={h.id}>
-                          <span className="mr-2 font-semibold text-slate-100">
-                            {h.id}.
-                          </span>
-                          {h.text}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                  {group.questions[0].type === "matching-headings" &&
+                    passage.headingBank && (
+                      <div className="mb-4 rounded-xl border border-white/10 bg-surface/60 p-4">
+                        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-accent-400">
+                          List of headings
+                        </p>
+                        <ul className="space-y-2 text-sm text-slate-300">
+                          {passage.headingBank.map((h) => (
+                            <li key={h.id}>
+                              <span className="mr-2 font-semibold text-slate-100">
+                                {h.id}.
+                              </span>
+                              {h.text}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
 
-                <div className="space-y-4">
-                  {group.questions.map((q, qIndex) => {
-                    const given = answers[q.id];
-                    // Calculate local question number (1-based within this group)
-                    const localQuestionNumber = qIndex + 1;
+                  <div className="space-y-3">
+                    {group.questions.map((q) => {
+                      const given = answers[q.id];
+                      const localQuestionNumber =
+                        questionNumbers.get(q.id) ?? 1;
 
-                    return (
-                      <div
-                        key={q.id}
-                        ref={(el) => { if (el) questionRefs.current[q.id] = el; }}
-                        onFocus={() => setActiveQ(q.id)}
-                        className={`rounded-xl border p-3 transition-colors ${
-                          activeQ === q.id
-                            ? "border-brand-500/50 bg-brand-500/5"
-                            : "border-white/10"
-                        }`}
-                      >
-                        <div className="mb-2 flex items-start gap-2">
-                          <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-bold">
-                            {localQuestionNumber}
-                          </span>
+                      return (
+                        <div
+                          key={q.id}
+                          ref={(el) => {
+                            if (el) questionRefs.current[q.id] = el;
+                          }}
+                          onFocus={() => setActiveQ(q.id)}
+                          className={`rounded-2xl border p-4 transition-all duration-300 ${
+                            activeQ === q.id
+                              ? "border-brand-500/40 bg-brand-500/10"
+                              : "border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06]"
+                          }`}
+                        >
+                          <div className="mb-3 flex items-start gap-2.5">
+                            <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-[12px] font-bold text-slate-100">
+                              {localQuestionNumber}
+                            </span>
 
-                          {q.type === "sentence-completion" ? (
-                            <p className="text-sm text-slate-200">
-                              {q.before}{" "}
-                              <input
-                                value={given || ""}
-                                onChange={(e) => setAnswer(q.id, e.target.value)}
-                                className="mx-1 w-40 rounded-md border border-white/20 bg-white/10 px-2 py-1 text-sm text-white focus:border-brand-500 focus:outline-none"
-                                placeholder={`max ${q.maxWords} words`}
-                              />{" "}
-                              {q.after}
-                            </p>
-                          ) : (
-                            <p className="text-sm text-slate-200">
-                              {q.type === "matching-headings" ? q.paragraphLabel : q.prompt}
-                            </p>
+                            {q.type === "sentence-completion" ? (
+                              <p className="text-sm leading-7 text-slate-200">
+                                {q.before}{" "}
+                                <input
+                                  value={given || ""}
+                                  onChange={(e) =>
+                                    setAnswer(q.id, e.target.value)
+                                  }
+                                  className="mx-1 w-full max-w-[9rem] rounded-lg border border-white/15 bg-white/10 px-2 py-1 text-sm text-white focus:border-brand-500 focus:outline-none sm:w-36"
+                                  placeholder={`max ${q.maxWords} words`}
+                                />{" "}
+                                {q.after}
+                              </p>
+                            ) : (
+                              <p className="text-sm leading-7 text-slate-200">
+                                {q.type === "matching-headings"
+                                  ? q.paragraphLabel
+                                  : q.prompt}
+                              </p>
+                            )}
+                          </div>
+
+                          {q.type === "true-false-not-given" && (
+                            <div className="ml-9 flex flex-wrap gap-2">
+                              {(["TRUE", "FALSE", "NOT GIVEN"] as const).map(
+                                (opt) => (
+                                  <button
+                                    key={opt}
+                                    onClick={() => setAnswer(q.id, opt)}
+                                    className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-all duration-200 ${
+                                      given === opt
+                                        ? "border-brand-500 bg-brand-500/20 text-brand-300"
+                                        : "border-white/15 text-slate-300 hover:border-white/30 hover:bg-white/10"
+                                    }`}
+                                  >
+                                    {opt}
+                                  </button>
+                                ),
+                              )}
+                            </div>
+                          )}
+
+                          {q.type === "yes-no-not-given" && (
+                            <div className="ml-9 flex flex-wrap gap-2">
+                              {(["YES", "NO", "NOT GIVEN"] as const).map(
+                                (opt) => (
+                                  <button
+                                    key={opt}
+                                    onClick={() => setAnswer(q.id, opt)}
+                                    className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-all duration-200 ${
+                                      given === opt
+                                        ? "border-brand-500 bg-brand-500/20 text-brand-300"
+                                        : "border-white/15 text-slate-300 hover:border-white/30 hover:bg-white/10"
+                                    }`}
+                                  >
+                                    {opt}
+                                  </button>
+                                ),
+                              )}
+                            </div>
+                          )}
+
+                          {q.type === "matching-headings" &&
+                            passage.headingBank && (
+                              <div className="ml-9 flex flex-wrap gap-2">
+                                {passage.headingBank.map((h) => (
+                                  <button
+                                    type="button"
+                                    key={h.id}
+                                    onClick={() => setAnswer(q.id, h.id)}
+                                    className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-all duration-200 ${
+                                      given === h.id
+                                        ? "border-brand-500 bg-brand-500/20 text-brand-300"
+                                        : "border-white/15 text-slate-300 hover:border-white/30 hover:bg-white/10"
+                                    }`}
+                                  >
+                                    {h.id}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+
+                          {q.type === "multiple-choice" && (
+                            <div className="ml-9 space-y-2">
+                              {q.options.map((opt) => (
+                                <button
+                                  type="button"
+                                  key={opt.key}
+                                  onClick={() => setAnswer(q.id, opt.key)}
+                                  className={`block w-full rounded-xl border px-3 py-2 text-left text-sm transition-all duration-200 ${
+                                    given === opt.key
+                                      ? "border-brand-500 bg-brand-500/20 text-brand-300"
+                                      : "border-white/15 text-slate-300 hover:border-white/30 hover:bg-white/10"
+                                  }`}
+                                >
+                                  <span className="mr-1 font-semibold">
+                                    {opt.key}.
+                                  </span>
+                                  {opt.text}
+                                </button>
+                              ))}
+                            </div>
                           )}
                         </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
 
-                        {q.type === "true-false-not-given" && (
-                          <div className="ml-8 flex flex-wrap gap-2">
-                            {(["TRUE", "FALSE", "NOT GIVEN"] as const).map((opt) => (
-                              <button
-                                key={opt}
-                                onClick={() => setAnswer(q.id, opt)}
-                                className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
-                                  given === opt
-                                    ? "border-brand-500 bg-brand-500/20 text-brand-300"
-                                    : "border-white/15 text-slate-300 hover:border-white/30"
-                                }`}
-                              >
-                                {opt}
-                              </button>
-                            ))}
-                          </div>
-                        )}
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.08)] backdrop-blur-sm">
+              <AIReadingTutor
+                passage={passage}
+                question={activeQuestion}
+                selectedAnswer={
+                  activeQuestion ? answers[activeQuestion.id] : undefined
+                }
+              />
+            </div>
 
-                        {q.type === "yes-no-not-given" && (
-                          <div className="ml-8 flex flex-wrap gap-2">
-                            {(["YES", "NO", "NOT GIVEN"] as const).map((opt) => (
-                              <button
-                                key={opt}
-                                onClick={() => setAnswer(q.id, opt)}
-                                className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
-                                  given === opt
-                                    ? "border-brand-500 bg-brand-500/20 text-brand-300"
-                                    : "border-white/15 text-slate-300 hover:border-white/30"
-                                }`}
-                              >
-                                {opt}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-
-                        {q.type === "matching-headings" && passage.headingBank && (
-                          <div className="ml-8 flex flex-wrap gap-2">
-                            {passage.headingBank.map((h) => (
-                              <button
-                                key={h.id}
-                                onClick={() => setAnswer(q.id, h.id)}
-                                className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors ${
-                                  given === h.id
-                                    ? "border-brand-500 bg-brand-500/20 text-brand-300"
-                                    : "border-white/15 text-slate-300 hover:border-white/30"
-                                }`}
-                              >
-                                {h.id}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-
-                        {q.type === "multiple-choice" && (
-                          <div className="ml-8 space-y-1.5">
-                            {q.options.map((opt) => (
-                              <button
-                                key={opt.key}
-                                onClick={() => setAnswer(q.id, opt.key)}
-                                className={`block w-full rounded-lg border px-3 py-1.5 text-left text-xs transition-colors ${
-                                  given === opt.key
-                                    ? "border-brand-500 bg-brand-500/20 text-brand-300"
-                                    : "border-white/15 text-slate-300 hover:border-white/30"
-                                }`}
-                              >
-                                <span className="mr-1 font-semibold">{opt.key}.</span>
-                                {opt.text}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.08)] backdrop-blur-sm">
+              <div className="flex items-start gap-3">
+                <MessageCircle size={18} className="mt-0.5 text-brand-400" />
+                <div>
+                  <p className="mb-1 text-sm font-semibold text-slate-200">
+                    Found a bug or have suggestions?
+                  </p>
+                  <p className="mb-3 text-sm leading-6 text-slate-400">
+                    I&apos;d love to hear your feedback.
+                  </p>
                 </div>
               </div>
-            ))}
-          </div>
-
-          {/* Feedback Section */}
-          <div className="mt-8 glass-card p-4">
-            <div className="flex items-start gap-3 mb-3">
-              <MessageCircle size={18} className="text-brand-400 mt-0.5" />
-              <div>
-                <p className="text-sm font-semibold text-slate-300 mb-1">
-                  Found a bug, mistake, or have suggestions?
-                </p>
-                <p className="text-xs text-slate-400 mb-3">
-                  If you find any mistakes or have ideas to improve this project, please let me know. I'd love to hear your feedback.
-                </p>
+              <div className="flex flex-wrap gap-3">
+                <a
+                  href="https://instagram.com/mukh4mmadov_7"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-slate-400 transition-colors duration-200 hover:text-pink-400"
+                >
+                  <Instagram size={14} />
+                  @mukh4mmadov_7
+                </a>
+                <a
+                  href="https://t.me/mukh4mmadov"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-slate-400 transition-colors duration-200 hover:text-brand-400"
+                >
+                  <Send size={14} />
+                  @mukh4mmadov
+                </a>
               </div>
-            </div>
-            <div className="flex gap-2">
-              <a
-                href="https://instagram.com/mukh4mmadov_7"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-xs text-slate-400 hover:text-pink-400 transition-colors"
-              >
-                <Instagram size={14} />
-                @mukh4mmadov_7
-              </a>
-              <a
-                href="https://t.me/mukh4mmadov"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-xs text-slate-400 hover:text-brand-400 transition-colors"
-              >
-                <Send size={14} />
-                @mukh4mmadov
-              </a>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Submit Confirmation Dialog */}
       {showSubmitDialog && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="glass-card max-w-md w-full p-6 animate-fade-in">
-            <div className="flex items-start gap-4 mb-4">
-              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div
+            className="glass-card w-full max-w-md p-6 animate-fade-in"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="submit-dialog-title"
+          >
+            <div className="mb-4 flex items-start gap-4">
+              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-amber-500/20">
                 <AlertTriangle className="text-amber-400" size={24} />
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-bold text-slate-100 mb-2">
+                <h3
+                  id="submit-dialog-title"
+                  className="mb-2 text-lg font-bold text-slate-100"
+                >
                   Unanswered Questions
                 </h3>
                 <p className="text-slate-300">
-                  You still have <span className="font-bold text-amber-400">{remainingCount}</span> unanswered question{remainingCount !== 1 ? 's' : ''}.
+                  You still have{" "}
+                  <span className="font-bold text-amber-400">
+                    {remainingCount}
+                  </span>{" "}
+                  unanswered question{remainingCount !== 1 ? "s" : ""}.
                 </p>
               </div>
             </div>
-            
-            <div className="flex gap-3 mt-6">
+
+            <div className="mt-6 flex gap-3">
               <button
                 onClick={() => setShowSubmitDialog(false)}
-                className="flex-1 btn-secondary"
+                className="btn-secondary flex-1"
               >
                 Review Answers
               </button>
-              <button
-                onClick={performSubmit}
-                className="flex-1 btn-primary"
-              >
+              <button onClick={performSubmit} className="btn-primary flex-1">
                 Submit Anyway
               </button>
             </div>

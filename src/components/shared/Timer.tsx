@@ -13,35 +13,47 @@ interface TimerProps {
   showControls?: boolean;
 }
 
-export default function Timer({ 
-  initialSeconds, 
-  running, 
-  onExpire, 
-  onPause, 
-  onResume, 
+export default function Timer({
+  initialSeconds,
+  running,
+  onExpire,
+  onPause,
+  onResume,
   onReset,
-  showControls = true 
+  showControls = true,
 }: TimerProps) {
   const [remaining, setRemaining] = useState(initialSeconds);
   const expiredRef = useRef(false);
+  const onExpireRef = useRef(onExpire);
+
+  useEffect(() => {
+    onExpireRef.current = onExpire;
+  }, [onExpire]);
+
+  useEffect(() => {
+    setRemaining(initialSeconds);
+    expiredRef.current = false;
+  }, [initialSeconds]);
 
   useEffect(() => {
     if (!running) return;
-    const interval = setInterval(() => {
+
+    const interval = window.setInterval(() => {
       setRemaining((prev) => {
         if (prev <= 1) {
-          clearInterval(interval);
+          window.clearInterval(interval);
           if (!expiredRef.current) {
             expiredRef.current = true;
-            onExpire?.();
+            onExpireRef.current?.();
           }
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
-    return () => clearInterval(interval);
-  }, [running, onExpire]);
+
+    return () => window.clearInterval(interval);
+  }, [running]);
 
   const mins = Math.floor(remaining / 60)
     .toString()
@@ -75,7 +87,7 @@ export default function Timer({
         <Clock size={16} />
         {mins}:{secs}
       </div>
-      
+
       {showControls && (
         <div className="flex items-center gap-1">
           {running ? (
