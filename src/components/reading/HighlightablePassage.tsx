@@ -25,6 +25,7 @@ export default function HighlightablePassage({ paragraphs }: HighlightablePassag
   const [highlights, setHighlights] = useState<Record<string, string>>({});
   const painting = useRef(false);
   const paintValue = useRef<string | null>(null);
+  const startKey = useRef<string | null>(null);
 
   const colorFor = (id: string) => COLORS.find((c) => c.id === id)?.bg;
 
@@ -42,6 +43,7 @@ export default function HighlightablePassage({ paragraphs }: HighlightablePassag
 
   const startPaint = (key: string) => {
     painting.current = true;
+    startKey.current = key;
     if (!eraseMode) {
       // toggle: if already this color, erase; else paint
       paintValue.current = highlights[key] === activeColor ? null : activeColor;
@@ -58,12 +60,17 @@ export default function HighlightablePassage({ paragraphs }: HighlightablePassag
   };
 
   const continuePaint = (key: string) => {
-    if (!painting.current) return;
+    if (!painting.current || startKey.current === null) return;
+    // Only continue painting if we're in the same paragraph
+    const [startPara] = startKey.current.split('-');
+    const [currentPara] = key.split('-');
+    if (startPara !== currentPara) return;
     applyToKey(key);
   };
 
   const stopPaint = () => {
     painting.current = false;
+    startKey.current = null;
   };
 
   return (
@@ -111,7 +118,7 @@ export default function HighlightablePassage({ paragraphs }: HighlightablePassag
               const hl = highlights[key];
               return (
                 <span
-                  key={i}
+                  key={key}
                   onMouseDown={() => startPaint(key)}
                   onMouseEnter={() => continuePaint(key)}
                   style={hl ? { backgroundColor: colorFor(hl), borderRadius: 3 } : undefined}

@@ -43,9 +43,20 @@ export default function ReadingTestResults({
   const [animateIndex, setAnimateIndex] = useState(0);
 
   const correctCount = questions.filter((q) => isCorrect(q, answers[q.id])).length;
-  const incorrectCount = questions.length - correctCount;
+  const incorrectCount = questions.filter((q) => answers[q.id] && !isCorrect(q, answers[q.id])).length;
+  const skippedCount = questions.filter((q) => !answers[q.id]).length;
   const band = scoreToBand(correctCount, questions.length);
   const percentage = (correctCount / questions.length) * 100;
+
+  // Motivational feedback based on score
+  const getMotivationalMessage = () => {
+    if (percentage >= 90) return "Outstanding! You're ready for the real IELTS exam!";
+    if (percentage >= 80) return "Excellent work! Keep practicing to maintain this level.";
+    if (percentage >= 70) return "Great job! You're making solid progress.";
+    if (percentage >= 60) return "Good effort! Focus on your weak areas for improvement.";
+    if (percentage >= 50) return "Keep practicing! Review the explanations to learn from mistakes.";
+    return "Don't give up! Study the explanations and try again.";
+  };
   
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -124,7 +135,7 @@ export default function ReadingTestResults({
             <BandGauge band={band} correct={correctCount} total={questions.length} />
           </div>
           
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
             <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
               <Target className="mx-auto mb-2 text-emerald-400" size={20} />
               <p className="text-2xl font-bold text-emerald-400">{correctCount}</p>
@@ -136,6 +147,11 @@ export default function ReadingTestResults({
               <p className="text-xs text-slate-400">Incorrect</p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
+              <BookOpen className="mx-auto mb-2 text-amber-400" size={20} />
+              <p className="text-2xl font-bold text-amber-400">{skippedCount}</p>
+              <p className="text-xs text-slate-400">Skipped</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
               <Clock className="mx-auto mb-2 text-brand-400" size={20} />
               <p className="text-2xl font-bold text-brand-400">{formatTime(timeSpent)}</p>
               <p className="text-xs text-slate-400">Time Spent</p>
@@ -143,8 +159,13 @@ export default function ReadingTestResults({
             <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
               <Trophy className="mx-auto mb-2 text-accent-400" size={20} />
               <p className="text-2xl font-bold text-accent-400">{percentage.toFixed(0)}%</p>
-              <p className="text-xs text-slate-400">Score</p>
+              <p className="text-xs text-slate-400">Accuracy</p>
             </div>
+          </div>
+
+          {/* Motivational Message */}
+          <div className="mt-6 rounded-xl border border-brand-500/30 bg-gradient-to-r from-brand-500/10 to-accent-500/10 p-4 text-center">
+            <p className="text-sm font-semibold text-brand-300">{getMotivationalMessage()}</p>
           </div>
         </div>
       </div>
@@ -180,6 +201,8 @@ export default function ReadingTestResults({
                 const unanswered = !given;
                 const globalIndex = questions.findIndex((q2) => q2.id === q.id);
                 const shouldAnimate = globalIndex <= animateIndex;
+                // Calculate local question number (1-based within this group)
+                const localQuestionNumber = qIndex + 1;
 
                 return (
                   <div
@@ -194,7 +217,7 @@ export default function ReadingTestResults({
                   >
                     <div className="mb-3 flex items-start gap-3">
                       <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-bold">
-                        {q.number}
+                        {localQuestionNumber}
                       </span>
 
                       <div className="flex-1">

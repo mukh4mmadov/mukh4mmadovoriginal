@@ -30,15 +30,15 @@
   }
   
   html:not(.dark) .glass-card {
-    @apply bg-white border-slate-200 shadow-lg;
+    @apply bg-white border-slate-300 shadow-lg;
   }
   
   html:not(.dark) .glass {
-    @apply bg-white/90 border-slate-200;
+    @apply bg-white/95 border-slate-300;
   }
   
   html:not(.dark) .input-field {
-    @apply bg-slate-50 border-slate-300 text-slate-900 placeholder:text-slate-400;
+    @apply bg-slate-50 border-slate-300 text-slate-900 placeholder:text-slate-500;
   }
   
   html:not(.dark) .btn-primary {
@@ -50,15 +50,32 @@
   }
   
   html:not(.dark) .section-subtitle {
-    @apply text-slate-600;
+    @apply text-slate-700;
   }
   
   html:not(.dark) header {
-    @apply bg-white/90 border-slate-200;
+    @apply bg-white/95 border-slate-300;
   }
   
   html:not(.dark) nav a {
-    @apply text-slate-600 hover:text-slate-900;
+    @apply text-slate-700 hover:text-slate-900;
+  }
+  
+  /* Light mode specific text improvements */
+  html:not(.dark) .text-slate-200 {
+    @apply text-slate-800;
+  }
+  
+  html:not(.dark) .text-slate-300 {
+    @apply text-slate-700;
+  }
+  
+  html:not(.dark) .text-slate-400 {
+    @apply text-slate-600;
+  }
+  
+  html:not(.dark) .text-slate-500 {
+    @apply text-slate-600;
   }
 }
 
@@ -115,5 +132,67 @@
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* Custom scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    transition: background 0.2s ease;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  html:not(.dark) .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  html:not(.dark) .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  html:not(.dark) .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+  }
+
+  /* Smooth animations */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-pulse-soft {
+    animation: pulseSoft 2s ease-in-out infinite;
+  }
+
+  @keyframes pulseSoft {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
   }
 }
