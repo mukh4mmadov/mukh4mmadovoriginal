@@ -19,7 +19,7 @@ export default function Home() {
         <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-4 py-20 sm:px-6 md:py-28 lg:grid-cols-[1.1fr_0.9fr] lg:px-8">
           <div className="animate-slide-up">
             <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.28em] text-brand-300">
-              {readingTests.length} passages &middot; exam format
+              Exam format
             </p>
             <h1 className="section-title mb-6 text-balance">
               IELTS Reading, practiced{" "}
@@ -86,8 +86,7 @@ export default function Home() {
             <div>
               <h3 className="font-display text-xl font-bold">All passages</h3>
               <p className="text-sm text-slate-400">
-                Pick any of the {readingTests.length} available passages to
-                start.
+                Pick any passage to start.
               </p>
             </div>
           </div>

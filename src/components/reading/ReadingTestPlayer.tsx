@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useRef, useEffect } from "react";
 import { ReadingPassage, ReadingQuestion } from "@/types/ielts";
+import { TestEvent } from "@/types/testEvents";
 import Timer from "@/components/shared/Timer";
 import {
   Check,
@@ -13,6 +14,7 @@ import {
   GripVertical,
 } from "lucide-react";
 import HighlightablePassage from "@/components/reading/HighlightablePassage";
+import HighlightableText from "@/components/reading/HighlightableText";
 import ReadingTestResults from "@/components/reading/ReadingTestResults";
 import AIReadingTutor from "@/components/reading/AIReadingTutor";
 import { saveProgress } from "@/lib/progressTracker";
@@ -61,10 +63,12 @@ export default function ReadingTestPlayer({
   const [panelWidth, setPanelWidth] = useState(65);
   const [isResizing, setIsResizing] = useState(false);
   const [isDesktop, setIsDesktop] = useState(true);
+  const [events, setEvents] = useState<TestEvent[]>([]);
   const startTimeRef = useRef(Date.now());
   const pausedTimeRef = useRef(0);
   const lastPauseStartRef = useRef<number | null>(null);
   const questionRefs = useRef<Record<string, HTMLDivElement>>({});
+  const previousAnswersRef = useRef<Record<string, string>>({});
 
   const getElapsedSeconds = (now = Date.now()) => {
     const elapsed = Math.floor((now - startTimeRef.current) / 1000);
@@ -133,6 +137,8 @@ export default function ReadingTestPlayer({
     const savedData = window.localStorage.getItem(
       `ielts-reading-${passage.slug}`,
     );
+    let hasValidSavedData = false;
+    
     if (savedData) {
       try {
         const parsed = JSON.parse(savedData);
@@ -141,10 +147,17 @@ export default function ReadingTestPlayer({
           setTimeSpent(parsed.timeSpent || 0);
           setTimerRunning(parsed.timerRunning ?? true);
           startTimeRef.current = Date.now() - parsed.timeSpent * 1000;
+          previousAnswersRef.current = parsed.answers || {};
+          hasValidSavedData = true;
         }
       } catch (e) {
         console.error("Failed to load saved data:", e);
       }
+    }
+
+    // Track test opened event (only if not loading saved data)
+    if (!hasValidSavedData) {
+      setEvents([{ type: "opened", timestamp: Date.now() }]);
     }
   }, [passage.slug]);
 
@@ -157,6 +170,8 @@ export default function ReadingTestPlayer({
 
   const scrollToQuestion = (questionId: string) => {
     const element = questionRefs.current[questionId];
+    const questionNumber = questionNumbers.get(questionId) ?? 1;
+    
     if (element) {
       element.scrollIntoView({ behavior: "smooth", block: "center" });
       setActiveQ(questionId);
@@ -198,9 +213,53 @@ export default function ReadingTestPlayer({
     startTimeRef.current = Date.now();
   };
 
+  const addEvent = (event: TestEvent) => {
+    setEvents((prev) => [...prev, event]);
+  };
+
+  const handleHighlight = (text: string) => {
+    addEvent({
+      type: "highlighted",
+      text,
+      timestamp: Date.now(),
+    });
+  };
+
+  const handleHighlightRemove = (text: string) => {
+    addEvent({
+      type: "highlight_removed",
+      text,
+      timestamp: Date.now(),
+    });
+  };
+
   const setAnswer = (id: string, value: string) => {
     if (submitted) return;
+    const questionNumber = questionNumbers.get(id) ?? 1;
+    const oldAnswer = previousAnswersRef.current[id];
+
     setAnswers((prev) => ({ ...prev, [id]: value }));
+
+    if (oldAnswer && oldAnswer !== value) {
+      addEvent({
+        type: "answer_changed",
+        questionId: id,
+        questionNumber,
+        oldAnswer,
+        newAnswer: value,
+        timestamp: Date.now(),
+      });
+    } else if (!oldAnswer && value) {
+      addEvent({
+        type: "answered",
+        questionId: id,
+        questionNumber,
+        answer: value,
+        timestamp: Date.now(),
+      });
+    }
+
+    previousAnswersRef.current = { ...previousAnswersRef.current, [id]: value };
   };
 
   const handleSubmit = () => {
@@ -224,6 +283,9 @@ export default function ReadingTestPlayer({
       isCorrect(q, answers[q.id]),
     ).length;
     const score = (correctCount / questions.length) * 100;
+
+    // Track submitted event
+    addEvent({ type: "submitted", timestamp: Date.now() });
 
     saveProgress(passage.slug, {
       completed: true,
@@ -277,6 +339,7 @@ export default function ReadingTestPlayer({
         onRestartIncorrect={handleRestartIncorrect}
         onRestartAll={handleRetry}
         timeSpent={timeSpent}
+        events={events}
       />
     );
   }
@@ -356,6 +419,8 @@ export default function ReadingTestPlayer({
             <HighlightablePassage
               paragraphs={passage.paragraphs}
               fontSize={fontSize}
+              onHighlight={handleHighlight}
+              onHighlightRemove={handleHighlightRemove}
             />
           </div>
         </div>
@@ -525,7 +590,9 @@ export default function ReadingTestPlayer({
 
                             {q.type === "sentence-completion" ? (
                               <p className="text-sm leading-7 text-slate-200">
-                                {q.before}{" "}
+                                <HighlightableText fontSize={fontSize} onHighlight={handleHighlight} onHighlightRemove={handleHighlightRemove}>
+                                  {q.before}
+                                </HighlightableText>{" "}
                                 <input
                                   value={given || ""}
                                   onChange={(e) =>
@@ -534,13 +601,17 @@ export default function ReadingTestPlayer({
                                   className="mx-1 w-full max-w-[9rem] rounded-lg border border-white/15 bg-white/10 px-2 py-1 text-sm text-white focus:border-brand-500 focus:outline-none sm:w-36"
                                   placeholder={`max ${q.maxWords} words`}
                                 />{" "}
-                                {q.after}
+                                <HighlightableText fontSize={fontSize} onHighlight={handleHighlight} onHighlightRemove={handleHighlightRemove}>
+                                  {q.after}
+                                </HighlightableText>
                               </p>
                             ) : (
                               <p className="text-sm leading-7 text-slate-200">
-                                {q.type === "matching-headings"
-                                  ? q.paragraphLabel
-                                  : q.prompt}
+                                <HighlightableText fontSize={fontSize} onHighlight={handleHighlight} onHighlightRemove={handleHighlightRemove}>
+                                  {q.type === "matching-headings"
+                                    ? q.paragraphLabel
+                                    : q.prompt}
+                                </HighlightableText>
                               </p>
                             )}
                           </div>

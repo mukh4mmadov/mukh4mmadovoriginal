@@ -2,11 +2,11 @@
 
 import { useMemo, useState, useEffect, useRef } from "react";
 import { ReadingPassage, ReadingQuestion } from "@/types/ielts";
+import { TestEvent } from "@/types/testEvents";
 import { scoreToBand } from "@/lib/bandScore";
 import {
   CheckCircle2,
   XCircle,
-  BookOpen,
   Lightbulb,
   ArrowLeft,
   Trophy,
@@ -15,9 +15,8 @@ import {
   Target,
   RotateCcw,
   RefreshCcw,
-  ListChecks,
-  MessageSquareText,
   Eye,
+  History,
 } from "lucide-react";
 
 function allQuestions(passage: ReadingPassage): ReadingQuestion[] {
@@ -45,6 +44,7 @@ interface ReadingTestResultsProps {
   onRestartIncorrect?: () => void;
   onRestartAll?: () => void;
   timeSpent?: number;
+  events?: TestEvent[];
 }
 
 export default function ReadingTestResults({
@@ -54,6 +54,7 @@ export default function ReadingTestResults({
   onRestartIncorrect,
   onRestartAll,
   timeSpent = 0,
+  events = [],
 }: ReadingTestResultsProps) {
   const questions = allQuestions(passage);
   const questionNumbers = useMemo(() => {
@@ -110,6 +111,37 @@ export default function ReadingTestResults({
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  const formatEventTime = (timestamp: number) => {
+    if (events.length === 0) return "00:00";
+    const elapsed = Math.floor((timestamp - events[0].timestamp) / 1000);
+    const mins = Math.floor(elapsed / 60);
+    const secs = elapsed % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  const getEventDescription = (event: TestEvent) => {
+    switch (event.type) {
+      case "opened":
+        return "Opened the test";
+      case "highlighted":
+        return `Highlighted "${event.text}"`;
+      case "highlight_removed":
+        return `Removed highlight from "${event.text}"`;
+      case "answered":
+        return `Answered Question ${event.questionNumber}`;
+      case "answer_changed":
+        return `Changed Question ${event.questionNumber} from ${event.oldAnswer} to ${event.newAnswer}`;
+      case "question_skipped":
+        return `Skipped Question ${event.questionNumber}`;
+      case "question_returned":
+        return `Returned to Question ${event.questionNumber}`;
+      case "submitted":
+        return "Submitted the test";
+      default:
+        return "Unknown event";
+    }
   };
 
   useEffect(() => {
@@ -308,6 +340,37 @@ export default function ReadingTestResults({
             : "Review only incorrect answers"}
         </button>
       </div>
+
+      {events.length > 0 && (
+        <div className="mb-8 rounded-3xl border border-white/10 bg-white/5 p-6">
+          <div className="mb-4 flex items-center gap-3">
+            <History size={20} className="text-brand-400" />
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-brand-400">
+                Reading Replay
+              </p>
+              <p className="text-sm text-slate-400">
+                Review your test timeline and reading behavior
+              </p>
+            </div>
+          </div>
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {events.map((event, index) => (
+              <div
+                key={index}
+                className="flex items-center gap-4 rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 transition hover:bg-white/[0.05]"
+              >
+                <span className="shrink-0 text-xs font-mono text-slate-500 w-16">
+                  {formatEventTime(event.timestamp)}
+                </span>
+                <span className="text-sm text-slate-300">
+                  {getEventDescription(event)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="space-y-8">
         {passage.questionGroups.map((group, gi) => (

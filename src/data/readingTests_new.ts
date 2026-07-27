@@ -1,5 +1,6 @@
 import { ReadingTest, ReadingPassage } from "@/types/ielts";
 import { cambridgePassages } from "./cambridgePassages";
+import { newPassages } from "./newPassages";
 
 // NOTE: This file now includes both original passages and authentic Cambridge IELTS passages:
 // - Cambridge passages are genuine IELTS Academic Reading passages with original questions and answers
@@ -10,6 +11,7 @@ import { cambridgePassages } from "./cambridgePassages";
 
 const passages: ReadingPassage[] = [
   ...cambridgePassages,
+  ...newPassages,
   {
     slug: "sustainable-urban-agriculture",
     title: "Sustainable Urban Agriculture: Feeding Cities of the Future",
