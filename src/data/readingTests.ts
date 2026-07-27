@@ -1,12 +1,5 @@
 import { ReadingTest, ReadingPassage } from "@/types/ielts";
 
-// NOTE: Tests follow authentic Cambridge IELTS Academic Reading format:
-// - 3 passages per test
-// - 40 questions total (13-14 per passage)
-// - 60 minutes total time
-// Topics drawn from academic research in environmental science, psychology, neuroscience, and technology
-
-// Individual passages (will be grouped into tests below)
 
 const passages: ReadingPassage[] = [
   {

@@ -590,7 +590,7 @@ export default function ReadingTestPlayer({
 
                             {q.type === "sentence-completion" ? (
                               <p className="text-sm leading-7 text-slate-200">
-                                <HighlightableText fontSize={fontSize} onHighlight={handleHighlight} onHighlightRemove={handleHighlightRemove}>
+                                <HighlightableText fontSize={fontSize} onHighlight={handleHighlight} onHighlightRemove={handleHighlightRemove} containerKey={`${q.id}-before`}>
                                   {q.before}
                                 </HighlightableText>{" "}
                                 <input
@@ -601,13 +601,13 @@ export default function ReadingTestPlayer({
                                   className="mx-1 w-full max-w-[9rem] rounded-lg border border-white/15 bg-white/10 px-2 py-1 text-sm text-white focus:border-brand-500 focus:outline-none sm:w-36"
                                   placeholder={`max ${q.maxWords} words`}
                                 />{" "}
-                                <HighlightableText fontSize={fontSize} onHighlight={handleHighlight} onHighlightRemove={handleHighlightRemove}>
+                                <HighlightableText fontSize={fontSize} onHighlight={handleHighlight} onHighlightRemove={handleHighlightRemove} containerKey={`${q.id}-after`}>
                                   {q.after}
                                 </HighlightableText>
                               </p>
                             ) : (
                               <p className="text-sm leading-7 text-slate-200">
-                                <HighlightableText fontSize={fontSize} onHighlight={handleHighlight} onHighlightRemove={handleHighlightRemove}>
+                                <HighlightableText fontSize={fontSize} onHighlight={handleHighlight} onHighlightRemove={handleHighlightRemove} containerKey={`${q.id}-prompt`}>
                                   {q.type === "matching-headings"
                                     ? q.paragraphLabel
                                     : q.prompt}
