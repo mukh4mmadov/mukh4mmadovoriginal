@@ -3,6 +3,7 @@
 import { useMemo, useState, useRef, useEffect } from "react";
 import { ReadingPassage, ReadingQuestion } from "@/types/ielts";
 import { TestEvent } from "@/types/testEvents";
+import { AIPersonality, AIConversationContext } from "@/types/aiCoach";
 import Timer from "@/components/shared/Timer";
 import {
   Check,
@@ -12,11 +13,13 @@ import {
   Instagram,
   Send,
   GripVertical,
+  Bot,
 } from "lucide-react";
 import HighlightablePassage from "@/components/reading/HighlightablePassage";
 import HighlightableText from "@/components/reading/HighlightableText";
 import ReadingTestResults from "@/components/reading/ReadingTestResults";
 import AIReadingTutor from "@/components/reading/AIReadingTutor";
+import AIChatPanel from "@/components/ai/AIChatPanel";
 import { saveProgress } from "@/lib/progressTracker";
 
 function allQuestions(passage: ReadingPassage): ReadingQuestion[] {
@@ -64,6 +67,8 @@ export default function ReadingTestPlayer({
   const [isResizing, setIsResizing] = useState(false);
   const [isDesktop, setIsDesktop] = useState(true);
   const [events, setEvents] = useState<TestEvent[]>([]);
+  const [aiChatOpen, setAiChatOpen] = useState(false);
+  const [aiPersonality, setAiPersonality] = useState<AIPersonality>('friendly');
   const startTimeRef = useRef(Date.now());
   const pausedTimeRef = useRef(0);
   const lastPauseStartRef = useRef<number | null>(null);
@@ -73,6 +78,32 @@ export default function ReadingTestPlayer({
   const getElapsedSeconds = (now = Date.now()) => {
     const elapsed = Math.floor((now - startTimeRef.current) / 1000);
     return Math.max(0, elapsed - pausedTimeRef.current);
+  };
+
+  const buildAIContext = (): AIConversationContext => {
+    const currentQuestion = activeQ ? questions.find(q => q.id === activeQ) : undefined;
+    
+    return {
+      passage: {
+        title: passage.title,
+        paragraphs: passage.paragraphs.map(p => ({
+          label: p.label,
+          text: p.text,
+        })),
+      },
+      question: currentQuestion ? {
+        id: currentQuestion.id,
+        type: currentQuestion.type,
+        prompt: currentQuestion.prompt,
+        before: (currentQuestion as any).before,
+        after: (currentQuestion as any).after,
+        userAnswer: answers[currentQuestion.id],
+        correctAnswer: currentQuestion.answer,
+        explanation: currentQuestion.explanation,
+        evidence: currentQuestion.evidence,
+        paragraphLabel: (currentQuestion as any).paragraphLabel,
+      } : undefined,
+    };
   };
 
   useEffect(() => {
@@ -118,29 +149,33 @@ export default function ReadingTestPlayer({
   useEffect(() => {
     if (submitted || typeof window === "undefined") return;
 
-    const saveData = {
-      answers,
-      timeSpent,
-      timerRunning,
-      timestamp: Date.now(),
-    };
+    try {
+      const saveData = {
+        answers,
+        timeSpent,
+        timerRunning,
+        timestamp: Date.now(),
+      };
 
-    window.localStorage.setItem(
-      `ielts-reading-${passage.slug}`,
-      JSON.stringify(saveData),
-    );
+      window.localStorage.setItem(
+        `ielts-reading-${passage.slug}`,
+        JSON.stringify(saveData),
+      );
+    } catch (e) {
+      console.warn('Failed to save progress to localStorage:', e);
+    }
   }, [answers, timeSpent, timerRunning, submitted, passage.slug]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const savedData = window.localStorage.getItem(
-      `ielts-reading-${passage.slug}`,
-    );
-    let hasValidSavedData = false;
-    
-    if (savedData) {
-      try {
+    try {
+      const savedData = window.localStorage.getItem(
+        `ielts-reading-${passage.slug}`,
+      );
+      let hasValidSavedData = false;
+      
+      if (savedData) {
         const parsed = JSON.parse(savedData);
         if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
           setAnswers(parsed.answers || {});
@@ -150,13 +185,14 @@ export default function ReadingTestPlayer({
           previousAnswersRef.current = parsed.answers || {};
           hasValidSavedData = true;
         }
-      } catch (e) {
-        console.error("Failed to load saved data:", e);
       }
-    }
 
-    // Track test opened event (only if not loading saved data)
-    if (!hasValidSavedData) {
+      // Track test opened event (only if not loading saved data)
+      if (!hasValidSavedData) {
+        setEvents([{ type: "opened", timestamp: Date.now() }]);
+      }
+    } catch (e) {
+      console.warn('Failed to load saved data:', e);
       setEvents([{ type: "opened", timestamp: Date.now() }]);
     }
   }, [passage.slug]);
@@ -383,6 +419,15 @@ export default function ReadingTestPlayer({
               onResume={handleTimerResume}
               onReset={handleTimerReset}
             />
+            <button
+              type="button"
+              onClick={() => setAiChatOpen(true)}
+              className="flex items-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/10 px-3 py-2 text-sm font-medium text-brand-300 hover:bg-brand-500/20 transition-colors"
+              title="Open AI Coach"
+            >
+              <Bot size={16} />
+              <span className="hidden sm:inline">AI Coach</span>
+            </button>
             <button
               type="button"
               className="btn-primary"
@@ -751,6 +796,14 @@ export default function ReadingTestPlayer({
           </div>
         </div>
       </div>
+
+      <AIChatPanel
+        isOpen={aiChatOpen}
+        onClose={() => setAiChatOpen(false)}
+        context={buildAIContext()}
+        personality={aiPersonality}
+        onPersonalityChange={setAiPersonality}
+      />
 
       {showSubmitDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">

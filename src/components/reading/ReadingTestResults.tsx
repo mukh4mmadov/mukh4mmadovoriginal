@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { ReadingPassage, ReadingQuestion } from "@/types/ielts";
 import { TestEvent } from "@/types/testEvents";
+import { AIPersonality, AIConversationContext } from "@/types/aiCoach";
 import { scoreToBand } from "@/lib/bandScore";
 import {
   CheckCircle2,
@@ -17,7 +18,9 @@ import {
   RefreshCcw,
   Eye,
   History,
+  Bot,
 } from "lucide-react";
+import AIChatPanel from "@/components/ai/AIChatPanel";
 
 function allQuestions(passage: ReadingPassage): ReadingQuestion[] {
   return passage.questionGroups.flatMap((g) => g.questions);
@@ -73,6 +76,9 @@ export default function ReadingTestResults({
   const [reviewMode, setReviewMode] = useState<"all" | "incorrect" | "none">(
     "all",
   );
+  const [aiChatOpen, setAiChatOpen] = useState(false);
+  const [aiPersonality, setAiPersonality] = useState<AIPersonality>('friendly');
+  const [selectedQuestionId, setSelectedQuestionId] = useState<string | null>(null);
 
   const correctCount = questions.filter((q) =>
     isCorrect(q, answers[q.id]),
@@ -83,6 +89,32 @@ export default function ReadingTestResults({
   const skippedCount = questions.filter((q) => !answers[q.id]).length;
   const band = scoreToBand(correctCount, questions.length);
   const percentage = (correctCount / questions.length) * 100;
+
+  const buildAIContext = (): AIConversationContext => {
+    const currentQuestion = selectedQuestionId ? questions.find(q => q.id === selectedQuestionId) : undefined;
+    
+    return {
+      passage: {
+        title: passage.title,
+        paragraphs: passage.paragraphs.map(p => ({
+          label: p.label,
+          text: p.text,
+        })),
+      },
+      question: currentQuestion ? {
+        id: currentQuestion.id,
+        type: currentQuestion.type,
+        prompt: currentQuestion.prompt,
+        before: (currentQuestion as any).before,
+        after: (currentQuestion as any).after,
+        userAnswer: answers[currentQuestion.id],
+        correctAnswer: currentQuestion.answer,
+        explanation: currentQuestion.explanation,
+        evidence: currentQuestion.evidence,
+        paragraphLabel: (currentQuestion as any).paragraphLabel,
+      } : undefined,
+    };
+  };
 
   const getMotivationalMessage = () => {
     if (percentage >= 90)
@@ -217,6 +249,17 @@ export default function ReadingTestResults({
           >
             <ArrowLeft size={16} />
             Back to test
+          </button>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setAiChatOpen(true)}
+            className="flex items-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/10 px-3 py-2 text-sm font-medium text-brand-300 hover:bg-brand-500/20 transition-colors"
+            title="Open AI Coach"
+          >
+            <Bot size={16} />
+            <span className="hidden sm:inline">AI Coach</span>
           </button>
         </div>
         <div>
@@ -518,30 +561,42 @@ export default function ReadingTestResults({
 
                       {(wrong || unanswered) && q.explanation && (
                         <div className="ml-9">
-                          <button
-                            onClick={() => toggleExplanation(q.id)}
-                            className={`flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-lg transition-all duration-300 ${
-                              expandedExplanation === q.id
-                                ? "bg-brand-500/20 border border-brand-500/50 text-brand-300"
-                                : wrong
-                                  ? "bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20"
-                                  : "bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10"
-                            }`}
-                          >
-                            <Lightbulb
-                              size={14}
-                              className={
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              onClick={() => toggleExplanation(q.id)}
+                              className={`flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-lg transition-all duration-300 ${
                                 expandedExplanation === q.id
-                                  ? "animate-pulse"
-                                  : ""
-                              }
-                            />
-                            {expandedExplanation === q.id
-                              ? "Hide explanation"
-                              : wrong
-                                ? "Why was this wrong?"
-                                : "Show explanation"}
-                          </button>
+                                  ? "bg-brand-500/20 border border-brand-500/50 text-brand-300"
+                                  : wrong
+                                    ? "bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20"
+                                    : "bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10"
+                              }`}
+                            >
+                              <Lightbulb
+                                size={14}
+                                className={
+                                  expandedExplanation === q.id
+                                    ? "animate-pulse"
+                                    : ""
+                                }
+                              />
+                              {expandedExplanation === q.id
+                                ? "Hide explanation"
+                                : wrong
+                                  ? "Why was this wrong?"
+                                  : "Show explanation"}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedQuestionId(q.id);
+                                setAiChatOpen(true);
+                              }}
+                              className="flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-lg transition-all duration-300 bg-brand-500/10 border border-brand-500/30 text-brand-300 hover:bg-brand-500/20"
+                            >
+                              <Bot size={14} />
+                              Ask AI Coach
+                            </button>
+                          </div>
 
                           {expandedExplanation === q.id && (
                             <div className="mt-3 rounded-xl border border-brand-500/30 bg-gradient-to-br from-brand-500/10 to-brand-500/5 p-4 animate-fade-in relative overflow-hidden">
@@ -589,6 +644,14 @@ export default function ReadingTestResults({
           Try Again
         </button>
       </div>
+
+      <AIChatPanel
+        isOpen={aiChatOpen}
+        onClose={() => setAiChatOpen(false)}
+        context={buildAIContext()}
+        personality={aiPersonality}
+        onPersonalityChange={setAiPersonality}
+      />
     </div>
   );
 }

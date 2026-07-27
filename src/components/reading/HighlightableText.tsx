@@ -36,40 +36,30 @@ export default function HighlightableText({
 
 
   const handleDoubleClick = (tokenKey: string, containerKey: string, tokenText: string) => {
-    console.log('[HighlightableText DBLCLICK] Event fired', { tokenKey, containerKey, tokenText });
     const now = Date.now();
     const lastClick = lastClickRef.current;
     
-    console.log('[HighlightableText DBLCLICK] Last click check', { lastClick, timeDiff: lastClick ? now - lastClick.time : null });
-    
     // Check if this is a double-click on the same token
     if (lastClick && lastClick.key === tokenKey && now - lastClick.time < 300) {
-      console.log('[HighlightableText DBLCLICK] Double-click detected, toggling highlight');
       // Double-click detected - toggle highlight
       setHighlights((prev) => {
         const next = { ...prev };
         const currentSet = next[containerKey] || new Set<string>();
         const current = new Set(currentSet);
         
-        console.log('[HighlightableText DBLCLICK] Current highlights before toggle', { currentSet: Array.from(currentSet), hasToken: current.has(tokenKey) });
-        
         if (current.has(tokenKey)) {
-          console.log('[HighlightableText DBLCLICK] Removing highlight');
           current.delete(tokenKey);
           onHighlightRemove?.(tokenText);
         } else {
-          console.log('[HighlightableText DBLCLICK] Adding highlight');
           current.add(tokenKey);
           onHighlight?.(tokenText);
         }
         
         next[containerKey] = current;
-        console.log('[HighlightableText DBLCLICK] State updated', { newHighlights: Array.from(current) });
         return next;
       });
       lastClickRef.current = null;
     } else {
-      console.log('[HighlightableText DBLCLICK] First click, waiting');
       lastClickRef.current = { key: tokenKey, time: now };
     }
   };
@@ -78,17 +68,8 @@ export default function HighlightableText({
     containerKey: string,
     containerElement: HTMLElement,
   ) => {
-    console.log('[HighlightableText SELECTION] Event fired', { containerKey });
     const selection = window.getSelection();
-    console.log('[HighlightableText SELECTION] getSelection result', { 
-      selection, 
-      rangeCount: selection?.rangeCount, 
-      isCollapsed: selection?.isCollapsed,
-      selectedText: selection?.toString()
-    });
-    
     if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
-      console.log('[HighlightableText SELECTION] Early return - no valid selection');
       return;
     }
 
@@ -100,27 +81,15 @@ export default function HighlightableText({
       range.compareBoundaryPoints(Range.START_TO_START, containerRange) >= 0 &&
       range.compareBoundaryPoints(Range.END_TO_END, containerRange) <= 0;
 
-    console.log('[HighlightableText SELECTION] Boundary check', { isWithinContainer });
-
-    if (!isWithinContainer) {
-      console.log('[HighlightableText SELECTION] Selection not within container');
-      return;
-    }
+    if (!isWithinContainer) return;
 
     const selectedText = selection.toString().trim();
-    console.log('[HighlightableText SELECTION] Selected text', { selectedText, length: selectedText.length });
-    
-    if (selectedText.length === 0) {
-      console.log('[HighlightableText SELECTION] Selected text is empty');
-      return;
-    }
+    if (selectedText.length === 0) return;
 
     // New algorithm: Use DOM Range intersection to detect overlapping tokens
     const tokenElements = Array.from(
       containerElement.querySelectorAll<HTMLElement>("[data-token-key]")
     );
-    
-    console.log('[HighlightableText SELECTION] Found token elements', { count: tokenElements.length });
 
     const selectedKeys: string[] = [];
     
@@ -139,31 +108,22 @@ export default function HighlightableText({
         const tokenKey = tokenElement.getAttribute("data-token-key");
         if (tokenKey) {
           selectedKeys.push(tokenKey);
-          console.log('[HighlightableText SELECTION] Token intersects', { tokenKey, tokenText: tokenElement.textContent?.trim() });
         }
       }
     }
 
-    console.log('[HighlightableText SELECTION] Selected token keys', { selectedKeys, count: selectedKeys.length });
-
-    if (selectedKeys.length === 0) {
-      console.log('[HighlightableText SELECTION] No token keys selected');
-      return;
-    }
+    if (selectedKeys.length === 0) return;
 
     setHighlights((prev) => {
       const next = { ...prev };
       const currentSet = next[containerKey] || new Set<string>();
       const current = new Set(currentSet);
       
-      console.log('[HighlightableText SELECTION] Before adding', { currentHighlights: Array.from(current) });
-      
-      selectedKeys.forEach((key) => {
-        current.add(key);
+      selectedKeys.forEach((k) => {
+        current.add(k);
       });
       
       next[containerKey] = current;
-      console.log('[HighlightableText SELECTION] State updated', { newHighlights: Array.from(current) });
       return next;
     });
 

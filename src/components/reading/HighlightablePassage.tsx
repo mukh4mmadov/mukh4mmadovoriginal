@@ -39,40 +39,30 @@ export default function HighlightablePassage({
   );
 
   const handleDoubleClick = (tokenKey: string, paragraphKey: string, tokenText: string) => {
-    console.log('[HighlightablePassage DBLCLICK] Event fired', { tokenKey, paragraphKey, tokenText });
     const now = Date.now();
     const lastClick = lastClickRef.current;
     
-    console.log('[HighlightablePassage DBLCLICK] Last click check', { lastClick, timeDiff: lastClick ? now - lastClick.time : null });
-    
     // Check if this is a double-click on the same token
     if (lastClick && lastClick.key === tokenKey && now - lastClick.time < 300) {
-      console.log('[HighlightablePassage DBLCLICK] Double-click detected, toggling highlight');
       // Double-click detected - toggle highlight
       setHighlights((prev) => {
         const next = { ...prev };
         const currentSet = next[paragraphKey] || new Set<string>();
         const current = new Set(currentSet);
         
-        console.log('[HighlightablePassage DBLCLICK] Current highlights before toggle', { currentSet: Array.from(currentSet), hasToken: current.has(tokenKey) });
-        
         if (current.has(tokenKey)) {
-          console.log('[HighlightablePassage DBLCLICK] Removing highlight');
           current.delete(tokenKey);
           onHighlightRemove?.(tokenText);
         } else {
-          console.log('[HighlightablePassage DBLCLICK] Adding highlight');
           current.add(tokenKey);
           onHighlight?.(tokenText);
         }
         
         next[paragraphKey] = current;
-        console.log('[HighlightablePassage DBLCLICK] State updated', { newHighlights: Array.from(current) });
         return next;
       });
       lastClickRef.current = null;
     } else {
-      console.log('[HighlightablePassage DBLCLICK] First click, waiting');
       lastClickRef.current = { key: tokenKey, time: now };
     }
   };
@@ -81,17 +71,8 @@ export default function HighlightablePassage({
     paragraphKey: string,
     paragraphElement: HTMLParagraphElement,
   ) => {
-    console.log('[HighlightablePassage SELECTION] Event fired', { paragraphKey });
     const selection = window.getSelection();
-    console.log('[HighlightablePassage SELECTION] getSelection result', { 
-      selection, 
-      rangeCount: selection?.rangeCount, 
-      isCollapsed: selection?.isCollapsed,
-      selectedText: selection?.toString()
-    });
-    
     if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
-      console.log('[HighlightablePassage SELECTION] Early return - no valid selection');
       return;
     }
 
@@ -103,27 +84,15 @@ export default function HighlightablePassage({
       range.compareBoundaryPoints(Range.START_TO_START, paragraphRange) >= 0 &&
       range.compareBoundaryPoints(Range.END_TO_END, paragraphRange) <= 0;
 
-    console.log('[HighlightablePassage SELECTION] Boundary check', { isWithinParagraph });
-
-    if (!isWithinParagraph) {
-      console.log('[HighlightablePassage SELECTION] Selection not within paragraph');
-      return;
-    }
+    if (!isWithinParagraph) return;
 
     const selectedText = selection.toString().trim();
-    console.log('[HighlightablePassage SELECTION] Selected text', { selectedText, length: selectedText.length });
-    
-    if (selectedText.length === 0) {
-      console.log('[HighlightablePassage SELECTION] Selected text is empty');
-      return;
-    }
+    if (selectedText.length === 0) return;
 
     // New algorithm: Use DOM Range intersection to detect overlapping tokens
     const tokenElements = Array.from(
       paragraphElement.querySelectorAll<HTMLElement>("[data-token-key]")
     );
-    
-    console.log('[HighlightablePassage SELECTION] Found token elements', { count: tokenElements.length });
 
     const selectedKeys: string[] = [];
     
@@ -142,31 +111,22 @@ export default function HighlightablePassage({
         const tokenKey = tokenElement.getAttribute("data-token-key");
         if (tokenKey) {
           selectedKeys.push(tokenKey);
-          console.log('[HighlightablePassage SELECTION] Token intersects', { tokenKey, tokenText: tokenElement.textContent?.trim() });
         }
       }
     }
 
-    console.log('[HighlightablePassage SELECTION] Selected token keys', { selectedKeys, count: selectedKeys.length });
-
-    if (selectedKeys.length === 0) {
-      console.log('[HighlightablePassage SELECTION] No token keys selected');
-      return;
-    }
+    if (selectedKeys.length === 0) return;
 
     setHighlights((prev) => {
       const next = { ...prev };
       const currentSet = next[paragraphKey] || new Set<string>();
       const current = new Set(currentSet);
       
-      console.log('[HighlightablePassage SELECTION] Before adding', { currentHighlights: Array.from(current) });
-      
       selectedKeys.forEach((key) => {
         current.add(key);
       });
       
       next[paragraphKey] = current;
-      console.log('[HighlightablePassage SELECTION] State updated', { newHighlights: Array.from(current) });
       return next;
     });
 
