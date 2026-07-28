@@ -9,6 +9,7 @@ import {
   Send,
 } from "lucide-react";
 import BandGauge from "@/components/shared/BandGauge";
+import DailyInspiration from "@/components/shared/DailyInspiration";
 import { readingTests } from "@/data/readingTests_new";
 
 export default function Home() {
@@ -43,6 +44,11 @@ export default function Home() {
             <BandGauge band={7.5} correct={10} total={13} />
           </div>
         </div>
+      </section>
+
+      {/* Daily Inspiration */}
+      <section className="mx-auto max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
+        <DailyInspiration />
       </section>
 
       <section className="mx-auto max-w-7xl px-4 pb-24 sm:px-6 lg:px-8">

@@ -21,6 +21,7 @@ import {
   Bot,
 } from "lucide-react";
 import AIChatPanel from "@/components/ai/AIChatPanel";
+import DailyInspiration from "@/components/shared/DailyInspiration";
 
 function allQuestions(passage: ReadingPassage): ReadingQuestion[] {
   return passage.questionGroups.flatMap((g) => g.questions);
@@ -239,6 +240,11 @@ export default function ReadingTestResults({
           />
         </div>
       )}
+
+      {/* Daily Inspiration (Compact) */}
+      <div className="mb-6">
+        <DailyInspiration compact />
+      </div>
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">

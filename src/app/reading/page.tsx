@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { getProgress } from "@/lib/progressTracker";
+import DailyInspiration from "@/components/shared/DailyInspiration";
 
 export default function ReadingListPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -114,6 +115,11 @@ export default function ReadingListPage() {
           </button>
         </div>
       )}
+
+      {/* Daily Inspiration */}
+      <div className="mb-8">
+        <DailyInspiration />
+      </div>
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         {filteredTests.length === 0 ? (
