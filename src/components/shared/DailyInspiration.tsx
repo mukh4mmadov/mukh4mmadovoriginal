@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { BookOpen, Lightbulb, Target, Check } from "lucide-react";
+import { BookOpen, Lightbulb, Target, Check, RefreshCw } from "lucide-react";
 import { verses } from "@/data/dailyVerses";
 import { strategies } from "@/data/dailyStrategies";
 import { words } from "@/data/dailyWords";
 import { missionSets, Mission } from "@/data/dailyMissions";
-import { getDailyContent } from "@/lib/dailyRotation";
+import { getDailyContent, getRandomContentExcluding } from "@/lib/dailyRotation";
 
 interface DailyInspirationProps {
   compact?: boolean;
@@ -15,15 +15,21 @@ interface DailyInspirationProps {
 export default function DailyInspiration({ compact = false }: DailyInspirationProps) {
   const [completedMissions, setCompletedMissions] = useState<Set<string>>(new Set());
   const [mounted, setMounted] = useState(false);
+  const [currentVerseIndex, setCurrentVerseIndex] = useState<number | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Get daily content with caching
-  const dailyVerse = useMemo(() => getDailyContent(verses, "daily-verse"), []);
+  // Get daily content with caching (for strategy, word, missions - still daily rotation)
   const dailyStrategy = useMemo(() => getDailyContent(strategies, "daily-strategy"), []);
   const dailyWord = useMemo(() => getDailyContent(words, "daily-word"), []);
   const dailyMissions = useMemo(() => getDailyContent(missionSets, "daily-missions"), []);
 
+  // Select random verse on client mount
   useEffect(() => {
     setMounted(true);
+    
+    // Select a random verse
+    const randomVerse = getRandomContentExcluding(verses);
+    setCurrentVerseIndex(randomVerse.index);
     
     // Load completed missions from localStorage
     if (typeof window !== 'undefined') {
@@ -41,6 +47,17 @@ export default function DailyInspiration({ compact = false }: DailyInspirationPr
       }
     }
   }, [dailyMissions.date]);
+
+  const handleRefreshVerse = () => {
+    setIsRefreshing(true);
+    
+    // Get a new random verse excluding the current one
+    const newVerse = getRandomContentExcluding(verses, currentVerseIndex ?? undefined);
+    setCurrentVerseIndex(newVerse.index);
+    
+    // Reset animation after transition
+    setTimeout(() => setIsRefreshing(false), 300);
+  };
 
   const toggleMission = (missionId: string) => {
     setCompletedMissions((prev) => {
@@ -70,9 +87,11 @@ export default function DailyInspiration({ compact = false }: DailyInspirationPr
     });
   };
 
-  if (!mounted) {
+  if (!mounted || currentVerseIndex === null) {
     return null; // Prevent hydration mismatch
   }
+
+  const currentVerse = verses[currentVerseIndex];
 
   if (compact) {
     return (
@@ -82,9 +101,9 @@ export default function DailyInspiration({ compact = false }: DailyInspirationPr
           <BookOpen className="text-brand-400 shrink-0" size={16} />
           <div className="flex-1 min-w-0">
             <p className="text-slate-200 text-sm font-medium leading-relaxed">
-              {dailyVerse.content.text}
+              {currentVerse.text}
             </p>
-            <p className="text-slate-500 text-xs mt-1">{dailyVerse.content.reference}</p>
+            <p className="text-slate-500 text-xs mt-1">{currentVerse.reference}</p>
           </div>
         </div>
 
@@ -109,11 +128,21 @@ export default function DailyInspiration({ compact = false }: DailyInspirationPr
           <BookOpen className="text-brand-400 relative" size={20} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-slate-200 text-base font-medium leading-relaxed">
-            {dailyVerse.content.text}
-          </p>
-          <p className="text-slate-500 text-sm mt-2">{dailyVerse.content.reference}</p>
+          <div className={`transition-opacity duration-300 ${isRefreshing ? 'opacity-0' : 'opacity-100'}`}>
+            <p className="text-slate-200 text-base font-medium leading-relaxed">
+              {currentVerse.text}
+            </p>
+            <p className="text-slate-500 text-sm mt-2">{currentVerse.reference}</p>
+          </div>
         </div>
+        <button
+          onClick={handleRefreshVerse}
+          className="shrink-0 p-2 rounded-lg hover:bg-white/10 transition-all duration-200 text-slate-400 hover:text-brand-400 hover:scale-110"
+          aria-label="New inspiration"
+          title="Get new inspiration"
+        >
+          <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
+        </button>
       </div>
 
       {/* Strategy Section */}

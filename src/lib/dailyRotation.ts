@@ -35,6 +35,31 @@ function getSeededRandom(dateString: string, max: number): number {
 }
 
 /**
+ * Get a random index from an array, excluding a specific index
+ * This is client-side only and uses Math.random()
+ * @param arrayLength - The length of the array
+ * @param excludeIndex - The index to exclude (to avoid repeats)
+ * @returns A random index different from excludeIndex
+ */
+export function getRandomIndexExcluding(arrayLength: number, excludeIndex?: number): number {
+  if (arrayLength <= 1) return 0;
+  
+  if (excludeIndex === undefined) {
+    return Math.floor(Math.random() * arrayLength);
+  }
+  
+  // If there's only one item and it's excluded, return it anyway
+  if (arrayLength === 1) return 0;
+  
+  let newIndex;
+  do {
+    newIndex = Math.floor(Math.random() * arrayLength);
+  } while (newIndex === excludeIndex);
+  
+  return newIndex;
+}
+
+/**
  * Get daily content from an array with caching
  * @param array - The array to select from
  * @param cacheKey - The localStorage key for caching
@@ -100,6 +125,24 @@ export function getDailyContentNoCache<T>(
   return {
     content: array[index],
     date,
+    index,
+  };
+}
+
+/**
+ * Get a random item from an array, excluding a specific index
+ * This is client-side only and uses Math.random()
+ * @param array - The array to select from
+ * @param excludeIndex - The index to exclude (to avoid repeats)
+ * @returns The selected content with its index
+ */
+export function getRandomContentExcluding<T>(
+  array: T[],
+  excludeIndex?: number
+): { content: T; index: number } {
+  const index = getRandomIndexExcluding(array.length, excludeIndex);
+  return {
+    content: array[index],
     index,
   };
 }
