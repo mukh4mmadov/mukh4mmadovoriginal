@@ -51,7 +51,7 @@ CURRENT QUESTION:
 - Paragraph Label: ${context.question.paragraphLabel || 'Not specified'}
 ` : ''}`;
 
-  const personalityPrompts: Record<AIPersonity, string> = {
+  const personalityPrompts: Record<AIPersonality, string> = {
     friendly: `${baseDirectives}
 
 PERSONALITY: Friendly Teacher 😊
