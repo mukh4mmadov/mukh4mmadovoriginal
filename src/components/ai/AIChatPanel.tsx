@@ -39,6 +39,8 @@ export default function AIChatPanel({
   const [retryCount, setRetryCount] = useState(0);
   const [lastFailedPrompt, setLastFailedPrompt] = useState<string | null>(null);
   const [isNotConfigured, setIsNotConfigured] = useState(false);
+  const [panelWidth, setPanelWidth] = useState(370);
+  const [isResizing, setIsResizing] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -58,7 +60,6 @@ export default function AIChatPanel({
         }
       } catch (e) {
         // Ignore parse errors or quota exceeded
-        console.warn('Failed to load conversation from localStorage:', e);
       }
     }
   }, [conversationKey]);
@@ -76,12 +77,11 @@ export default function AIChatPanel({
         );
       } catch (e) {
         // Handle quota exceeded or other localStorage errors
-        console.warn('Failed to save conversation to localStorage:', e);
         // Try to clear old data to free space
         try {
           localStorage.clear();
         } catch (clearError) {
-          console.warn('Failed to clear localStorage:', clearError);
+          // Ignore clear errors
         }
       }
     }
@@ -106,6 +106,35 @@ export default function AIChatPanel({
       inputRef.current.focus();
     }
   }, [isOpen]);
+
+  // Handle panel resize
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMove = (event: MouseEvent) => {
+      const newWidth = window.innerWidth - event.clientX;
+      const clamped = Math.min(500, Math.max(320, newWidth));
+      setPanelWidth(clamped);
+    };
+
+    const stopResize = () => {
+      setIsResizing(false);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", stopResize);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", stopResize);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [isResizing]);
 
   const handleSend = async (prompt: string) => {
     if (!prompt.trim() || isLoading) return;
@@ -268,7 +297,19 @@ export default function AIChatPanel({
   return (
     <>
       {/* Desktop Sidebar */}
-      <div className="hidden sm:block fixed right-0 top-0 h-full w-[350px] bg-surface/95 backdrop-blur-xl border-l border-white/10 shadow-2xl z-50 flex flex-col">
+      {/* Resize Handle */}
+      <div 
+        className="hidden sm:block fixed top-0 h-full w-1.5 -ml-1.5 cursor-col-resize hover:bg-brand-500/30 transition-colors z-50"
+        onMouseDown={() => setIsResizing(true)}
+        style={{ left: `calc(100% - ${panelWidth}px)` }}
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize AI panel"
+      />
+      <div 
+        className="hidden sm:block fixed right-0 top-0 h-full bg-surface/95 backdrop-blur-xl border-l border-white/10 shadow-2xl z-50 flex flex-col"
+        style={{ width: `${panelWidth}px` }}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/10 bg-gradient-to-r from-brand-500/5 via-transparent to-transparent">
           <div className="flex items-center gap-2">
@@ -332,40 +373,45 @@ export default function AIChatPanel({
           {isNotConfigured && (
             <div className="text-center py-8">
               <div className="relative inline-block mb-3">
-                <div className="absolute inset-0 bg-rose-500/20 blur-2xl rounded-full" />
-                <Bot className="text-rose-400 relative" size={28} />
+                <div className="absolute inset-0 bg-brand-500/20 blur-2xl rounded-full animate-pulse" />
+                <Sparkles className="text-brand-400 relative" size={28} />
               </div>
-              <h3 className="text-white font-semibold text-sm mb-1.5">AI is not connected yet</h3>
-              <p className="text-slate-400 text-xs max-w-[240px] mx-auto leading-relaxed mb-3">
-                To enable AI Reading Coach:
+              <h3 className="text-white font-semibold text-sm mb-1.5">AI Coach Coming Soon</h3>
+              <p className="text-slate-400 text-xs max-w-[200px] mx-auto leading-relaxed">
+                Get personalized IELTS reading guidance powered by AI.
               </p>
-              <div className="bg-slate-900/50 rounded-lg p-3 text-left max-w-[240px] mx-auto border border-white/10">
-                <p className="text-xs text-slate-300 mb-2">
-                  <span className="font-semibold text-brand-400">1.</span> Add your OpenAI API key to <code className="bg-white/10 px-1.5 py-0.5 rounded text-[10px]">.env.local</code>
-                </p>
-                <pre className="bg-black/50 rounded p-2 text-[10px] text-slate-400 overflow-x-auto mb-2">
-                  OPENAI_API_KEY=your_key_here
-                </pre>
-                <p className="text-xs text-slate-300">
-                  <span className="font-semibold text-brand-400">2.</span> Restart the development server
-                </p>
+              <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/20">
+                <div className="w-2 h-2 rounded-full bg-brand-400 animate-pulse" />
+                <span className="text-xs text-brand-300 font-medium">In Development</span>
               </div>
-              <p className="text-slate-500 text-[10px] mt-3">
-                After configuration the AI Coach will become available automatically.
-              </p>
             </div>
           )}
 
           {messages.length === 0 && !isNotConfigured && (
-            <div className="text-center py-8">
-              <div className="relative inline-block mb-3">
+            <div className="text-center py-6">
+              <div className="relative inline-block mb-4">
                 <div className="absolute inset-0 bg-brand-500/20 blur-2xl rounded-full" />
-                <Sparkles className="text-brand-400 relative" size={28} />
+                <Sparkles className="text-brand-400 relative" size={32} />
               </div>
-              <h3 className="text-white font-semibold text-sm mb-1.5">Welcome to AI Reading Coach</h3>
-              <p className="text-slate-400 text-xs max-w-[200px] mx-auto leading-relaxed">
+              <h3 className="text-white font-semibold text-base mb-2">Welcome to AI Reading Coach</h3>
+              <p className="text-slate-400 text-sm max-w-[220px] mx-auto leading-relaxed mb-6">
                 Ask me anything about the passage, questions, or IELTS strategies.
               </p>
+              
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">Try asking:</p>
+                {SUGGESTED_PROMPTS.filter(p => !p.personality || p.personality === personality).slice(0, 4).map((suggestion) => (
+                  <button
+                    key={suggestion.label}
+                    onClick={() => handleSend(suggestion.prompt)}
+                    disabled={isLoading}
+                    className="w-full text-left px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-brand-500/30 text-sm text-slate-300 hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group"
+                  >
+                    <span className="mr-2 text-lg">{suggestion.icon}</span>
+                    <span className="group-hover:translate-x-1 transition-transform inline-block">{suggestion.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
@@ -433,7 +479,7 @@ export default function AIChatPanel({
                   className="text-sm leading-relaxed"
                   dangerouslySetInnerHTML={{ __html: formatMessage(streamingContent) }}
                 />
-                <span className="inline-block w-2 h-4 bg-brand-400 animate-pulse ml-1" />
+                <span className="inline-block w-0.5 h-5 bg-brand-400 ml-1 animate-blink" />
               </div>
             </div>
           )}
@@ -559,40 +605,45 @@ export default function AIChatPanel({
           {isNotConfigured && (
             <div className="text-center py-8">
               <div className="relative inline-block mb-3">
-                <div className="absolute inset-0 bg-rose-500/20 blur-2xl rounded-full" />
-                <Bot className="text-rose-400 relative" size={28} />
+                <div className="absolute inset-0 bg-brand-500/20 blur-2xl rounded-full animate-pulse" />
+                <Sparkles className="text-brand-400 relative" size={28} />
               </div>
-              <h3 className="text-white font-semibold text-sm mb-1.5">AI is not connected yet</h3>
-              <p className="text-slate-400 text-xs max-w-[240px] mx-auto leading-relaxed mb-3">
-                To enable AI Reading Coach:
+              <h3 className="text-white font-semibold text-sm mb-1.5">AI Coach Coming Soon</h3>
+              <p className="text-slate-400 text-xs max-w-[200px] mx-auto leading-relaxed">
+                Get personalized IELTS reading guidance powered by AI.
               </p>
-              <div className="bg-slate-900/50 rounded-lg p-3 text-left max-w-[240px] mx-auto border border-white/10">
-                <p className="text-xs text-slate-300 mb-2">
-                  <span className="font-semibold text-brand-400">1.</span> Add your OpenAI API key to <code className="bg-white/10 px-1.5 py-0.5 rounded text-[10px]">.env.local</code>
-                </p>
-                <pre className="bg-black/50 rounded p-2 text-[10px] text-slate-400 overflow-x-auto mb-2">
-                  OPENAI_API_KEY=your_key_here
-                </pre>
-                <p className="text-xs text-slate-300">
-                  <span className="font-semibold text-brand-400">2.</span> Restart the development server
-                </p>
+              <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/20">
+                <div className="w-2 h-2 rounded-full bg-brand-400 animate-pulse" />
+                <span className="text-xs text-brand-300 font-medium">In Development</span>
               </div>
-              <p className="text-slate-500 text-[10px] mt-3">
-                After configuration the AI Coach will become available automatically.
-              </p>
             </div>
           )}
 
           {messages.length === 0 && !isNotConfigured && (
-            <div className="text-center py-8">
-              <div className="relative inline-block mb-3">
+            <div className="text-center py-6">
+              <div className="relative inline-block mb-4">
                 <div className="absolute inset-0 bg-brand-500/20 blur-2xl rounded-full" />
-                <Sparkles className="text-brand-400 relative" size={28} />
+                <Sparkles className="text-brand-400 relative" size={32} />
               </div>
-              <h3 className="text-white font-semibold text-sm mb-1.5">Welcome to AI Reading Coach</h3>
-              <p className="text-slate-400 text-xs max-w-[200px] mx-auto leading-relaxed">
+              <h3 className="text-white font-semibold text-base mb-2">Welcome to AI Reading Coach</h3>
+              <p className="text-slate-400 text-sm max-w-[220px] mx-auto leading-relaxed mb-6">
                 Ask me anything about the passage, questions, or IELTS strategies.
               </p>
+              
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">Try asking:</p>
+                {SUGGESTED_PROMPTS.filter(p => !p.personality || p.personality === personality).slice(0, 4).map((suggestion) => (
+                  <button
+                    key={suggestion.label}
+                    onClick={() => handleSend(suggestion.prompt)}
+                    disabled={isLoading}
+                    className="w-full text-left px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-brand-500/30 text-sm text-slate-300 hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group"
+                  >
+                    <span className="mr-2 text-lg">{suggestion.icon}</span>
+                    <span className="group-hover:translate-x-1 transition-transform inline-block">{suggestion.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
@@ -660,7 +711,7 @@ export default function AIChatPanel({
                   className="text-sm leading-relaxed"
                   dangerouslySetInnerHTML={{ __html: formatMessage(streamingContent) }}
                 />
-                <span className="inline-block w-2 h-4 bg-brand-400 animate-pulse ml-1" />
+                <span className="inline-block w-0.5 h-5 bg-brand-400 ml-1 animate-blink" />
               </div>
             </div>
           )}

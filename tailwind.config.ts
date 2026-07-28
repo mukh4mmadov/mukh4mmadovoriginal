@@ -41,7 +41,10 @@ const config: Config = {
         "fade-in": "fadeIn 0.5s ease-out",
         "slide-up": "slideUp 0.5s ease-out",
         "pulse-soft": "pulseSoft 2s ease-in-out infinite",
-        float: "float 3s ease-in-out infinite",
+        "float": "float 3s ease-in-out infinite",
+        "blink": "blink 1s step-end infinite",
+        "scale-in": "scaleIn 0.2s ease-out",
+        "slide-in-right": "slideInRight 0.3s ease-out",
       },
       keyframes: {
         fadeIn: {
@@ -59,6 +62,18 @@ const config: Config = {
         float: {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-10px)" },
+        },
+        blink: {
+          "0%, 50%": { opacity: "1" },
+          "51%, 100%": { opacity: "0" },
+        },
+        scaleIn: {
+          "0%": { transform: "scale(0.95)", opacity: "0" },
+          "100%": { transform: "scale(1)", opacity: "1" },
+        },
+        slideInRight: {
+          "0%": { transform: "translateX(20px)", opacity: "0" },
+          "100%": { transform: "translateX(0)", opacity: "1" },
         },
       },
     },

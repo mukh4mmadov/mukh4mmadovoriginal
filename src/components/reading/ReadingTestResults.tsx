@@ -91,6 +91,32 @@ export default function ReadingTestResults({
   const band = scoreToBand(correctCount, questions.length);
   const percentage = (correctCount / questions.length) * 100;
 
+  // Calculate analytics by question type
+  const analyticsByType = useMemo(() => {
+    const typeStats: Record<string, { correct: number; total: number; time: number }> = {};
+    
+    questions.forEach((q) => {
+      const type = q.type;
+      if (!typeStats[type]) {
+        typeStats[type] = { correct: 0, total: 0, time: 0 };
+      }
+      typeStats[type].total++;
+      if (isCorrect(q, answers[q.id])) {
+        typeStats[type].correct++;
+      }
+    });
+
+    return Object.entries(typeStats).map(([type, stats]) => ({
+      type,
+      accuracy: (stats.correct / stats.total) * 100,
+      count: stats.total,
+    })).sort((a, b) => b.accuracy - a.accuracy);
+  }, [questions, answers]);
+
+  const strongestSkill = analyticsByType[0];
+  const weakestSkill = analyticsByType[analyticsByType.length - 1];
+  const avgTimePerQuestion = questions.length > 0 ? timeSpent / questions.length : 0;
+
   const buildAIContext = (): AIConversationContext => {
     const currentQuestion = selectedQuestionId ? questions.find(q => q.id === selectedQuestionId) : undefined;
     
@@ -355,6 +381,88 @@ export default function ReadingTestResults({
             <p className="mt-2 text-sm text-slate-400">
               {getBandLabel()} •{" "}
               {correctCount >= 30 ? "Excellent pacing" : "Keep building speed"}
+            </p>
+          </div>
+        </div>
+
+        {/* Detailed Analytics */}
+        <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 rounded-lg bg-brand-500/20">
+              <Target size={20} className="text-brand-400" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-white">Performance Analytics</h3>
+              <p className="text-sm text-slate-400">Breakdown by question type</p>
+            </div>
+          </div>
+          
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {analyticsByType.map((stat) => (
+              <div key={stat.type} className="rounded-xl border border-white/10 bg-surface/50 p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    {stat.type.replace(/-/g, ' ')}
+                  </p>
+                  <p className="text-lg font-bold text-white">{stat.accuracy.toFixed(0)}%</p>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-brand-500 to-cyan-400 transition-all duration-500"
+                    style={{ width: `${stat.accuracy}%` }}
+                  />
+                </div>
+                <p className="mt-2 text-xs text-slate-500">
+                  {stat.count} question{stat.count !== 1 ? 's' : ''}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-1">
+                Strongest Skill
+              </p>
+              <p className="text-sm font-medium text-white">
+                {strongestSkill?.type.replace(/-/g, ' ') || 'N/A'}
+              </p>
+              <p className="text-xs text-emerald-300 mt-1">
+                {strongestSkill?.accuracy.toFixed(0)}% accuracy
+              </p>
+            </div>
+            <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-rose-400 mb-1">
+                Weakest Skill
+              </p>
+              <p className="text-sm font-medium text-white">
+                {weakestSkill?.type.replace(/-/g, ' ') || 'N/A'}
+              </p>
+              <p className="text-xs text-rose-300 mt-1">
+                {weakestSkill?.accuracy.toFixed(0)}% accuracy
+              </p>
+            </div>
+            <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-amber-400 mb-1">
+                Avg Time/Question
+              </p>
+              <p className="text-sm font-medium text-white">
+                {Math.round(avgTimePerQuestion)}s
+              </p>
+              <p className="text-xs text-amber-300 mt-1">
+                {avgTimePerQuestion < 90 ? 'Good pace' : 'Improve speed'}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-xl border border-brand-500/20 bg-brand-500/10 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-brand-400 mb-2">
+              💡 Suggested Next Practice
+            </p>
+            <p className="text-sm text-white">
+              {weakestSkill && weakestSkill.accuracy < 70
+                ? `Focus on ${weakestSkill.type.replace(/-/g, ' ')} questions to improve your overall band score.`
+                : "Great job! Try practicing more complex passages to challenge yourself further."}
             </p>
           </div>
         </div>
