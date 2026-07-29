@@ -32,21 +32,22 @@ export default function HighlightablePassage({
   onHighlightRemove,
 }: HighlightablePassageProps) {
   const { user } = useAuth();
-  const [highlights, setHighlights] = useState<
-    Record<string, Set<string>>
-  >({});
+  const [highlights, setHighlights] = useState<Record<string, Set<string>>>({});
   const lastClickRef = useRef<{ key: string; time: number } | null>(null);
 
   const totalHighlights = useMemo(
-    () =>
-      Object.values(highlights).reduce((sum, items) => sum + items.size, 0),
+    () => Object.values(highlights).reduce((sum, items) => sum + items.size, 0),
     [highlights],
   );
 
-  const handleDoubleClick = (tokenKey: string, paragraphKey: string, tokenText: string) => {
+  const handleDoubleClick = (
+    tokenKey: string,
+    paragraphKey: string,
+    tokenText: string,
+  ) => {
     const now = Date.now();
     const lastClick = lastClickRef.current;
-    
+
     // Check if this is a double-click on the same token
     if (lastClick && lastClick.key === tokenKey && now - lastClick.time < 300) {
       // Double-click detected - toggle highlight
@@ -54,21 +55,29 @@ export default function HighlightablePassage({
         const next = { ...prev };
         const currentSet = next[paragraphKey] || new Set<string>();
         const current = new Set(currentSet);
-        
+
         if (current.has(tokenKey)) {
           current.delete(tokenKey);
           onHighlightRemove?.(tokenText);
           if (passageId) {
-            analyticsService.trackHighlightRemoved(user?.id, passageId, { text: tokenText });
+            analyticsService.trackHighlightRemoved(
+              user?.id ?? null,
+              passageId,
+              { text: tokenText },
+            );
           }
         } else {
           current.add(tokenKey);
           onHighlight?.(tokenText);
           if (passageId) {
-            analyticsService.trackHighlightCreated(user?.id, passageId, { text: tokenText });
+            analyticsService.trackHighlightCreated(
+              user?.id ?? null,
+              passageId,
+              { text: tokenText },
+            );
           }
         }
-        
+
         next[paragraphKey] = current;
         return next;
       });
@@ -102,22 +111,28 @@ export default function HighlightablePassage({
 
     // New algorithm: Use DOM Range intersection to detect overlapping tokens
     const tokenElements = Array.from(
-      paragraphElement.querySelectorAll<HTMLElement>("[data-token-key]")
+      paragraphElement.querySelectorAll<HTMLElement>("[data-token-key]"),
     );
 
     const selectedKeys: string[] = [];
-    
+
     for (const tokenElement of tokenElements) {
       const tokenRange = document.createRange();
       tokenRange.selectNodeContents(tokenElement);
-      
+
       // Check if the selection range intersects with this token range
-      const startToEnd = range.compareBoundaryPoints(Range.START_TO_END, tokenRange);
-      const endToStart = range.compareBoundaryPoints(Range.END_TO_START, tokenRange);
-      
+      const startToEnd = range.compareBoundaryPoints(
+        Range.START_TO_END,
+        tokenRange,
+      );
+      const endToStart = range.compareBoundaryPoints(
+        Range.END_TO_START,
+        tokenRange,
+      );
+
       // If START_TO_END >= 0 and END_TO_START <= 0, the ranges intersect
       const intersects = startToEnd >= 0 && endToStart <= 0;
-      
+
       if (intersects) {
         const tokenKey = tokenElement.getAttribute("data-token-key");
         if (tokenKey) {
@@ -132,11 +147,11 @@ export default function HighlightablePassage({
       const next = { ...prev };
       const currentSet = next[paragraphKey] || new Set<string>();
       const current = new Set(currentSet);
-      
+
       selectedKeys.forEach((key) => {
         current.add(key);
       });
-      
+
       next[paragraphKey] = current;
       return next;
     });
@@ -146,7 +161,6 @@ export default function HighlightablePassage({
 
   return (
     <div className="space-y-4">
-
       <div
         className={`overflow-x-hidden text-slate-200 ${fontSizeMap[fontSize]}`}
         style={{
@@ -157,7 +171,8 @@ export default function HighlightablePassage({
       >
         {paragraphs.map((p, paragraphIndex) => {
           const paragraphKey = p.label || `paragraph-${paragraphIndex}`;
-          const paragraphHighlights = highlights[paragraphKey] ?? new Set<string>();
+          const paragraphHighlights =
+            highlights[paragraphKey] ?? new Set<string>();
           const highlightMap = paragraphHighlights;
 
           return (
@@ -186,7 +201,9 @@ export default function HighlightablePassage({
                   <span
                     key={tokenKey}
                     data-token-key={tokenKey}
-                    onDoubleClick={() => handleDoubleClick(tokenKey, paragraphKey, tok.trim())}
+                    onDoubleClick={() =>
+                      handleDoubleClick(tokenKey, paragraphKey, tok.trim())
+                    }
                     style={
                       isHighlighted
                         ? { backgroundColor: HIGHLIGHT_COLOR, borderRadius: 3 }
