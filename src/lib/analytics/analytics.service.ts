@@ -76,59 +76,59 @@ export class AnalyticsService {
   }
 
   // Convenience methods for common events
-  async trackUserRegistration(userId: string, metadata?: Record<string, any>): Promise<void> {
+  async trackUserRegistration(userId?: string | null, metadata?: Record<string, any>): Promise<void> {
     await this.track({ event_type: 'user_registered', metadata }, userId);
   }
 
-  async trackUserLogin(userId: string, metadata?: Record<string, any>): Promise<void> {
+  async trackUserLogin(userId?: string | null, metadata?: Record<string, any>): Promise<void> {
     await this.track({ event_type: 'user_login', metadata }, userId);
   }
 
-  async trackUserLogout(userId: string, metadata?: Record<string, any>): Promise<void> {
+  async trackUserLogout(userId?: string | null, metadata?: Record<string, any>): Promise<void> {
     await this.track({ event_type: 'user_logout', metadata }, userId);
   }
 
-  async trackReadingStarted(userId: string, passageId: string, metadata?: Record<string, any>): Promise<void> {
+  async trackReadingStarted(userId?: string | null, passageId: string, metadata?: Record<string, any>): Promise<void> {
     await this.track({ event_type: 'reading_started', metadata: { passageId, ...metadata } }, userId);
   }
 
-  async trackReadingFinished(userId: string, passageId: string, timeSpent: number, metadata?: Record<string, any>): Promise<void> {
+  async trackReadingFinished(userId?: string | null, passageId: string, timeSpent: number, metadata?: Record<string, any>): Promise<void> {
     await this.track({ event_type: 'reading_finished', metadata: { passageId, timeSpent, ...metadata } }, userId);
   }
 
-  async trackQuestionAnswered(userId: string, passageId: string, questionId: string, isCorrect: boolean, metadata?: Record<string, any>): Promise<void> {
+  async trackQuestionAnswered(userId?: string | null, passageId: string, questionId: string, isCorrect: boolean, metadata?: Record<string, any>): Promise<void> {
     await this.track({ event_type: 'question_answered', metadata: { passageId, questionId, isCorrect, ...metadata } }, userId);
   }
 
-  async trackPassageCompleted(userId: string, passageId: string, score: number, metadata?: Record<string, any>): Promise<void> {
+  async trackPassageCompleted(userId?: string | null, passageId: string, score: number, metadata?: Record<string, any>): Promise<void> {
     await this.track({ event_type: 'passage_completed', metadata: { passageId, score, ...metadata } }, userId);
   }
 
-  async trackHighlightCreated(userId: string, passageId: string, metadata?: Record<string, any>): Promise<void> {
+  async trackHighlightCreated(userId?: string | null, passageId: string, metadata?: Record<string, any>): Promise<void> {
     await this.track({ event_type: 'highlight_created', metadata: { passageId, ...metadata } }, userId);
   }
 
-  async trackHighlightRemoved(userId: string, passageId: string, metadata?: Record<string, any>): Promise<void> {
+  async trackHighlightRemoved(userId?: string | null, passageId: string, metadata?: Record<string, any>): Promise<void> {
     await this.track({ event_type: 'highlight_removed', metadata: { passageId, ...metadata } }, userId);
   }
 
-  async trackAICoachOpened(userId: string, passageId: string, metadata?: Record<string, any>): Promise<void> {
+  async trackAICoachOpened(userId?: string | null, passageId: string, metadata?: Record<string, any>): Promise<void> {
     await this.track({ event_type: 'ai_coach_opened', metadata: { passageId, ...metadata } }, userId);
   }
 
-  async trackAIMessageSent(userId: string, passageId: string, metadata?: Record<string, any>): Promise<void> {
+  async trackAIMessageSent(userId?: string | null, passageId: string, metadata?: Record<string, any>): Promise<void> {
     await this.track({ event_type: 'ai_message_sent', metadata: { passageId, ...metadata } }, userId);
   }
 
-  async trackQuoteSaved(userId: string, quoteId: string, metadata?: Record<string, any>): Promise<void> {
+  async trackQuoteSaved(userId?: string | null, quoteId: string, metadata?: Record<string, any>): Promise<void> {
     await this.track({ event_type: 'quote_saved', metadata: { quoteId, ...metadata } }, userId);
   }
 
-  async trackFeedbackSubmitted(userId: string | null, feedbackId: string, metadata?: Record<string, any>): Promise<void> {
+  async trackFeedbackSubmitted(userId?: string | null, feedbackId: string, metadata?: Record<string, any>): Promise<void> {
     await this.track({ event_type: 'feedback_submitted', metadata: { feedbackId, ...metadata } }, userId);
   }
 
-  async trackBugReportSubmitted(userId: string | null, feedbackId: string, metadata?: Record<string, any>): Promise<void> {
+  async trackBugReportSubmitted(userId?: string | null, feedbackId: string, metadata?: Record<string, any>): Promise<void> {
     await this.track({ event_type: 'bug_report_submitted', metadata: { feedbackId, ...metadata } }, userId);
   }
 }
