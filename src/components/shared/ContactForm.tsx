@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from 'react';
-import { Mail, Send, X } from 'lucide-react';
-import { feedbackRepository } from '@/lib/supabase/repositories/feedback.repository';
-import { useAuth } from '@/contexts/AuthContext';
-import Toast from './Toast';
+import { useState } from "react";
+import { Mail, Send, X } from "lucide-react";
+import { feedbackRepository } from "@/lib/supabase/repositories/feedback.repository";
+import { useAuth } from "@/contexts/AuthContext";
+import Toast from "./Toast";
 
 interface ContactFormProps {
   isOpen: boolean;
@@ -12,17 +12,17 @@ interface ContactFormProps {
 }
 
 export default function ContactForm({ isOpen, onClose }: ContactFormProps) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [formData, setFormData] = useState({
-    name: user?.profile?.full_name || '',
-    email: user?.email || '',
-    subject: '',
-    message: '',
+    name: profile?.full_name || "",
+    email: user?.email || "",
+    subject: "",
+    message: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
+  const [toastMessage, setToastMessage] = useState("");
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -33,23 +33,23 @@ export default function ContactForm({ isOpen, onClose }: ContactFormProps) {
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = "Name is required";
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     } else if (!validateEmail(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = "Please enter a valid email address";
     }
 
     if (!formData.subject.trim()) {
-      newErrors.subject = 'Subject is required';
+      newErrors.subject = "Subject is required";
     }
 
     if (!formData.message.trim()) {
-      newErrors.message = 'Message is required';
+      newErrors.message = "Message is required";
     } else if (formData.message.trim().length < 10) {
-      newErrors.message = 'Message must be at least 10 characters';
+      newErrors.message = "Message must be at least 10 characters";
     }
 
     setErrors(newErrors);
@@ -72,7 +72,7 @@ export default function ContactForm({ isOpen, onClose }: ContactFormProps) {
         email: formData.email,
         subject: formData.subject,
         message: formData.message,
-        message_type: 'general',
+        message_type: "general",
         page_url: window.location.href,
         browser_info: {
           userAgent: navigator.userAgent,
@@ -81,29 +81,31 @@ export default function ContactForm({ isOpen, onClose }: ContactFormProps) {
         screen_size: `${window.innerWidth}x${window.innerHeight}`,
       });
 
-      setToastMessage('Thank you! Your feedback has been received.');
+      setToastMessage("Thank you! Your feedback has been received.");
       setShowToast(true);
       setFormData({
-        name: user?.profile?.full_name || '',
-        email: user?.email || '',
-        subject: '',
-        message: '',
+        name: user?.profile?.full_name || "",
+        email: user?.email || "",
+        subject: "",
+        message: "",
       });
       onClose();
     } catch (error: any) {
       setErrors({
-        submit: error.message || 'Failed to send message. Please try again.',
+        submit: error.message || "Failed to send message. Please try again.",
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
@@ -139,7 +141,10 @@ export default function ContactForm({ isOpen, onClose }: ContactFormProps) {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-slate-300 mb-2">
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-slate-300 mb-2"
+              >
                 Name *
               </label>
               <input
@@ -149,16 +154,21 @@ export default function ContactForm({ isOpen, onClose }: ContactFormProps) {
                 value={formData.name}
                 onChange={handleChange}
                 className={`w-full bg-white/5 border rounded-lg px-4 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent ${
-                  errors.name ? 'border-red-500' : 'border-white/10'
+                  errors.name ? "border-red-500" : "border-white/10"
                 }`}
                 placeholder="Your name"
                 required
               />
-              {errors.name && <p className="mt-1 text-xs text-red-400">{errors.name}</p>}
+              {errors.name && (
+                <p className="mt-1 text-xs text-red-400">{errors.name}</p>
+              )}
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-slate-300 mb-2"
+              >
                 Email *
               </label>
               <input
@@ -168,16 +178,21 @@ export default function ContactForm({ isOpen, onClose }: ContactFormProps) {
                 value={formData.email}
                 onChange={handleChange}
                 className={`w-full bg-white/5 border rounded-lg px-4 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent ${
-                  errors.email ? 'border-red-500' : 'border-white/10'
+                  errors.email ? "border-red-500" : "border-white/10"
                 }`}
                 placeholder="your@email.com"
                 required
               />
-              {errors.email && <p className="mt-1 text-xs text-red-400">{errors.email}</p>}
+              {errors.email && (
+                <p className="mt-1 text-xs text-red-400">{errors.email}</p>
+              )}
             </div>
 
             <div>
-              <label htmlFor="subject" className="block text-sm font-medium text-slate-300 mb-2">
+              <label
+                htmlFor="subject"
+                className="block text-sm font-medium text-slate-300 mb-2"
+              >
                 Subject *
               </label>
               <input
@@ -187,16 +202,21 @@ export default function ContactForm({ isOpen, onClose }: ContactFormProps) {
                 value={formData.subject}
                 onChange={handleChange}
                 className={`w-full bg-white/5 border rounded-lg px-4 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent ${
-                  errors.subject ? 'border-red-500' : 'border-white/10'
+                  errors.subject ? "border-red-500" : "border-white/10"
                 }`}
                 placeholder="What is this about?"
                 required
               />
-              {errors.subject && <p className="mt-1 text-xs text-red-400">{errors.subject}</p>}
+              {errors.subject && (
+                <p className="mt-1 text-xs text-red-400">{errors.subject}</p>
+              )}
             </div>
 
             <div>
-              <label htmlFor="message" className="block text-sm font-medium text-slate-300 mb-2">
+              <label
+                htmlFor="message"
+                className="block text-sm font-medium text-slate-300 mb-2"
+              >
                 Message *
               </label>
               <textarea
@@ -206,12 +226,14 @@ export default function ContactForm({ isOpen, onClose }: ContactFormProps) {
                 onChange={handleChange}
                 rows={4}
                 className={`w-full bg-white/5 border rounded-lg px-4 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none ${
-                  errors.message ? 'border-red-500' : 'border-white/10'
+                  errors.message ? "border-red-500" : "border-white/10"
                 }`}
                 placeholder="Describe your issue or suggestion..."
                 required
               />
-              {errors.message && <p className="mt-1 text-xs text-red-400">{errors.message}</p>}
+              {errors.message && (
+                <p className="mt-1 text-xs text-red-400">{errors.message}</p>
+              )}
             </div>
 
             <button
