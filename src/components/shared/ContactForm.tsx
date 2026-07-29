@@ -84,7 +84,7 @@ export default function ContactForm({ isOpen, onClose }: ContactFormProps) {
       setToastMessage("Thank you! Your feedback has been received.");
       setShowToast(true);
       setFormData({
-        name: user?.profile?.full_name || "",
+        name: profile?.full_name || "",
         email: user?.email || "",
         subject: "",
         message: "",
