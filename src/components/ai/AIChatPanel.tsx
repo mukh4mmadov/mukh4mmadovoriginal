@@ -1,11 +1,24 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, Bot, User, Sparkles, Copy, RotateCcw } from 'lucide-react';
-import { AIMessage, AIConversationContext, AIPersonality } from '@/types/aiCoach';
-import { parseAIResponse, formatParsedResponse } from '@/lib/ai/parseResponse';
-import { useAuth } from '@/contexts/AuthContext';
-import { analyticsService } from '@/lib/analytics/analytics.service';
+import { useState, useRef, useEffect } from "react";
+import {
+  MessageSquare,
+  X,
+  Send,
+  Bot,
+  User,
+  Sparkles,
+  Copy,
+  RotateCcw,
+} from "lucide-react";
+import {
+  AIMessage,
+  AIConversationContext,
+  AIPersonality,
+} from "@/types/aiCoach";
+import { parseAIResponse, formatParsedResponse } from "@/lib/ai/parseResponse";
+import { useAuth } from "@/contexts/AuthContext";
+import { analyticsService } from "@/lib/analytics/analytics.service";
 
 interface AIChatPanelProps {
   isOpen: boolean;
@@ -16,14 +29,43 @@ interface AIChatPanelProps {
 }
 
 const SUGGESTED_PROMPTS = [
-  { icon: '💡', label: 'Hint', prompt: 'Give me a hint for this question.' },
-  { icon: '📖', label: 'Explain Paragraph', prompt: 'Explain the paragraph that contains the evidence.' },
-  { icon: '🎯', label: 'Find Evidence', prompt: 'Which sentence contains the evidence for the correct answer?' },
-  { icon: '📚', label: 'Vocabulary', prompt: 'Explain the difficult vocabulary in this passage.' },
-  { icon: '🧠', label: 'Strategy', prompt: 'What strategy should I use for this type of question?' },
-  { icon: '📝', label: 'Summary', prompt: 'Summarize the main point of this passage.' },
-  { icon: '🔁', label: 'Explain Simpler', prompt: 'Explain this in simpler terms.' },
-  { icon: '🔥', label: 'Roast Me', prompt: 'Roast my answer and tell me what I did wrong.', personality: 'savage' as const },
+  { icon: "💡", label: "Hint", prompt: "Give me a hint for this question." },
+  {
+    icon: "📖",
+    label: "Explain Paragraph",
+    prompt: "Explain the paragraph that contains the evidence.",
+  },
+  {
+    icon: "🎯",
+    label: "Find Evidence",
+    prompt: "Which sentence contains the evidence for the correct answer?",
+  },
+  {
+    icon: "📚",
+    label: "Vocabulary",
+    prompt: "Explain the difficult vocabulary in this passage.",
+  },
+  {
+    icon: "🧠",
+    label: "Strategy",
+    prompt: "What strategy should I use for this type of question?",
+  },
+  {
+    icon: "📝",
+    label: "Summary",
+    prompt: "Summarize the main point of this passage.",
+  },
+  {
+    icon: "🔁",
+    label: "Explain Simpler",
+    prompt: "Explain this in simpler terms.",
+  },
+  {
+    icon: "🔥",
+    label: "Roast Me",
+    prompt: "Roast my answer and tell me what I did wrong.",
+    personality: "savage" as const,
+  },
 ];
 
 export default function AIChatPanel({
@@ -35,16 +77,16 @@ export default function AIChatPanel({
 }: AIChatPanelProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<AIMessage[]>([]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [streamingContent, setStreamingContent] = useState('');
+  const [streamingContent, setStreamingContent] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [lastFailedPrompt, setLastFailedPrompt] = useState<string | null>(null);
   const [isNotConfigured, setIsNotConfigured] = useState(false);
   const [panelWidth, setPanelWidth] = useState(370);
   const [isResizing, setIsResizing] = useState(false);
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const conversationKey = `ai-conversation-${context.passage.title}`;
@@ -52,13 +94,16 @@ export default function AIChatPanel({
   // Track AI coach opened
   useEffect(() => {
     if (isOpen) {
-      analyticsService.trackAICoachOpened(user?.id, context.passage.title);
+      analyticsService.trackAICoachOpened(
+        user?.id ?? null,
+        context.passage.title,
+      );
     }
   }, [isOpen, user?.id, context.passage.title]);
 
   // Load conversation from localStorage on mount
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       try {
         const saved = localStorage.getItem(conversationKey);
         if (saved) {
@@ -76,14 +121,14 @@ export default function AIChatPanel({
 
   // Save conversation to localStorage whenever messages change
   useEffect(() => {
-    if (messages.length > 0 && typeof window !== 'undefined') {
+    if (messages.length > 0 && typeof window !== "undefined") {
       try {
         localStorage.setItem(
           conversationKey,
           JSON.stringify({
             messages,
             timestamp: Date.now(),
-          })
+          }),
         );
       } catch (e) {
         // Handle quota exceeded or other localStorage errors
@@ -104,7 +149,7 @@ export default function AIChatPanel({
   }, [context.passage.title]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
@@ -151,45 +196,51 @@ export default function AIChatPanel({
 
     const userMessage: AIMessage = {
       id: Date.now().toString(),
-      role: 'user',
+      role: "user",
       content: prompt.trim(),
       timestamp: Date.now(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    setInput('');
+    setInput("");
     setError(null);
     setIsNotConfigured(false);
     setIsLoading(true);
-    setStreamingContent('');
+    setStreamingContent("");
     setLastFailedPrompt(prompt.trim());
 
     // Track AI message sent
-    analyticsService.trackAIMessageSent(user?.id, context.passage.title, { prompt: prompt.trim() });
+    analyticsService.trackAIMessageSent(
+      user?.id ?? null,
+      context.passage.title,
+      {
+        prompt: prompt.trim(),
+      },
+    );
 
     try {
-      const response = await fetch('/api/ai-chat', {
-        method: 'POST',
+      const response = await fetch("/api/ai-chat", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           messages: [...messages, userMessage],
           context,
           personality,
-          provider: 'openai',
+          provider: "openai",
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to get AI response');
+        throw new Error(errorData.error || "Failed to get AI response");
       }
 
       const assistantMessage: AIMessage = {
         id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: '',
+        role: "assistant",
+        content: "",
         timestamp: Date.now(),
       };
 
@@ -197,7 +248,7 @@ export default function AIChatPanel({
 
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
-      let fullContent = '';
+      let fullContent = "";
 
       if (reader) {
         while (true) {
@@ -205,11 +256,13 @@ export default function AIChatPanel({
           if (done) break;
 
           const chunk = decoder.decode(value);
-          const lines = chunk.split('\n').filter(line => line.trim().startsWith('data: '));
+          const lines = chunk
+            .split("\n")
+            .filter((line) => line.trim().startsWith("data: "));
 
           for (const line of lines) {
-            const data = line.replace('data: ', '').trim();
-            if (data === '[DONE]') continue;
+            const data = line.replace("data: ", "").trim();
+            if (data === "[DONE]") continue;
 
             try {
               const parsed = JSON.parse(data);
@@ -220,8 +273,10 @@ export default function AIChatPanel({
               if (parsed.done) {
                 setMessages((prev) =>
                   prev.map((msg) =>
-                    msg.id === assistantMessage.id ? { ...msg, content: parsed.content } : msg
-                  )
+                    msg.id === assistantMessage.id
+                      ? { ...msg, content: parsed.content }
+                      : msg,
+                  ),
                 );
               }
               if (parsed.error) {
@@ -238,25 +293,29 @@ export default function AIChatPanel({
       setRetryCount(0);
       setLastFailedPrompt(null);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to get AI response';
-      
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to get AI response";
+
       // Check if it's a configuration error
-      if (errorMessage.includes('AI service not configured') || errorMessage.includes('not configured')) {
+      if (
+        errorMessage.includes("AI service not configured") ||
+        errorMessage.includes("not configured")
+      ) {
         setIsNotConfigured(true);
         setError(null);
       } else {
         setError(errorMessage);
       }
-      
+
       setMessages((prev) => prev.slice(0, -1)); // Remove the empty assistant message
     } finally {
       setIsLoading(false);
-      setStreamingContent('');
+      setStreamingContent("");
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend(input);
     }
@@ -265,22 +324,25 @@ export default function AIChatPanel({
   const formatMessage = (content: string) => {
     // Sanitize content to prevent XSS
     const sanitized = content
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#x27;')
-      .replace(/\//g, '&#x2F;');
-    
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#x27;")
+      .replace(/\//g, "&#x2F;");
+
     // Parse and format structured AI responses
     const parsed = parseAIResponse(sanitized);
     const formatted = formatParsedResponse(parsed);
-    
+
     // Safe markdown-like formatting (only allow specific tags)
     return formatted
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/`(.*?)`/g, '<code class="bg-white/10 px-1 py-0.5 rounded text-sm">$1</code>')
-      .replace(/\n/g, '<br />');
+      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*(.*?)\*/g, "<em>$1</em>")
+      .replace(
+        /`(.*?)`/g,
+        '<code class="bg-white/10 px-1 py-0.5 rounded text-sm">$1</code>',
+      )
+      .replace(/\n/g, "<br />");
   };
 
   const handleCopy = (content: string) => {
@@ -290,7 +352,7 @@ export default function AIChatPanel({
   const handleRegenerate = () => {
     if (messages.length >= 2) {
       const lastUserMessage = messages[messages.length - 2];
-      if (lastUserMessage.role === 'user') {
+      if (lastUserMessage.role === "user") {
         setMessages((prev) => prev.slice(0, -1));
         handleSend(lastUserMessage.content);
       }
@@ -299,7 +361,7 @@ export default function AIChatPanel({
 
   const handleRetry = () => {
     if (lastFailedPrompt && retryCount < 3) {
-      setRetryCount(prev => prev + 1);
+      setRetryCount((prev) => prev + 1);
       setError(null);
       handleSend(lastFailedPrompt);
     }
@@ -311,7 +373,7 @@ export default function AIChatPanel({
     <>
       {/* Desktop Sidebar */}
       {/* Resize Handle */}
-      <div 
+      <div
         className="hidden sm:block fixed top-0 h-full w-1.5 -ml-1.5 cursor-col-resize hover:bg-brand-500/30 transition-colors z-50"
         onMouseDown={() => setIsResizing(true)}
         style={{ left: `calc(100% - ${panelWidth}px)` }}
@@ -319,7 +381,7 @@ export default function AIChatPanel({
         aria-orientation="vertical"
         aria-label="Resize AI panel"
       />
-      <div 
+      <div
         className="hidden sm:block fixed right-0 top-0 h-full bg-surface/95 backdrop-blur-xl border-l border-white/10 shadow-2xl z-50 flex flex-col"
         style={{ width: `${panelWidth}px` }}
       >
@@ -331,8 +393,12 @@ export default function AIChatPanel({
               <Bot className="text-brand-400 relative" size={18} />
             </div>
             <div>
-              <h2 className="font-semibold text-white text-sm">AI Reading Coach</h2>
-              <p className="text-[10px] text-slate-400">Think like an examiner</p>
+              <h2 className="font-semibold text-white text-sm">
+                AI Reading Coach
+              </h2>
+              <p className="text-[10px] text-slate-400">
+                Think like an examiner
+              </p>
             </div>
           </div>
           <button
@@ -346,34 +412,36 @@ export default function AIChatPanel({
 
         {/* Personality Selector */}
         <div className="p-3 border-b border-white/10 bg-gradient-to-b from-white/[0.02] to-transparent">
-          <label className="text-[10px] font-medium text-slate-400 mb-1.5 block uppercase tracking-wider">Coach Personality</label>
+          <label className="text-[10px] font-medium text-slate-400 mb-1.5 block uppercase tracking-wider">
+            Coach Personality
+          </label>
           <div className="flex gap-1.5">
             <button
-              onClick={() => onPersonalityChange('friendly')}
+              onClick={() => onPersonalityChange("friendly")}
               className={`flex-1 px-2 py-1.5 rounded-md text-[10px] font-semibold transition-all duration-200 ${
-                personality === 'friendly'
-                  ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 shadow-lg shadow-emerald-500/10'
-                  : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-slate-300'
+                personality === "friendly"
+                  ? "bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 shadow-lg shadow-emerald-500/10"
+                  : "bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-slate-300"
               }`}
             >
               😊 Friendly
             </button>
             <button
-              onClick={() => onPersonalityChange('strict')}
+              onClick={() => onPersonalityChange("strict")}
               className={`flex-1 px-2 py-1.5 rounded-md text-[10px] font-semibold transition-all duration-200 ${
-                personality === 'strict'
-                  ? 'bg-blue-500/20 border border-blue-500/50 text-blue-300 shadow-lg shadow-blue-500/10'
-                  : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-slate-300'
+                personality === "strict"
+                  ? "bg-blue-500/20 border border-blue-500/50 text-blue-300 shadow-lg shadow-blue-500/10"
+                  : "bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-slate-300"
               }`}
             >
               📋 Strict
             </button>
             <button
-              onClick={() => onPersonalityChange('savage')}
+              onClick={() => onPersonalityChange("savage")}
               className={`flex-1 px-2 py-1.5 rounded-md text-[10px] font-semibold transition-all duration-200 ${
-                personality === 'savage'
-                  ? 'bg-brand-500/20 border border-brand-500/50 text-brand-300 shadow-lg shadow-brand-500/10'
-                  : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-slate-300'
+                personality === "savage"
+                  ? "bg-brand-500/20 border border-brand-500/50 text-brand-300 shadow-lg shadow-brand-500/10"
+                  : "bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-slate-300"
               }`}
             >
               😈 Savage
@@ -389,13 +457,17 @@ export default function AIChatPanel({
                 <div className="absolute inset-0 bg-brand-500/20 blur-2xl rounded-full animate-pulse" />
                 <Sparkles className="text-brand-400 relative" size={28} />
               </div>
-              <h3 className="text-white font-semibold text-sm mb-1.5">AI Coach Coming Soon</h3>
+              <h3 className="text-white font-semibold text-sm mb-1.5">
+                AI Coach Coming Soon
+              </h3>
               <p className="text-slate-400 text-xs max-w-[200px] mx-auto leading-relaxed">
                 Get personalized IELTS reading guidance powered by AI.
               </p>
               <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/20">
                 <div className="w-2 h-2 rounded-full bg-brand-400 animate-pulse" />
-                <span className="text-xs text-brand-300 font-medium">In Development</span>
+                <span className="text-xs text-brand-300 font-medium">
+                  In Development
+                </span>
               </div>
             </div>
           )}
@@ -406,24 +478,35 @@ export default function AIChatPanel({
                 <div className="absolute inset-0 bg-brand-500/20 blur-2xl rounded-full" />
                 <Sparkles className="text-brand-400 relative" size={32} />
               </div>
-              <h3 className="text-white font-semibold text-base mb-2">Welcome to AI Reading Coach</h3>
+              <h3 className="text-white font-semibold text-base mb-2">
+                Welcome to AI Reading Coach
+              </h3>
               <p className="text-slate-400 text-sm max-w-[220px] mx-auto leading-relaxed mb-6">
-                Ask me anything about the passage, questions, or IELTS strategies.
+                Ask me anything about the passage, questions, or IELTS
+                strategies.
               </p>
-              
+
               <div className="space-y-2">
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">Try asking:</p>
-                {SUGGESTED_PROMPTS.filter(p => !p.personality || p.personality === personality).slice(0, 4).map((suggestion) => (
-                  <button
-                    key={suggestion.label}
-                    onClick={() => handleSend(suggestion.prompt)}
-                    disabled={isLoading}
-                    className="w-full text-left px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-brand-500/30 text-sm text-slate-300 hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group"
-                  >
-                    <span className="mr-2 text-lg">{suggestion.icon}</span>
-                    <span className="group-hover:translate-x-1 transition-transform inline-block">{suggestion.label}</span>
-                  </button>
-                ))}
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">
+                  Try asking:
+                </p>
+                {SUGGESTED_PROMPTS.filter(
+                  (p) => !p.personality || p.personality === personality,
+                )
+                  .slice(0, 4)
+                  .map((suggestion) => (
+                    <button
+                      key={suggestion.label}
+                      onClick={() => handleSend(suggestion.prompt)}
+                      disabled={isLoading}
+                      className="w-full text-left px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-brand-500/30 text-sm text-slate-300 hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group"
+                    >
+                      <span className="mr-2 text-lg">{suggestion.icon}</span>
+                      <span className="group-hover:translate-x-1 transition-transform inline-block">
+                        {suggestion.label}
+                      </span>
+                    </button>
+                  ))}
               </div>
             </div>
           )}
@@ -432,26 +515,28 @@ export default function AIChatPanel({
             <div
               key={message.id}
               className={`flex gap-3 ${
-                message.role === 'user' ? 'justify-end' : 'justify-start'
+                message.role === "user" ? "justify-end" : "justify-start"
               }`}
             >
-              {message.role === 'assistant' && (
+              {message.role === "assistant" && (
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-500/20 flex items-center justify-center">
                   <Bot size={16} className="text-brand-400" />
                 </div>
               )}
               <div
                 className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                  message.role === 'user'
-                    ? 'bg-brand-500/20 text-brand-100'
-                    : 'bg-white/5 text-slate-200'
+                  message.role === "user"
+                    ? "bg-brand-500/20 text-brand-100"
+                    : "bg-white/5 text-slate-200"
                 }`}
               >
                 <div
                   className="text-sm leading-relaxed"
-                  dangerouslySetInnerHTML={{ __html: formatMessage(message.content) }}
+                  dangerouslySetInnerHTML={{
+                    __html: formatMessage(message.content),
+                  }}
                 />
-                {message.role === 'assistant' && (
+                {message.role === "assistant" && (
                   <div className="flex gap-2 mt-2 pt-2 border-t border-white/10">
                     <button
                       onClick={() => handleCopy(message.content)}
@@ -474,7 +559,7 @@ export default function AIChatPanel({
                   </div>
                 )}
               </div>
-              {message.role === 'user' && (
+              {message.role === "user" && (
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
                   <User size={16} className="text-slate-400" />
                 </div>
@@ -490,7 +575,9 @@ export default function AIChatPanel({
               <div className="max-w-[80%] rounded-2xl px-4 py-3 bg-white/5 text-slate-200">
                 <div
                   className="text-sm leading-relaxed"
-                  dangerouslySetInnerHTML={{ __html: formatMessage(streamingContent) }}
+                  dangerouslySetInnerHTML={{
+                    __html: formatMessage(streamingContent),
+                  }}
                 />
                 <span className="inline-block w-0.5 h-5 bg-brand-400 ml-1 animate-blink" />
               </div>
@@ -518,7 +605,9 @@ export default function AIChatPanel({
         {messages.length === 0 && (
           <div className="p-3 border-t border-white/10">
             <div className="grid grid-cols-2 gap-1.5">
-              {SUGGESTED_PROMPTS.filter(p => !p.personality || p.personality === personality).map((suggestion) => (
+              {SUGGESTED_PROMPTS.filter(
+                (p) => !p.personality || p.personality === personality,
+              ).map((suggestion) => (
                 <button
                   key={suggestion.label}
                   onClick={() => handleSend(suggestion.prompt)}
@@ -545,7 +634,7 @@ export default function AIChatPanel({
               disabled={isLoading}
               rows={1}
               className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500/50 resize-none disabled:opacity-50"
-              style={{ minHeight: '48px', maxHeight: '120px' }}
+              style={{ minHeight: "48px", maxHeight: "120px" }}
             />
             <button
               onClick={() => handleSend(input)}
@@ -578,34 +667,36 @@ export default function AIChatPanel({
 
         {/* Personality Selector */}
         <div className="p-3 border-b border-white/10 bg-gradient-to-b from-white/[0.02] to-transparent">
-          <label className="text-[10px] font-medium text-slate-400 mb-1.5 block uppercase tracking-wider">Coach Personality</label>
+          <label className="text-[10px] font-medium text-slate-400 mb-1.5 block uppercase tracking-wider">
+            Coach Personality
+          </label>
           <div className="flex gap-1.5">
             <button
-              onClick={() => onPersonalityChange('friendly')}
+              onClick={() => onPersonalityChange("friendly")}
               className={`flex-1 px-2 py-1.5 rounded-md text-[10px] font-semibold transition-all duration-200 ${
-                personality === 'friendly'
-                  ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 shadow-lg shadow-emerald-500/10'
-                  : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-slate-300'
+                personality === "friendly"
+                  ? "bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 shadow-lg shadow-emerald-500/10"
+                  : "bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-slate-300"
               }`}
             >
               😊 Friendly
             </button>
             <button
-              onClick={() => onPersonalityChange('strict')}
+              onClick={() => onPersonalityChange("strict")}
               className={`flex-1 px-2 py-1.5 rounded-md text-[10px] font-semibold transition-all duration-200 ${
-                personality === 'strict'
-                  ? 'bg-blue-500/20 border border-blue-500/50 text-blue-300 shadow-lg shadow-blue-500/10'
-                  : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-slate-300'
+                personality === "strict"
+                  ? "bg-blue-500/20 border border-blue-500/50 text-blue-300 shadow-lg shadow-blue-500/10"
+                  : "bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-slate-300"
               }`}
             >
               📋 Strict
             </button>
             <button
-              onClick={() => onPersonalityChange('savage')}
+              onClick={() => onPersonalityChange("savage")}
               className={`flex-1 px-2 py-1.5 rounded-md text-[10px] font-semibold transition-all duration-200 ${
-                personality === 'savage'
-                  ? 'bg-brand-500/20 border border-brand-500/50 text-brand-300 shadow-lg shadow-brand-500/10'
-                  : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-slate-300'
+                personality === "savage"
+                  ? "bg-brand-500/20 border border-brand-500/50 text-brand-300 shadow-lg shadow-brand-500/10"
+                  : "bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-slate-300"
               }`}
             >
               😈 Savage
@@ -621,13 +712,17 @@ export default function AIChatPanel({
                 <div className="absolute inset-0 bg-brand-500/20 blur-2xl rounded-full animate-pulse" />
                 <Sparkles className="text-brand-400 relative" size={28} />
               </div>
-              <h3 className="text-white font-semibold text-sm mb-1.5">AI Coach Coming Soon</h3>
+              <h3 className="text-white font-semibold text-sm mb-1.5">
+                AI Coach Coming Soon
+              </h3>
               <p className="text-slate-400 text-xs max-w-[200px] mx-auto leading-relaxed">
                 Get personalized IELTS reading guidance powered by AI.
               </p>
               <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/20">
                 <div className="w-2 h-2 rounded-full bg-brand-400 animate-pulse" />
-                <span className="text-xs text-brand-300 font-medium">In Development</span>
+                <span className="text-xs text-brand-300 font-medium">
+                  In Development
+                </span>
               </div>
             </div>
           )}
@@ -638,24 +733,35 @@ export default function AIChatPanel({
                 <div className="absolute inset-0 bg-brand-500/20 blur-2xl rounded-full" />
                 <Sparkles className="text-brand-400 relative" size={32} />
               </div>
-              <h3 className="text-white font-semibold text-base mb-2">Welcome to AI Reading Coach</h3>
+              <h3 className="text-white font-semibold text-base mb-2">
+                Welcome to AI Reading Coach
+              </h3>
               <p className="text-slate-400 text-sm max-w-[220px] mx-auto leading-relaxed mb-6">
-                Ask me anything about the passage, questions, or IELTS strategies.
+                Ask me anything about the passage, questions, or IELTS
+                strategies.
               </p>
-              
+
               <div className="space-y-2">
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">Try asking:</p>
-                {SUGGESTED_PROMPTS.filter(p => !p.personality || p.personality === personality).slice(0, 4).map((suggestion) => (
-                  <button
-                    key={suggestion.label}
-                    onClick={() => handleSend(suggestion.prompt)}
-                    disabled={isLoading}
-                    className="w-full text-left px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-brand-500/30 text-sm text-slate-300 hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group"
-                  >
-                    <span className="mr-2 text-lg">{suggestion.icon}</span>
-                    <span className="group-hover:translate-x-1 transition-transform inline-block">{suggestion.label}</span>
-                  </button>
-                ))}
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">
+                  Try asking:
+                </p>
+                {SUGGESTED_PROMPTS.filter(
+                  (p) => !p.personality || p.personality === personality,
+                )
+                  .slice(0, 4)
+                  .map((suggestion) => (
+                    <button
+                      key={suggestion.label}
+                      onClick={() => handleSend(suggestion.prompt)}
+                      disabled={isLoading}
+                      className="w-full text-left px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-brand-500/30 text-sm text-slate-300 hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group"
+                    >
+                      <span className="mr-2 text-lg">{suggestion.icon}</span>
+                      <span className="group-hover:translate-x-1 transition-transform inline-block">
+                        {suggestion.label}
+                      </span>
+                    </button>
+                  ))}
               </div>
             </div>
           )}
@@ -664,26 +770,28 @@ export default function AIChatPanel({
             <div
               key={message.id}
               className={`flex gap-3 ${
-                message.role === 'user' ? 'justify-end' : 'justify-start'
+                message.role === "user" ? "justify-end" : "justify-start"
               }`}
             >
-              {message.role === 'assistant' && (
+              {message.role === "assistant" && (
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-500/20 flex items-center justify-center">
                   <Bot size={16} className="text-brand-400" />
                 </div>
               )}
               <div
                 className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                  message.role === 'user'
-                    ? 'bg-brand-500/20 text-brand-100'
-                    : 'bg-white/5 text-slate-200'
+                  message.role === "user"
+                    ? "bg-brand-500/20 text-brand-100"
+                    : "bg-white/5 text-slate-200"
                 }`}
               >
                 <div
                   className="text-sm leading-relaxed"
-                  dangerouslySetInnerHTML={{ __html: formatMessage(message.content) }}
+                  dangerouslySetInnerHTML={{
+                    __html: formatMessage(message.content),
+                  }}
                 />
-                {message.role === 'assistant' && (
+                {message.role === "assistant" && (
                   <div className="flex gap-2 mt-2 pt-2 border-t border-white/10">
                     <button
                       onClick={() => handleCopy(message.content)}
@@ -706,7 +814,7 @@ export default function AIChatPanel({
                   </div>
                 )}
               </div>
-              {message.role === 'user' && (
+              {message.role === "user" && (
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
                   <User size={16} className="text-slate-400" />
                 </div>
@@ -722,7 +830,9 @@ export default function AIChatPanel({
               <div className="max-w-[80%] rounded-2xl px-4 py-3 bg-white/5 text-slate-200">
                 <div
                   className="text-sm leading-relaxed"
-                  dangerouslySetInnerHTML={{ __html: formatMessage(streamingContent) }}
+                  dangerouslySetInnerHTML={{
+                    __html: formatMessage(streamingContent),
+                  }}
                 />
                 <span className="inline-block w-0.5 h-5 bg-brand-400 ml-1 animate-blink" />
               </div>
@@ -750,7 +860,9 @@ export default function AIChatPanel({
         {messages.length === 0 && (
           <div className="p-3 border-t border-white/10">
             <div className="grid grid-cols-2 gap-1.5">
-              {SUGGESTED_PROMPTS.filter(p => !p.personality || p.personality === personality).map((suggestion) => (
+              {SUGGESTED_PROMPTS.filter(
+                (p) => !p.personality || p.personality === personality,
+              ).map((suggestion) => (
                 <button
                   key={suggestion.label}
                   onClick={() => handleSend(suggestion.prompt)}
@@ -777,7 +889,7 @@ export default function AIChatPanel({
               disabled={isLoading}
               rows={1}
               className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500/50 resize-none disabled:opacity-50"
-              style={{ minHeight: '48px', maxHeight: '120px' }}
+              style={{ minHeight: "48px", maxHeight: "120px" }}
             />
             <button
               onClick={() => handleSend(input)}
