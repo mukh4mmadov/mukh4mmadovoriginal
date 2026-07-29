@@ -70,7 +70,7 @@ export default function ReadingTestPlayer({
   const [isDesktop, setIsDesktop] = useState(true);
   const [events, setEvents] = useState<TestEvent[]>([]);
   const [aiChatOpen, setAiChatOpen] = useState(false);
-  const [aiPersonality, setAiPersonality] = useState<AIPersonality>('friendly');
+  const [aiPersonality, setAiPersonality] = useState<AIPersonality>("friendly");
   const startTimeRef = useRef(Date.now());
   const pausedTimeRef = useRef(0);
   const lastPauseStartRef = useRef<number | null>(null);
@@ -79,7 +79,7 @@ export default function ReadingTestPlayer({
 
   // Track reading started
   useEffect(() => {
-    analyticsService.trackReadingStarted(user?.id, passage.slug);
+    analyticsService.trackReadingStarted(user?.id ?? null, passage.slug);
   }, [user?.id, passage.slug]);
 
   const getElapsedSeconds = (now = Date.now()) => {
@@ -88,28 +88,41 @@ export default function ReadingTestPlayer({
   };
 
   const buildAIContext = (): AIConversationContext => {
-    const currentQuestion = activeQ ? questions.find(q => q.id === activeQ) : undefined;
-    
+    const currentQuestion = activeQ
+      ? questions.find((q) => q.id === activeQ)
+      : undefined;
+
     return {
       passage: {
         title: passage.title,
-        paragraphs: passage.paragraphs.map(p => ({
+        paragraphs: passage.paragraphs.map((p) => ({
           label: p.label,
           text: p.text,
         })),
       },
-      question: currentQuestion ? {
-        id: currentQuestion.id,
-        type: currentQuestion.type,
-        prompt: currentQuestion.prompt,
-        before: currentQuestion.type === 'sentence-completion' ? currentQuestion.before : undefined,
-        after: currentQuestion.type === 'sentence-completion' ? currentQuestion.after : undefined,
-        userAnswer: answers[currentQuestion.id],
-        correctAnswer: currentQuestion.answer,
-        explanation: currentQuestion.explanation,
-        evidence: currentQuestion.evidence,
-        paragraphLabel: currentQuestion.type === 'matching-headings' ? currentQuestion.paragraphLabel : undefined,
-      } : undefined,
+      question: currentQuestion
+        ? {
+            id: currentQuestion.id,
+            type: currentQuestion.type,
+            prompt: currentQuestion.prompt,
+            before:
+              currentQuestion.type === "sentence-completion"
+                ? currentQuestion.before
+                : undefined,
+            after:
+              currentQuestion.type === "sentence-completion"
+                ? currentQuestion.after
+                : undefined,
+            userAnswer: answers[currentQuestion.id],
+            correctAnswer: currentQuestion.answer,
+            explanation: currentQuestion.explanation,
+            evidence: currentQuestion.evidence,
+            paragraphLabel:
+              currentQuestion.type === "matching-headings"
+                ? currentQuestion.paragraphLabel
+                : undefined,
+          }
+        : undefined,
     };
   };
 
@@ -181,7 +194,7 @@ export default function ReadingTestPlayer({
         `ielts-reading-${passage.slug}`,
       );
       let hasValidSavedData = false;
-      
+
       if (savedData) {
         const parsed = JSON.parse(savedData);
         if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
@@ -214,7 +227,7 @@ export default function ReadingTestPlayer({
   const scrollToQuestion = (questionId: string) => {
     const element = questionRefs.current[questionId];
     const questionNumber = questionNumbers.get(questionId) ?? 1;
-    
+
     if (element) {
       element.scrollIntoView({ behavior: "smooth", block: "center" });
       setActiveQ(questionId);
@@ -284,10 +297,15 @@ export default function ReadingTestPlayer({
     setAnswers((prev) => ({ ...prev, [id]: value }));
 
     // Track question answered
-    const question = questions.find(q => q.id === id);
+    const question = questions.find((q) => q.id === id);
     if (question) {
       const correct = isCorrect(question, value);
-      analyticsService.trackQuestionAnswered(user?.id, passage.slug, id, correct);
+      analyticsService.trackQuestionAnswered(
+        user?.id ?? null,
+        passage.slug,
+        id,
+        correct,
+      );
     }
 
     if (oldAnswer && oldAnswer !== value) {
@@ -338,15 +356,27 @@ export default function ReadingTestPlayer({
     addEvent({ type: "submitted", timestamp: Date.now() });
 
     // Analytics tracking
-    analyticsService.trackReadingFinished(user?.id, passage.slug, finalTime);
-    analyticsService.trackPassageCompleted(user?.id, passage.slug, score);
+    analyticsService.trackReadingFinished(
+      user?.id ?? null,
+      passage.slug,
+      finalTime,
+    );
+    analyticsService.trackPassageCompleted(
+      user?.id ?? null,
+      passage.slug,
+      score,
+    );
 
-    saveProgress(passage.slug, {
-      completed: true,
-      bestScore: score,
-      attempts: 1,
-      totalTime: finalTime,
-    }, user?.id);
+    saveProgress(
+      passage.slug,
+      {
+        completed: true,
+        bestScore: score,
+        attempts: 1,
+        totalTime: finalTime,
+      },
+      user?.id,
+    );
   };
 
   const resetTestState = () => {
@@ -653,7 +683,12 @@ export default function ReadingTestPlayer({
 
                             {q.type === "sentence-completion" ? (
                               <p className="text-sm leading-7 text-slate-200">
-                                <HighlightableText fontSize={fontSize} onHighlight={handleHighlight} onHighlightRemove={handleHighlightRemove} containerKey={`${q.id}-before`}>
+                                <HighlightableText
+                                  fontSize={fontSize}
+                                  onHighlight={handleHighlight}
+                                  onHighlightRemove={handleHighlightRemove}
+                                  containerKey={`${q.id}-before`}
+                                >
                                   {q.before}
                                 </HighlightableText>{" "}
                                 <input
@@ -664,13 +699,23 @@ export default function ReadingTestPlayer({
                                   className="mx-1 w-full max-w-[9rem] rounded-lg border border-white/15 bg-white/10 px-2 py-1 text-sm text-white focus:border-brand-500 focus:outline-none sm:w-36"
                                   placeholder={`max ${q.maxWords} words`}
                                 />{" "}
-                                <HighlightableText fontSize={fontSize} onHighlight={handleHighlight} onHighlightRemove={handleHighlightRemove} containerKey={`${q.id}-after`}>
+                                <HighlightableText
+                                  fontSize={fontSize}
+                                  onHighlight={handleHighlight}
+                                  onHighlightRemove={handleHighlightRemove}
+                                  containerKey={`${q.id}-after`}
+                                >
                                   {q.after}
                                 </HighlightableText>
                               </p>
                             ) : (
                               <p className="text-sm leading-7 text-slate-200">
-                                <HighlightableText fontSize={fontSize} onHighlight={handleHighlight} onHighlightRemove={handleHighlightRemove} containerKey={`${q.id}-prompt`}>
+                                <HighlightableText
+                                  fontSize={fontSize}
+                                  onHighlight={handleHighlight}
+                                  onHighlightRemove={handleHighlightRemove}
+                                  containerKey={`${q.id}-prompt`}
+                                >
                                   {q.type === "matching-headings"
                                     ? q.paragraphLabel
                                     : q.prompt}
