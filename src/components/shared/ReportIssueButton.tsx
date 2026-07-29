@@ -1,37 +1,64 @@
 "use client";
 
-import { useState } from 'react';
-import { AlertTriangle, X, Bug, Lightbulb, AlertCircle, MessageSquare } from 'lucide-react';
-import { feedbackRepository } from '@/lib/supabase/repositories/feedback.repository';
-import { useAuth } from '@/contexts/AuthContext';
-import Toast from './Toast';
+import { useState } from "react";
+import {
+  AlertTriangle,
+  X,
+  Bug,
+  Lightbulb,
+  AlertCircle,
+  MessageSquare,
+} from "lucide-react";
+import { feedbackRepository } from "@/lib/supabase/repositories/feedback.repository";
+import { useAuth } from "@/contexts/AuthContext";
+import Toast from "./Toast";
 
 export default function ReportIssueButton() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState({
-    name: user?.profile?.full_name || '',
-    email: user?.email || '',
-    message_type: 'bug' as 'bug' | 'feature' | 'incorrect_answer' | 'general',
-    subject: '',
-    message: '',
+    name: profile?.full_name || "",
+    email: user?.email || "",
+    message_type: "bug" as "bug" | "feature" | "incorrect_answer" | "general",
+    subject: "",
+    message: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
+  const [toastMessage, setToastMessage] = useState("");
 
-  type FeedbackMessageType = 'bug' | 'feature' | 'incorrect_answer' | 'general';
+  type FeedbackMessageType = "bug" | "feature" | "incorrect_answer" | "general";
 
   function isFeedbackMessageType(value: string): value is FeedbackMessageType {
-    return value === 'bug' || value === 'feature' || value === 'incorrect_answer' || value === 'general';
+    return (
+      value === "bug" ||
+      value === "feature" ||
+      value === "incorrect_answer" ||
+      value === "general"
+    );
   }
 
   const messageTypes = [
-    { value: 'bug', label: 'Report a Bug', icon: Bug, color: 'text-red-400' },
-    { value: 'feature', label: 'Suggest a Feature', icon: Lightbulb, color: 'text-yellow-400' },
-    { value: 'incorrect_answer', label: 'Incorrect Answer', icon: AlertCircle, color: 'text-orange-400' },
-    { value: 'general', label: 'General Feedback', icon: MessageSquare, color: 'text-blue-400' },
+    { value: "bug", label: "Report a Bug", icon: Bug, color: "text-red-400" },
+    {
+      value: "feature",
+      label: "Suggest a Feature",
+      icon: Lightbulb,
+      color: "text-yellow-400",
+    },
+    {
+      value: "incorrect_answer",
+      label: "Incorrect Answer",
+      icon: AlertCircle,
+      color: "text-orange-400",
+    },
+    {
+      value: "general",
+      label: "General Feedback",
+      icon: MessageSquare,
+      color: "text-blue-400",
+    },
   ];
 
   const validateEmail = (email: string): boolean => {
@@ -43,23 +70,23 @@ export default function ReportIssueButton() {
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = "Name is required";
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     } else if (!validateEmail(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = "Please enter a valid email address";
     }
 
     if (!formData.subject.trim()) {
-      newErrors.subject = 'Subject is required';
+      newErrors.subject = "Subject is required";
     }
 
     if (!formData.message.trim()) {
-      newErrors.message = 'Message is required';
+      newErrors.message = "Message is required";
     } else if (formData.message.trim().length < 10) {
-      newErrors.message = 'Message must be at least 10 characters';
+      newErrors.message = "Message must be at least 10 characters";
     }
 
     setErrors(newErrors);
@@ -92,30 +119,34 @@ export default function ReportIssueButton() {
         screen_size: `${window.innerWidth}x${window.innerHeight}`,
       });
 
-      setToastMessage('Thank you! Your report has been received.');
+      setToastMessage("Thank you! Your report has been received.");
       setShowToast(true);
       setFormData({
-        name: user?.profile?.full_name || '',
-        email: user?.email || '',
-        message_type: 'bug',
-        subject: '',
-        message: '',
+        name: profile?.full_name || "",
+        email: user?.email || "",
+        message_type: "bug",
+        subject: "",
+        message: "",
       });
       setIsOpen(false);
     } catch (error: any) {
       setErrors({
-        submit: error.message || 'Failed to send report. Please try again.',
+        submit: error.message || "Failed to send report. Please try again.",
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
@@ -147,7 +178,8 @@ export default function ReportIssueButton() {
                 Report an Issue
               </h2>
               <p className="text-slate-400 text-sm">
-                Help us improve by reporting bugs, suggesting features, or providing feedback
+                Help us improve by reporting bugs, suggesting features, or
+                providing feedback
               </p>
             </div>
 
@@ -171,16 +203,23 @@ export default function ReportIssueButton() {
                         type="button"
                         onClick={() => {
                           const value = type.value;
-                          setFormData(prev => ({ ...prev, message_type: isFeedbackMessageType(value) ? value : 'bug' }));
+                          setFormData((prev) => ({
+                            ...prev,
+                            message_type: isFeedbackMessageType(value)
+                              ? value
+                              : "bug",
+                          }));
                         }}
                         className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
                           formData.message_type === type.value
-                            ? 'border-brand-500 bg-brand-500/10'
-                            : 'border-white/10 bg-white/5 hover:border-white/20'
+                            ? "border-brand-500 bg-brand-500/10"
+                            : "border-white/10 bg-white/5 hover:border-white/20"
                         }`}
                       >
                         <Icon className={type.color} size={18} />
-                        <span className="text-sm text-slate-200">{type.label}</span>
+                        <span className="text-sm text-slate-200">
+                          {type.label}
+                        </span>
                       </button>
                     );
                   })}
@@ -188,7 +227,10 @@ export default function ReportIssueButton() {
               </div>
 
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-slate-300 mb-2">
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-medium text-slate-300 mb-2"
+                >
                   Name *
                 </label>
                 <input
@@ -198,16 +240,21 @@ export default function ReportIssueButton() {
                   value={formData.name}
                   onChange={handleChange}
                   className={`w-full bg-white/5 border rounded-lg px-4 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent ${
-                    errors.name ? 'border-red-500' : 'border-white/10'
+                    errors.name ? "border-red-500" : "border-white/10"
                   }`}
                   placeholder="Your name"
                   required
                 />
-                {errors.name && <p className="mt-1 text-xs text-red-400">{errors.name}</p>}
+                {errors.name && (
+                  <p className="mt-1 text-xs text-red-400">{errors.name}</p>
+                )}
               </div>
 
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-slate-300 mb-2"
+                >
                   Email *
                 </label>
                 <input
@@ -217,16 +264,21 @@ export default function ReportIssueButton() {
                   value={formData.email}
                   onChange={handleChange}
                   className={`w-full bg-white/5 border rounded-lg px-4 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent ${
-                    errors.email ? 'border-red-500' : 'border-white/10'
+                    errors.email ? "border-red-500" : "border-white/10"
                   }`}
                   placeholder="your@email.com"
                   required
                 />
-                {errors.email && <p className="mt-1 text-xs text-red-400">{errors.email}</p>}
+                {errors.email && (
+                  <p className="mt-1 text-xs text-red-400">{errors.email}</p>
+                )}
               </div>
 
               <div>
-                <label htmlFor="subject" className="block text-sm font-medium text-slate-300 mb-2">
+                <label
+                  htmlFor="subject"
+                  className="block text-sm font-medium text-slate-300 mb-2"
+                >
                   Subject *
                 </label>
                 <input
@@ -236,16 +288,21 @@ export default function ReportIssueButton() {
                   value={formData.subject}
                   onChange={handleChange}
                   className={`w-full bg-white/5 border rounded-lg px-4 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent ${
-                    errors.subject ? 'border-red-500' : 'border-white/10'
+                    errors.subject ? "border-red-500" : "border-white/10"
                   }`}
                   placeholder="Brief description"
                   required
                 />
-                {errors.subject && <p className="mt-1 text-xs text-red-400">{errors.subject}</p>}
+                {errors.subject && (
+                  <p className="mt-1 text-xs text-red-400">{errors.subject}</p>
+                )}
               </div>
 
               <div>
-                <label htmlFor="message" className="block text-sm font-medium text-slate-300 mb-2">
+                <label
+                  htmlFor="message"
+                  className="block text-sm font-medium text-slate-300 mb-2"
+                >
                   Details *
                 </label>
                 <textarea
@@ -255,19 +312,23 @@ export default function ReportIssueButton() {
                   onChange={handleChange}
                   rows={4}
                   className={`w-full bg-white/5 border rounded-lg px-4 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none ${
-                    errors.message ? 'border-red-500' : 'border-white/10'
+                    errors.message ? "border-red-500" : "border-white/10"
                   }`}
                   placeholder="Please provide as much detail as possible..."
                   required
                 />
-                {errors.message && <p className="mt-1 text-xs text-red-400">{errors.message}</p>}
+                {errors.message && (
+                  <p className="mt-1 text-xs text-red-400">{errors.message}</p>
+                )}
               </div>
 
               <div className="text-xs text-slate-500">
                 <p>System info will be automatically included:</p>
                 <p>• Page: {window.location.href}</p>
-                <p>• Screen: {window.innerWidth}x{window.innerHeight}</p>
-                <p>• User: {user?.id ? 'Logged in' : 'Guest'}</p>
+                <p>
+                  • Screen: {window.innerWidth}x{window.innerHeight}
+                </p>
+                <p>• User: {user?.id ? "Logged in" : "Guest"}</p>
               </div>
 
               <button
@@ -281,7 +342,7 @@ export default function ReportIssueButton() {
                     Sending...
                   </>
                 ) : (
-                  'Submit Report'
+                  "Submit Report"
                 )}
               </button>
             </form>
