@@ -7,17 +7,20 @@ import { strategies } from "@/data/dailyStrategies";
 import { words } from "@/data/dailyWords";
 import { missionSets, Mission } from "@/data/dailyMissions";
 import { getDailyContent } from "@/lib/dailyRotation";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSavedQuotes } from "@/hooks/useSavedQuotes";
 
 interface DailyInspirationProps {
   compact?: boolean;
 }
 
 export default function DailyInspiration({ compact = false }: DailyInspirationProps) {
+  const { user } = useAuth();
+  const { quotes: savedQuotes, toggleQuote } = useSavedQuotes();
   const [completedMissions, setCompletedMissions] = useState<Set<string>>(new Set());
   const [mounted, setMounted] = useState(false);
   const [currentQuote, setCurrentQuote] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [savedQuoteIds, setSavedQuoteIds] = useState<Set<string>>(new Set());
   const [viewedQuoteIds, setViewedQuoteIds] = useState<string[]>([]);
 
   // Get daily content with caching (for strategy, word, missions - still daily rotation)
@@ -29,14 +32,9 @@ export default function DailyInspiration({ compact = false }: DailyInspirationPr
   useEffect(() => {
     setMounted(true);
     
-    // Load saved quote IDs from localStorage
+    // Load viewed quotes from localStorage
     if (typeof window !== 'undefined') {
       try {
-        const savedQuotes = localStorage.getItem("saved-quote-ids");
-        if (savedQuotes) {
-          setSavedQuoteIds(new Set(JSON.parse(savedQuotes)));
-        }
-        
         const viewedQuotes = localStorage.getItem("viewed-quote-ids");
         if (viewedQuotes) {
           setViewedQuoteIds(JSON.parse(viewedQuotes));
@@ -127,28 +125,24 @@ export default function DailyInspiration({ compact = false }: DailyInspirationPr
     setTimeout(() => setIsRefreshing(false), 300);
   };
   
-  const handleSaveQuote = () => {
+  const handleSaveQuote = async () => {
     if (!currentQuote) return;
     
-    setSavedQuoteIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(currentQuote)) {
-        next.delete(currentQuote);
-      } else {
-        next.add(currentQuote);
-      }
-      
-      // Save to localStorage
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.setItem("saved-quote-ids", JSON.stringify(Array.from(next)));
-        } catch (e) {
-          // Ignore errors
-        }
-      }
-      
-      return next;
-    });
+    const quoteData = studyWisdomQuotes.find(q => q.id === currentQuote);
+    if (!quoteData) return;
+
+    try {
+      await toggleQuote({
+        quote_id: quoteData.id,
+        quote: quoteData.quote,
+        author: quoteData.author,
+        role: quoteData.role,
+        category: quoteData.category,
+        reflection: quoteData.reflection,
+      });
+    } catch (error) {
+      console.error('Error saving quote:', error);
+    }
   };
   
   const handleCopyQuote = () => {
@@ -205,6 +199,8 @@ export default function DailyInspiration({ compact = false }: DailyInspirationPr
   const quoteData = studyWisdomQuotes.find(q => q.id === currentQuote);
   if (!quoteData) return null;
 
+  const isQuoteSaved = savedQuotes.some(q => q.quote_id === currentQuote);
+
   if (compact) {
     return (
       <div className="bg-gradient-to-br from-brand-500/10 via-transparent to-surface/50 border border-white/10 rounded-xl p-4 space-y-3">
@@ -223,14 +219,14 @@ export default function DailyInspiration({ compact = false }: DailyInspirationPr
             <button
               onClick={handleSaveQuote}
               className={`p-1.5 rounded-lg transition-all ${
-                savedQuoteIds.has(currentQuote)
+                isQuoteSaved
                   ? "text-amber-400 hover:bg-amber-400/10"
                   : "text-slate-500 hover:bg-white/10 hover:text-slate-300"
               }`}
               aria-label="Save quote"
               title="Save quote"
             >
-              <Star size={14} className={savedQuoteIds.has(currentQuote) ? "fill-current" : ""} />
+              <Star size={14} className={isQuoteSaved ? "fill-current" : ""} />
             </button>
             <button
               onClick={handleCopyQuote}
@@ -280,14 +276,14 @@ export default function DailyInspiration({ compact = false }: DailyInspirationPr
           <button
             onClick={handleSaveQuote}
             className={`p-2 rounded-lg transition-all ${
-              savedQuoteIds.has(currentQuote)
+              isQuoteSaved
                 ? "text-amber-400 hover:bg-amber-400/10"
                 : "text-slate-500 hover:bg-white/10 hover:text-slate-300"
             }`}
             aria-label="Save quote"
             title="Save quote"
           >
-            <Star size={16} className={savedQuoteIds.has(currentQuote) ? "fill-current" : ""} />
+            <Star size={16} className={isQuoteSaved ? "fill-current" : ""} />
           </button>
           <button
             onClick={handleCopyQuote}

@@ -1,9 +1,12 @@
 "use client";
 
 import { useMemo, useState, useRef } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { analyticsService } from "@/lib/analytics/analytics.service";
 
 interface HighlightablePassageProps {
   paragraphs: { label: string; text: string }[];
+  passageId?: string;
   fontSize?: "small" | "medium" | "large";
   onHighlight?: (text: string) => void;
   onHighlightRemove?: (text: string) => void;
@@ -23,10 +26,12 @@ function tokenize(text: string): string[] {
 
 export default function HighlightablePassage({
   paragraphs,
+  passageId,
   fontSize = "medium",
   onHighlight,
   onHighlightRemove,
 }: HighlightablePassageProps) {
+  const { user } = useAuth();
   const [highlights, setHighlights] = useState<
     Record<string, Set<string>>
   >({});
@@ -53,9 +58,15 @@ export default function HighlightablePassage({
         if (current.has(tokenKey)) {
           current.delete(tokenKey);
           onHighlightRemove?.(tokenText);
+          if (passageId) {
+            analyticsService.trackHighlightRemoved(user?.id, passageId, { text: tokenText });
+          }
         } else {
           current.add(tokenKey);
           onHighlight?.(tokenText);
+          if (passageId) {
+            analyticsService.trackHighlightCreated(user?.id, passageId, { text: tokenText });
+          }
         }
         
         next[paragraphKey] = current;

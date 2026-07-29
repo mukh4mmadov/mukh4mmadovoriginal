@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from 'react';
 import { MessageSquare, X, Send, Bot, User, Sparkles, Copy, RotateCcw } from 'lucide-react';
 import { AIMessage, AIConversationContext, AIPersonality } from '@/types/aiCoach';
 import { parseAIResponse, formatParsedResponse } from '@/lib/ai/parseResponse';
+import { useAuth } from '@/contexts/AuthContext';
+import { analyticsService } from '@/lib/analytics/analytics.service';
 
 interface AIChatPanelProps {
   isOpen: boolean;
@@ -31,6 +33,7 @@ export default function AIChatPanel({
   personality,
   onPersonalityChange,
 }: AIChatPanelProps) {
+  const { user } = useAuth();
   const [messages, setMessages] = useState<AIMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -45,6 +48,13 @@ export default function AIChatPanel({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const conversationKey = `ai-conversation-${context.passage.title}`;
+
+  // Track AI coach opened
+  useEffect(() => {
+    if (isOpen) {
+      analyticsService.trackAICoachOpened(user?.id, context.passage.title);
+    }
+  }, [isOpen, user?.id, context.passage.title]);
 
   // Load conversation from localStorage on mount
   useEffect(() => {
@@ -153,6 +163,9 @@ export default function AIChatPanel({
     setIsLoading(true);
     setStreamingContent('');
     setLastFailedPrompt(prompt.trim());
+
+    // Track AI message sent
+    analyticsService.trackAIMessageSent(user?.id, context.passage.title, { prompt: prompt.trim() });
 
     try {
       const response = await fetch('/api/ai-chat', {

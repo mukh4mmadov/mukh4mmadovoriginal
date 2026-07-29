@@ -13,28 +13,28 @@ import {
 import { useState, useMemo, useEffect } from "react";
 import { getProgress } from "@/lib/progressTracker";
 import DailyInspiration from "@/components/shared/DailyInspiration";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function ReadingListPage() {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("all");
   const [progressData, setProgressData] = useState<Record<string, any>>({});
 
   useEffect(() => {
-    const syncProgress = () => {
+    const syncProgress = async () => {
       const data: Record<string, any> = {};
-      readingTests.forEach((test) => {
-        const progress = getProgress(test.slug);
+      for (const test of readingTests) {
+        const progress = await getProgress(test.slug, user?.id);
         if (progress) {
           data[test.slug] = progress;
         }
-      });
+      }
       setProgressData(data);
     };
 
     syncProgress();
-    window.addEventListener("storage", syncProgress);
-    return () => window.removeEventListener("storage", syncProgress);
-  }, []);
+  }, [user]);
 
   const filteredTests = useMemo(() => {
     return readingTests.filter((t) => {

@@ -162,13 +162,10 @@ export class AIProviderFactory {
       case 'openai':
         return new OpenAIProvider(config);
       case 'gemini':
-        // TODO: Implement Gemini provider
         throw new Error('Gemini provider not yet implemented');
       case 'claude':
-        // TODO: Implement Claude provider
         throw new Error('Claude provider not yet implemented');
       case 'openrouter':
-        // TODO: Implement OpenRouter provider
         throw new Error('OpenRouter provider not yet implemented');
       default:
         throw new Error(`Unknown provider: ${provider}`);

@@ -10,7 +10,6 @@ import {
   AlertTriangle,
   Type,
   MessageCircle,
-  Instagram,
   Send,
   GripVertical,
   Bot,
@@ -21,6 +20,8 @@ import ReadingTestResults from "@/components/reading/ReadingTestResults";
 import AIReadingTutor from "@/components/reading/AIReadingTutor";
 import AIChatPanel from "@/components/ai/AIChatPanel";
 import { saveProgress } from "@/lib/progressTracker";
+import { useAuth } from "@/contexts/AuthContext";
+import { analyticsService } from "@/lib/analytics/analytics.service";
 
 function allQuestions(passage: ReadingPassage): ReadingQuestion[] {
   return passage.questionGroups.flatMap((g) => g.questions);
@@ -46,6 +47,7 @@ export default function ReadingTestPlayer({
 }: {
   passage: ReadingPassage;
 }) {
+  const { user } = useAuth();
   const questions = useMemo(() => allQuestions(passage), [passage]);
   const questionNumbers = useMemo(() => {
     const map = new Map<string, number>();
@@ -74,6 +76,11 @@ export default function ReadingTestPlayer({
   const lastPauseStartRef = useRef<number | null>(null);
   const questionRefs = useRef<Record<string, HTMLDivElement>>({});
   const previousAnswersRef = useRef<Record<string, string>>({});
+
+  // Track reading started
+  useEffect(() => {
+    analyticsService.trackReadingStarted(user?.id, passage.slug);
+  }, [user?.id, passage.slug]);
 
   const getElapsedSeconds = (now = Date.now()) => {
     const elapsed = Math.floor((now - startTimeRef.current) / 1000);
@@ -276,6 +283,13 @@ export default function ReadingTestPlayer({
 
     setAnswers((prev) => ({ ...prev, [id]: value }));
 
+    // Track question answered
+    const question = questions.find(q => q.id === id);
+    if (question) {
+      const isCorrect = isCorrect(question, value);
+      analyticsService.trackQuestionAnswered(user?.id, passage.slug, id, isCorrect);
+    }
+
     if (oldAnswer && oldAnswer !== value) {
       addEvent({
         type: "answer_changed",
@@ -323,12 +337,16 @@ export default function ReadingTestPlayer({
     // Track submitted event
     addEvent({ type: "submitted", timestamp: Date.now() });
 
+    // Analytics tracking
+    analyticsService.trackReadingFinished(user?.id, passage.slug, finalTime);
+    analyticsService.trackPassageCompleted(user?.id, passage.slug, score);
+
     saveProgress(passage.slug, {
       completed: true,
       bestScore: score,
       attempts: 1,
       totalTime: finalTime,
-    });
+    }, user?.id);
   };
 
   const resetTestState = () => {
@@ -773,15 +791,6 @@ export default function ReadingTestPlayer({
                 </div>
               </div>
               <div className="flex flex-wrap gap-3">
-                <a
-                  href="https://instagram.com/mukh4mmadov_7"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-slate-400 transition-colors duration-200 hover:text-pink-400"
-                >
-                  <Instagram size={14} />
-                  @mukh4mmadov_7
-                </a>
                 <a
                   href="https://t.me/mukh4mmadov"
                   target="_blank"

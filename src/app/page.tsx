@@ -8,18 +8,21 @@ import {
   Target,
   Highlighter,
   ArrowRight,
-  Instagram,
   Send,
   Play,
   TrendingUp,
   CheckCircle,
+  Mail,
 } from "lucide-react";
 import BandGauge from "@/components/shared/BandGauge";
 import DailyInspiration from "@/components/shared/DailyInspiration";
 import { readingTests } from "@/data/readingTests_new";
 import { getAllProgress } from "@/lib/progressTracker";
+import { useAuth } from "@/contexts/AuthContext";
+import ContactForm from "@/components/shared/ContactForm";
 
 export default function Home() {
+  const { user } = useAuth();
   const [progressData, setProgressData] = useState<any[]>([]);
   const [todayStats, setTodayStats] = useState({
     readingTime: 0,
@@ -27,62 +30,68 @@ export default function Home() {
     highlightsCreated: 0,
     accuracy: 0,
   });
+  const [isContactFormOpen, setIsContactFormOpen] = useState(false);
 
   useEffect(() => {
     // Load progress data
-    const progress = getAllProgress();
-    setProgressData(progress);
+    const loadProgress = async () => {
+      const progress = await getAllProgress(user?.id);
+      setProgressData(progress);
 
-    // Calculate today's stats (simplified for demo)
-    const todayProgress = progress.filter(p => {
-      const lastAttempt = new Date(p.lastAttempt);
-      const today = new Date();
-      return lastAttempt.toDateString() === today.toDateString();
-    });
+      // Calculate today's stats (simplified for demo)
+      const todayProgress = progress.filter(p => {
+        const lastAttempt = new Date(p.lastAttempt);
+        const today = new Date();
+        return lastAttempt.toDateString() === today.toDateString();
+      });
 
-    const totalTime = todayProgress.reduce((sum, p) => sum + (p.totalTime || 0), 0);
-    const totalQuestions = todayProgress.reduce((sum, p) => sum + (p.attempts * 13), 0); // Assuming 13 questions per test
-    const avgAccuracy = todayProgress.length > 0 
-      ? todayProgress.reduce((sum, p) => sum + p.bestScore, 0) / todayProgress.length 
-      : 0;
+      const totalTime = todayProgress.reduce((sum, p) => sum + (p.totalTime || 0), 0);
+      const totalQuestions = todayProgress.reduce((sum, p) => sum + (p.attempts * 13), 0); // Assuming 13 questions per test
+      const avgAccuracy = todayProgress.length > 0 
+        ? todayProgress.reduce((sum, p) => sum + p.bestScore, 0) / todayProgress.length 
+        : 0;
 
-    setTodayStats({
-      readingTime: Math.round(totalTime / 60), // Convert to minutes
-      questionsAnswered: totalQuestions,
-      highlightsCreated: 0, // Would need to track this separately
-      accuracy: Math.round(avgAccuracy),
-    });
-  }, []);
+      setTodayStats({
+        readingTime: Math.round(totalTime / 60), // Convert to minutes
+        questionsAnswered: totalQuestions,
+        highlightsCreated: 0, // Would need to track this separately
+        accuracy: Math.round(avgAccuracy),
+      });
+    };
+
+    loadProgress();
+  }, [user]);
 
   const lastTest = progressData[0];
   return (
-    <main>
-      {/* Continue Last Test Banner */}
-      {lastTest && lastTest.completed < 13 && (
-        <section className="border-b border-white/10 bg-gradient-to-r from-brand-500/10 via-brand-500/5 to-transparent">
-          <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between rounded-xl border border-brand-500/20 bg-brand-500/10 p-4">
-              <div className="flex items-center gap-4">
-                <div className="rounded-full bg-brand-500/20 p-2">
-                  <Play size={20} className="text-brand-400" />
+    <>
+      <main>
+        {/* Continue Last Test Banner */}
+        {lastTest && lastTest.completed < 13 && (
+          <section className="border-b border-white/10 bg-gradient-to-r from-brand-500/10 via-brand-500/5 to-transparent">
+            <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+              <div className="flex items-center justify-between rounded-xl border border-brand-500/20 bg-brand-500/10 p-4">
+                <div className="flex items-center gap-4">
+                  <div className="rounded-full bg-brand-500/20 p-2">
+                    <Play size={20} className="text-brand-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-white">Continue Your Last Test</p>
+                    <p className="text-xs text-slate-400">
+                      {lastTest.passageTitle} • {lastTest.completed}/13 questions answered
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-white">Continue Your Last Test</p>
-                  <p className="text-xs text-slate-400">
-                    {lastTest.passageTitle} • {lastTest.completed}/13 questions answered
-                  </p>
-                </div>
+                <Link
+                  href={`/reading/${lastTest.passageId}`}
+                  className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-brand-600 hover:scale-105 hover:shadow-lg hover:shadow-brand-500/25 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-surface"
+                >
+                  Resume
+                </Link>
               </div>
-              <Link
-                href={`/reading/${lastTest.passageId}`}
-                className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-brand-600 hover:scale-105 hover:shadow-lg hover:shadow-brand-500/25 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-surface"
-              >
-                Resume
-              </Link>
             </div>
-          </div>
-        </section>
-      )}
+          </section>
+        )}
 
       {/* Today's Study Stats */}
       <section className="border-b border-white/10 bg-white/[0.02]">
@@ -223,35 +232,27 @@ export default function Home() {
             please let me know.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <a
-              href="https://instagram.com/mukh4mmadov_7"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={() => setIsContactFormOpen(true)}
               className="group flex items-center gap-3 rounded-full border border-brand-500/30 bg-brand-500/10 px-6 py-3 transition-all hover:border-brand-500 hover:bg-brand-500/20"
             >
-              <Instagram
+              <Mail
                 className="text-brand-400 group-hover:text-brand-300"
                 size={20}
               />
               <span className="font-semibold text-slate-100">
-                @mukh4mmadov_7
+                Contact Developer
               </span>
-            </a>
-            <a
-              href="https://t.me/mukh4mmadov"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex items-center gap-3 rounded-full border border-brand-500/30 bg-brand-500/10 px-6 py-3 transition-all hover:border-brand-500 hover:bg-brand-500/20"
-            >
-              <Send
-                className="text-brand-400 group-hover:text-brand-300"
-                size={20}
-              />
-              <span className="font-semibold text-slate-100">@mukh4mmadov</span>
-            </a>
+            </button>
           </div>
         </div>
       </section>
-    </main>
+      </main>
+
+      <ContactForm
+        isOpen={isContactFormOpen}
+        onClose={() => setIsContactFormOpen(false)}
+      />
+    </>
   );
 }
