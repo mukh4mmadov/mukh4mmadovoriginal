@@ -21,6 +21,12 @@ export default function ReportIssueButton() {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
+  type FeedbackMessageType = 'bug' | 'feature' | 'incorrect_answer' | 'general';
+
+  function isFeedbackMessageType(value: string): value is FeedbackMessageType {
+    return value === 'bug' || value === 'feature' || value === 'incorrect_answer' || value === 'general';
+  }
+
   const messageTypes = [
     { value: 'bug', label: 'Report a Bug', icon: Bug, color: 'text-red-400' },
     { value: 'feature', label: 'Suggest a Feature', icon: Lightbulb, color: 'text-yellow-400' },
@@ -163,7 +169,10 @@ export default function ReportIssueButton() {
                       <button
                         key={type.value}
                         type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, message_type: type.value as any }))}
+                        onClick={() => {
+                          const value = type.value;
+                          setFormData(prev => ({ ...prev, message_type: isFeedbackMessageType(value) ? value : 'bug' }));
+                        }}
                         className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
                           formData.message_type === type.value
                             ? 'border-brand-500 bg-brand-500/10'

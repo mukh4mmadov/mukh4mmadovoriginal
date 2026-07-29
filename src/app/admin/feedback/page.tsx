@@ -17,6 +17,17 @@ interface FeedbackMessage {
   status: 'new' | 'read' | 'replied';
 }
 
+type FeedbackStatus = 'new' | 'read' | 'replied';
+type FeedbackType = 'bug' | 'feature' | 'incorrect_answer' | 'general';
+
+function isFeedbackStatus(value: string): value is FeedbackStatus {
+  return value === 'new' || value === 'read' || value === 'replied';
+}
+
+function isFeedbackType(value: string): value is FeedbackType {
+  return value === 'bug' || value === 'feature' || value === 'incorrect_answer' || value === 'general';
+}
+
 export default function FeedbackManagement() {
   const [feedback, setFeedback] = useState<FeedbackMessage[]>([]);
   const [filteredFeedback, setFilteredFeedback] = useState<FeedbackMessage[]>([]);
@@ -173,7 +184,10 @@ export default function FeedbackManagement() {
 
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as any)}
+          onChange={(e) => {
+            const value = e.target.value;
+            setStatusFilter(value === 'all' ? 'all' : (isFeedbackStatus(value) ? value : 'new'));
+          }}
           className="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500"
         >
           <option value="all">All Status</option>
@@ -184,7 +198,10 @@ export default function FeedbackManagement() {
 
         <select
           value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value as any)}
+          onChange={(e) => {
+            const value = e.target.value;
+            setTypeFilter(value === 'all' ? 'all' : (isFeedbackType(value) ? value : 'general'));
+          }}
           className="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500"
         >
           <option value="all">All Types</option>

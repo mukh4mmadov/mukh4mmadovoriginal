@@ -4,12 +4,18 @@ import { useEffect, useState } from 'react';
 import { Bell, X, MessageSquare, AlertTriangle, UserPlus } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 
+type NotificationType = 'feedback' | 'bug' | 'registration';
+
 interface Notification {
   id: string;
-  type: 'feedback' | 'bug' | 'registration';
+  type: NotificationType;
   message: string;
   timestamp: string;
   read: boolean;
+}
+
+function isNotificationType(value: string): value is NotificationType {
+  return value === 'feedback' || value === 'bug' || value === 'registration';
 }
 
 export default function AdminNotifications() {
@@ -47,14 +53,17 @@ export default function AdminNotifications() {
       ]);
 
       const allNotifications: Notification[] = [
-        ...(feedback.data || []).map((f: any) => ({
-          id: f.id,
-          type: f.message_type === 'bug' ? 'bug' : 'feedback',
-          message: f.subject,
-          timestamp: f.created_at,
-          read: false,
-        })),
-        ...(registrations.data || []).map((r: any) => ({
+        ...(feedback.data || []).map((f: any): Notification => {
+          const type = f.message_type === 'bug' ? 'bug' : 'feedback';
+          return {
+            id: f.id,
+            type: isNotificationType(type) ? type : 'feedback',
+            message: f.subject,
+            timestamp: f.created_at,
+            read: false,
+          };
+        }),
+        ...(registrations.data || []).map((r: any): Notification => ({
           id: r.id,
           type: 'registration',
           message: 'New user registered',
@@ -80,10 +89,11 @@ export default function AdminNotifications() {
           schema: 'public',
           table: 'feedback_messages',
         },
-        (payload) => {
+        (payload: any) => {
+          const type = payload.new.message_type === 'bug' ? 'bug' : 'feedback';
           const newNotification: Notification = {
             id: payload.new.id,
-            type: payload.new.message_type === 'bug' ? 'bug' : 'feedback',
+            type: isNotificationType(type) ? type : 'feedback',
             message: payload.new.subject,
             timestamp: payload.new.created_at,
             read: false,
@@ -100,7 +110,7 @@ export default function AdminNotifications() {
           table: 'analytics_events',
           filter: 'event_type=eq.user_registered',
         },
-        (payload) => {
+        (payload: any) => {
           const newNotification: Notification = {
             id: payload.new.id,
             type: 'registration',

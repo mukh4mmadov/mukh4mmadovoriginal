@@ -30,7 +30,7 @@ export function parseAIResponse(content: string): ParsedAIResponse {
     if (match && match[1]) {
       const trimmed = match[1].trim();
       if (trimmed) {
-        (result as any)[key] = trimmed;
+        (result as unknown as ParsedAIResponse)[key as keyof ParsedAIResponse] = trimmed;
       }
     }
   }

@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { Activity, BookOpen, MessageSquare, AlertTriangle, UserPlus, Clock } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface ActivityItem {
   id: string;
@@ -16,7 +15,6 @@ interface ActivityItem {
 export default function ActivityFeed() {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { user } = useAuth();
 
   useEffect(() => {
     loadActivities();

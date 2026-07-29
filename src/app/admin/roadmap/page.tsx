@@ -16,6 +16,22 @@ interface RoadmapItem {
   created_at: string;
 }
 
+type RoadmapStatus = 'completed' | 'in_progress' | 'planned';
+type RoadmapCategory = 'feature' | 'improvement' | 'bug_fix';
+type RoadmapPriority = 'low' | 'medium' | 'high';
+
+function isRoadmapStatus(value: string): value is RoadmapStatus {
+  return value === 'completed' || value === 'in_progress' || value === 'planned';
+}
+
+function isRoadmapCategory(value: string): value is RoadmapCategory {
+  return value === 'feature' || value === 'improvement' || value === 'bug_fix';
+}
+
+function isRoadmapPriority(value: string): value is RoadmapPriority {
+  return value === 'low' || value === 'medium' || value === 'high';
+}
+
 export default function AdminRoadmap() {
   const [items, setItems] = useState<RoadmapItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,9 +40,9 @@ export default function AdminRoadmap() {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    status: 'planned' as 'completed' | 'in_progress' | 'planned',
-    category: 'feature' as 'feature' | 'improvement' | 'bug_fix',
-    priority: 'medium' as 'low' | 'medium' | 'high',
+    status: 'planned' as RoadmapStatus,
+    category: 'feature' as RoadmapCategory,
+    priority: 'medium' as RoadmapPriority,
     progress: 0,
     target_date: '',
   });
@@ -298,7 +314,10 @@ export default function AdminRoadmap() {
                   </label>
                   <select
                     value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setFormData({ ...formData, status: isRoadmapStatus(value) ? value : 'planned' });
+                    }}
                     className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500"
                   >
                     <option value="planned">Planned</option>
@@ -313,7 +332,10 @@ export default function AdminRoadmap() {
                   </label>
                   <select
                     value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value as any })}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setFormData({ ...formData, category: isRoadmapCategory(value) ? value : 'feature' });
+                    }}
                     className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500"
                   >
                     <option value="feature">Feature</option>
@@ -330,7 +352,10 @@ export default function AdminRoadmap() {
                   </label>
                   <select
                     value={formData.priority}
-                    onChange={(e) => setFormData({ ...formData, priority: e.target.value as any })}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setFormData({ ...formData, priority: isRoadmapPriority(value) ? value : 'medium' });
+                    }}
                     className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500"
                   >
                     <option value="low">Low</option>

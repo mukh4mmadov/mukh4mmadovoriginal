@@ -102,13 +102,13 @@ export default function ReadingTestPlayer({
         id: currentQuestion.id,
         type: currentQuestion.type,
         prompt: currentQuestion.prompt,
-        before: (currentQuestion as any).before,
-        after: (currentQuestion as any).after,
+        before: currentQuestion.type === 'sentence-completion' ? currentQuestion.before : undefined,
+        after: currentQuestion.type === 'sentence-completion' ? currentQuestion.after : undefined,
         userAnswer: answers[currentQuestion.id],
         correctAnswer: currentQuestion.answer,
         explanation: currentQuestion.explanation,
         evidence: currentQuestion.evidence,
-        paragraphLabel: (currentQuestion as any).paragraphLabel,
+        paragraphLabel: currentQuestion.type === 'matching-headings' ? currentQuestion.paragraphLabel : undefined,
       } : undefined,
     };
   };
@@ -286,8 +286,8 @@ export default function ReadingTestPlayer({
     // Track question answered
     const question = questions.find(q => q.id === id);
     if (question) {
-      const isCorrect = isCorrect(question, value);
-      analyticsService.trackQuestionAnswered(user?.id, passage.slug, id, isCorrect);
+      const correct = isCorrect(question, value);
+      analyticsService.trackQuestionAnswered(user?.id, passage.slug, id, correct);
     }
 
     if (oldAnswer && oldAnswer !== value) {

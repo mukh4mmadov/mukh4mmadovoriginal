@@ -132,13 +132,13 @@ export default function ReadingTestResults({
         id: currentQuestion.id,
         type: currentQuestion.type,
         prompt: currentQuestion.prompt,
-        before: (currentQuestion as any).before,
-        after: (currentQuestion as any).after,
+        before: currentQuestion.type === 'sentence-completion' ? currentQuestion.before : undefined,
+        after: currentQuestion.type === 'sentence-completion' ? currentQuestion.after : undefined,
         userAnswer: answers[currentQuestion.id],
         correctAnswer: currentQuestion.answer,
         explanation: currentQuestion.explanation,
         evidence: currentQuestion.evidence,
-        paragraphLabel: (currentQuestion as any).paragraphLabel,
+        paragraphLabel: currentQuestion.type === 'matching-headings' ? currentQuestion.paragraphLabel : undefined,
       } : undefined,
     };
   };
