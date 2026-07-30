@@ -139,6 +139,7 @@ export async function POST(request: NextRequest) {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, content: fullContent })}\n\n`));
           controller.close();
         } catch (error) {
+          console.error('AI chat streaming error:', error);
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' })}\n\n`));
           controller.close();
         }
@@ -153,6 +154,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
+    console.error('AI chat request failed:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

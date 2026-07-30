@@ -75,6 +75,7 @@ export default function IssueTracker() {
       await loadIssues();
     } catch (error) {
       console.error('Error updating status:', error);
+      alert(`Failed to update status: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 

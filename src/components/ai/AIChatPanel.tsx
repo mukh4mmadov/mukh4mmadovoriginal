@@ -114,7 +114,7 @@ export default function AIChatPanel({
           }
         }
       } catch (e) {
-        // Ignore parse errors or quota exceeded
+        console.warn('Failed to load saved AI conversation:', e);
       }
     }
   }, [conversationKey]);
@@ -131,12 +131,12 @@ export default function AIChatPanel({
           }),
         );
       } catch (e) {
-        // Handle quota exceeded or other localStorage errors
-        // Try to clear old data to free space
+        // Likely quota exceeded: try to free space by clearing old data.
+        console.warn('Failed to save AI conversation, attempting to free space:', e);
         try {
           localStorage.clear();
         } catch (clearError) {
-          // Ignore clear errors
+          console.warn('Failed to clear localStorage after save failure:', clearError);
         }
       }
     }

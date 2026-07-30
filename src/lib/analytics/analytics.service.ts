@@ -44,9 +44,23 @@ export class AnalyticsService {
         page_url: typeof window !== "undefined" ? window.location.href : null,
       };
 
-      await supabase.from("analytics_events").insert(eventData);
+      const { error } = await supabase
+        .from("analytics_events")
+        .insert(eventData);
+
+      if (error) {
+        // Analytics must never disrupt the user experience, but the failure
+        // should still be observable so it can be diagnosed.
+        console.warn(
+          `Failed to record analytics event "${event.event_type}":`,
+          error.message,
+        );
+      }
     } catch (error) {
-      // Silently fail
+      console.warn(
+        `Unexpected error recording analytics event "${event.event_type}":`,
+        error,
+      );
     }
   }
 

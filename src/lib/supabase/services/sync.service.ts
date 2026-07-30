@@ -271,7 +271,8 @@ export class SyncService {
     try {
       const data = localStorage.getItem(`sync-${key}`);
       return data ? JSON.parse(data) : null;
-    } catch {
+    } catch (error) {
+      console.warn(`Failed to read local sync data "sync-${key}":`, error);
       return null;
     }
   }
@@ -284,8 +285,8 @@ export class SyncService {
     
     try {
       localStorage.removeItem(`sync-${key}`);
-    } catch {
-      // Ignore
+    } catch (error) {
+      console.warn(`Failed to remove local sync data "sync-${key}":`, error);
     }
   }
 
@@ -297,8 +298,8 @@ export class SyncService {
     
     try {
       localStorage.setItem(`sync-${key}`, JSON.stringify(data));
-    } catch {
-      // Ignore
+    } catch (error) {
+      console.warn(`Failed to persist local sync data "sync-${key}":`, error);
     }
   }
 }
