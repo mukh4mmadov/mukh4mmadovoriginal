@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle, Lightbulb, MessageSquare, CheckCircle, Clock, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import LoadingSpinner from '@/components/shared/LoadingSpinner';
+import { requireRows, runQuery } from '@/lib/supabase/queryHelpers';
 
 interface Issue {
   id: string;
@@ -32,13 +34,12 @@ export default function IssueTracker() {
 
   async function loadIssues() {
     try {
-      const { data, error } = await supabase
-        .from('feedback_messages')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setIssues(data || []);
+      setIssues(await requireRows(
+        supabase
+          .from('feedback_messages')
+          .select('*')
+          .order('created_at', { ascending: false })
+      ));
     } catch (error) {
       console.error('Error loading issues:', error);
     } finally {
@@ -66,12 +67,12 @@ export default function IssueTracker() {
 
   async function updateStatus(id: string, status: 'new' | 'in_progress' | 'fixed' | 'closed') {
     try {
-      const { error } = await supabase
-        .from('feedback_messages')
-        .update({ status })
-        .eq('id', id);
-
-      if (error) throw error;
+      await runQuery(
+        supabase
+          .from('feedback_messages')
+          .update({ status })
+          .eq('id', id)
+      );
       await loadIssues();
     } catch (error) {
       console.error('Error updating status:', error);
@@ -93,11 +94,7 @@ export default function IssueTracker() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500" />
-      </div>
-    );
+    return <LoadingSpinner containerClassName="h-64" />;
   }
 
   return (

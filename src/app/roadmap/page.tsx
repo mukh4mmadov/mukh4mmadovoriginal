@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { CheckCircle, Clock, Circle, Calendar, TrendingUp } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import LoadingSpinner from '@/components/shared/LoadingSpinner';
+import { requireRows } from '@/lib/supabase/queryHelpers';
 
 interface RoadmapItem {
   id: string;
@@ -25,13 +27,12 @@ export default function RoadmapPage() {
 
   async function loadRoadmap() {
     try {
-      const { data, error } = await supabase
-        .from('roadmap')
-        .select('*')
-        .order('priority', { ascending: false });
-
-      if (error) throw error;
-      setItems(data || []);
+      setItems(await requireRows(
+        supabase
+          .from('roadmap')
+          .select('*')
+          .order('priority', { ascending: false })
+      ));
     } catch (error) {
       console.error('Error loading roadmap:', error);
     } finally {
@@ -58,11 +59,7 @@ export default function RoadmapPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500" />
-      </div>
-    );
+    return <LoadingSpinner containerClassName="min-h-screen" />;
   }
 
   return (

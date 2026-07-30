@@ -1,6 +1,7 @@
 import { AIProvider, AIProviderConfig } from './types';
 import { AIMessage, AIConversationContext, AIPersonality } from '@/types/aiCoach';
 import { buildSystemPrompt } from '../prompts';
+import { assertResponseOk } from './stream';
 
 export class GeminiProvider implements AIProvider {
   private config: AIProviderConfig;
@@ -33,10 +34,7 @@ export class GeminiProvider implements AIProvider {
       }),
     });
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Gemini API error: ${response.status} - ${error}`);
-    }
+    await assertResponseOk(response, 'Gemini');
 
     const data = await response.json();
     return data.candidates[0]?.content?.parts[0]?.text || '';

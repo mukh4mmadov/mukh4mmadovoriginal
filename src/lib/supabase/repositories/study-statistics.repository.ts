@@ -1,4 +1,5 @@
 import { supabase } from '../client';
+import { maybeRow, requireRow } from '../queryHelpers';
 import {
   StudyStatistics,
   StudyStatisticsInsert,
@@ -10,47 +11,40 @@ export class StudyStatisticsRepository {
    * Get study statistics for a user
    */
   async getStatistics(userId: string): Promise<StudyStatistics | null> {
-    const { data, error } = await supabase
-      .from('study_statistics')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') return null;
-      throw error;
-    }
-
-    return data;
+    return maybeRow(
+      supabase
+        .from('study_statistics')
+        .select('*')
+        .eq('user_id', userId)
+        .single()
+    );
   }
 
   /**
    * Create statistics record
    */
   async createStatistics(stats: StudyStatisticsInsert): Promise<StudyStatistics> {
-    const { data, error } = await supabase
-      .from('study_statistics')
-      .insert(stats)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    return requireRow(
+      supabase
+        .from('study_statistics')
+        .insert(stats)
+        .select()
+        .single()
+    );
   }
 
   /**
    * Update statistics
    */
   async updateStatistics(userId: string, updates: StudyStatisticsUpdate): Promise<StudyStatistics> {
-    const { data, error } = await supabase
-      .from('study_statistics')
-      .update({ ...updates, last_updated_at: new Date().toISOString() })
-      .eq('user_id', userId)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    return requireRow(
+      supabase
+        .from('study_statistics')
+        .update({ ...updates, last_updated_at: new Date().toISOString() })
+        .eq('user_id', userId)
+        .select()
+        .single()
+    );
   }
 
   /**

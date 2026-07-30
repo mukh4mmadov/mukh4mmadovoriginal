@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { Plus, Edit, Trash2, CheckCircle, Clock, Circle, Calendar } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import LoadingSpinner from '@/components/shared/LoadingSpinner';
+import { requireRows, runQuery } from '@/lib/supabase/queryHelpers';
 
 interface RoadmapItem {
   id: string;
@@ -53,13 +55,12 @@ export default function AdminRoadmap() {
 
   async function loadRoadmap() {
     try {
-      const { data, error } = await supabase
-        .from('roadmap')
-        .select('*')
-        .order('priority', { ascending: false });
-
-      if (error) throw error;
-      setItems(data || []);
+      setItems(await requireRows(
+        supabase
+          .from('roadmap')
+          .select('*')
+          .order('priority', { ascending: false })
+      ));
     } catch (error) {
       console.error('Error loading roadmap:', error);
     } finally {
@@ -77,14 +78,14 @@ export default function AdminRoadmap() {
 
     try {
       if (editingItem) {
-        const { error } = await supabase
-          .from('roadmap')
-          .update(entry)
-          .eq('id', editingItem.id);
-        if (error) throw error;
+        await runQuery(
+          supabase
+            .from('roadmap')
+            .update(entry)
+            .eq('id', editingItem.id)
+        );
       } else {
-        const { error } = await supabase.from('roadmap').insert(entry);
-        if (error) throw error;
+        await runQuery(supabase.from('roadmap').insert(entry));
       }
 
       setIsFormOpen(false);
@@ -108,8 +109,7 @@ export default function AdminRoadmap() {
     if (!confirm('Are you sure you want to delete this roadmap item?')) return;
 
     try {
-      const { error } = await supabase.from('roadmap').delete().eq('id', id);
-      if (error) throw error;
+      await runQuery(supabase.from('roadmap').delete().eq('id', id));
       await loadRoadmap();
     } catch (error) {
       console.error('Error deleting roadmap item:', error);
@@ -162,11 +162,7 @@ export default function AdminRoadmap() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500" />
-      </div>
-    );
+    return <LoadingSpinner containerClassName="h-64" />;
   }
 
   return (

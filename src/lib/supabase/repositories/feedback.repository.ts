@@ -1,4 +1,5 @@
 import { supabase } from '../client';
+import { requireRows } from '../queryHelpers';
 import { analyticsService } from '@/lib/analytics/analytics.service';
 
 export interface FeedbackMessage {
@@ -62,14 +63,13 @@ export class FeedbackRepository {
   }
 
   async getUserFeedback(userId: string): Promise<FeedbackMessage[]> {
-    const { data, error } = await supabase
-      .from('feedback_messages')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    return data as FeedbackMessage[];
+    return requireRows(
+      supabase
+        .from('feedback_messages')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+    );
   }
 
   private sanitizeData(data: FeedbackInsert): FeedbackInsert {

@@ -17,6 +17,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { isAdmin } from '@/lib/supabase/auth-admin';
 import AdminNotifications from './AdminNotifications';
+import LoadingSpinner from '@/components/shared/LoadingSpinner';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -43,11 +44,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }, [user]);
 
   if (isAdminUser === null) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500" />
-      </div>
-    );
+    return <LoadingSpinner containerClassName="min-h-screen" />;
   }
 
   if (!isAdminUser) {

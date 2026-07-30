@@ -1,5 +1,7 @@
 import { authService } from '../auth';
 import * as repositories from '../repositories';
+import { hasKey, readJSON, removeKey } from '@/lib/storage';
+import { todayISODate } from '@/lib/date';
 
 export interface LocalStorageData {
   readingProgress?: any[];
@@ -13,128 +15,58 @@ export interface LocalStorageData {
   settings?: { theme: string; language: string; notifications: boolean; reminderTime: string | null; autoSave: boolean; fontSize: number };
 }
 
+const LEGACY_KEYS = {
+  readingProgress: 'reading-progress',
+  readingHistory: 'reading-history',
+  highlights: 'highlights',
+  aiConversations: 'ai-conversation',
+  savedQuotes: 'saved-quote-ids',
+  dailyMissions: 'daily-missions-completed',
+  xp: 'user-xp',
+  streak: 'user-streak',
+  settings: 'user-settings',
+} as const;
+
 export class MigrationService {
   /**
    * Check if user has localStorage data
    */
   hasLocalStorageData(): boolean {
-    if (typeof window === 'undefined') return false;
-
-    const keys = [
-      'reading-progress',
-      'reading-history',
-      'highlights',
-      'ai-conversation',
-      'saved-quote-ids',
-      'daily-missions-completed',
-      'user-xp',
-      'user-streak',
-      'user-settings',
-    ];
-
-    return keys.some(key => localStorage.getItem(key) !== null);
+    return Object.values(LEGACY_KEYS).some(hasKey);
   }
 
   /**
    * Extract all localStorage data
    */
   extractLocalStorageData(): LocalStorageData {
-    if (typeof window === 'undefined') return {};
-
     const data: LocalStorageData = {};
 
-    // Reading progress
-    const progress = localStorage.getItem('reading-progress');
-    if (progress) {
-      try {
-        data.readingProgress = JSON.parse(progress);
-      } catch {
-        // Ignore parse errors
-      }
-    }
+    const readingProgress = readJSON<any[]>(LEGACY_KEYS.readingProgress);
+    if (readingProgress) data.readingProgress = readingProgress;
 
-    // Reading history
-    const history = localStorage.getItem('reading-history');
-    if (history) {
-      try {
-        data.readingHistory = JSON.parse(history);
-      } catch {
-        // Ignore parse errors
-      }
-    }
+    const readingHistory = readJSON<any[]>(LEGACY_KEYS.readingHistory);
+    if (readingHistory) data.readingHistory = readingHistory;
 
-    // Highlights
-    const highlights = localStorage.getItem('highlights');
-    if (highlights) {
-      try {
-        data.highlights = JSON.parse(highlights);
-      } catch {
-        // Ignore parse errors
-      }
-    }
+    const highlights = readJSON<any[]>(LEGACY_KEYS.highlights);
+    if (highlights) data.highlights = highlights;
 
-    // AI conversations
-    const conversations = localStorage.getItem('ai-conversation');
-    if (conversations) {
-      try {
-        data.aiConversations = JSON.parse(conversations);
-      } catch {
-        // Ignore parse errors
-      }
-    }
+    const aiConversations = readJSON<any[]>(LEGACY_KEYS.aiConversations);
+    if (aiConversations) data.aiConversations = aiConversations;
 
-    // Saved quotes
-    const savedQuotes = localStorage.getItem('saved-quote-ids');
-    if (savedQuotes) {
-      try {
-        const quoteIds = JSON.parse(savedQuotes);
-        // This would need to be mapped to actual quote data
-        data.savedQuotes = quoteIds;
-      } catch {
-        // Ignore parse errors
-      }
-    }
+    const savedQuotes = readJSON<string[]>(LEGACY_KEYS.savedQuotes);
+    if (savedQuotes) data.savedQuotes = savedQuotes;
 
-    // Daily missions
-    const missions = localStorage.getItem('daily-missions-completed');
-    if (missions) {
-      try {
-        const parsed = JSON.parse(missions);
-        data.dailyMissions = parsed;
-      } catch {
-        // Ignore parse errors
-      }
-    }
+    const dailyMissions = readJSON<LocalStorageData['dailyMissions']>(LEGACY_KEYS.dailyMissions);
+    if (dailyMissions) data.dailyMissions = dailyMissions;
 
-    // XP
-    const xp = localStorage.getItem('user-xp');
-    if (xp) {
-      try {
-        data.xp = JSON.parse(xp);
-      } catch {
-        // Ignore parse errors
-      }
-    }
+    const xp = readJSON<LocalStorageData['xp']>(LEGACY_KEYS.xp);
+    if (xp) data.xp = xp;
 
-    // Streak
-    const streak = localStorage.getItem('user-streak');
-    if (streak) {
-      try {
-        data.streak = JSON.parse(streak);
-      } catch {
-        // Ignore parse errors
-      }
-    }
+    const streak = readJSON<LocalStorageData['streak']>(LEGACY_KEYS.streak);
+    if (streak) data.streak = streak;
 
-    // Settings
-    const settings = localStorage.getItem('user-settings');
-    if (settings) {
-      try {
-        data.settings = JSON.parse(settings);
-      } catch {
-        // Ignore parse errors
-      }
-    }
+    const settings = readJSON<LocalStorageData['settings']>(LEGACY_KEYS.settings);
+    if (settings) data.settings = settings;
 
     return data;
   }
@@ -207,7 +139,7 @@ export class MigrationService {
 
       // Migrate daily missions
       if (data.dailyMissions) {
-        const today = new Date().toISOString().split('T')[0];
+        const today = todayISODate();
         await repositories.dailyMissionsRepository.createDailyMissions({
           user_id: userId,
           date: today,
@@ -257,27 +189,7 @@ export class MigrationService {
    * Clear localStorage after successful migration
    */
   clearLocalStorage(): void {
-    if (typeof window === 'undefined') return;
-
-    const keys = [
-      'reading-progress',
-      'reading-history',
-      'highlights',
-      'ai-conversation',
-      'saved-quote-ids',
-      'daily-missions-completed',
-      'user-xp',
-      'user-streak',
-      'user-settings',
-    ];
-
-    keys.forEach(key => {
-      try {
-        localStorage.removeItem(key);
-      } catch {
-        // Ignore errors
-      }
-    });
+    Object.values(LEGACY_KEYS).forEach(removeKey);
   }
 
   /**

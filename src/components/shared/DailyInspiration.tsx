@@ -9,6 +9,10 @@ import { missionSets, Mission } from "@/data/dailyMissions";
 import { getDailyContent } from "@/lib/dailyRotation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSavedQuotes } from "@/hooks/useSavedQuotes";
+import { readJSON, writeJSON } from "@/lib/storage";
+
+const VIEWED_QUOTES_KEY = "viewed-quote-ids";
+const COMPLETED_MISSIONS_KEY = "daily-missions-completed";
 
 interface DailyInspirationProps {
   compact?: boolean;
@@ -32,26 +36,15 @@ export default function DailyInspiration({ compact = false }: DailyInspirationPr
   useEffect(() => {
     setMounted(true);
     
-    // Load viewed quotes from localStorage
-    if (typeof window !== 'undefined') {
-      try {
-        const viewedQuotes = localStorage.getItem("viewed-quote-ids");
-        if (viewedQuotes) {
-          setViewedQuoteIds(JSON.parse(viewedQuotes));
-        }
-        
-        // Load completed missions from localStorage
-        const saved = localStorage.getItem("daily-missions-completed");
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          // Only load if it's from today
-          if (parsed.date === dailyMissions.date) {
-            setCompletedMissions(new Set(parsed.completed));
-          }
-        }
-      } catch (e) {
-        // Ignore errors
-      }
+    const viewedQuotes = readJSON<string[]>(VIEWED_QUOTES_KEY);
+    if (viewedQuotes) {
+      setViewedQuoteIds(viewedQuotes);
+    }
+
+    const saved = readJSON<{ completed: string[]; date: string }>(COMPLETED_MISSIONS_KEY);
+    // Only load if it's from today
+    if (saved && saved.date === dailyMissions.date) {
+      setCompletedMissions(new Set(saved.completed));
     }
   }, [dailyMissions.date]);
   
@@ -66,25 +59,13 @@ export default function DailyInspiration({ compact = false }: DailyInspirationPr
       setViewedQuoteIds([]);
       const randomQuote = getRandomQuoteExcluding([]);
       setCurrentQuote(randomQuote.id);
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.setItem("viewed-quote-ids", JSON.stringify([randomQuote.id]));
-        } catch (e) {
-          // Ignore errors
-        }
-      }
+      writeJSON(VIEWED_QUOTES_KEY, [randomQuote.id]);
     } else {
       const randomQuote = getRandomQuoteExcluding(viewedQuoteIds);
       setCurrentQuote(randomQuote.id);
       const newViewedIds = [...viewedQuoteIds, randomQuote.id];
       setViewedQuoteIds(newViewedIds);
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.setItem("viewed-quote-ids", JSON.stringify(newViewedIds));
-        } catch (e) {
-          // Ignore errors
-        }
-      }
+      writeJSON(VIEWED_QUOTES_KEY, newViewedIds);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mounted]);
@@ -100,25 +81,13 @@ export default function DailyInspiration({ compact = false }: DailyInspirationPr
       setViewedQuoteIds([]);
       const newQuote = getRandomQuoteExcluding([currentQuote || ""]);
       setCurrentQuote(newQuote.id);
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.setItem("viewed-quote-ids", JSON.stringify([newQuote.id]));
-        } catch (e) {
-          // Ignore errors
-        }
-      }
+      writeJSON(VIEWED_QUOTES_KEY, [newQuote.id]);
     } else {
       const newQuote = getRandomQuoteExcluding([...viewedQuoteIds, currentQuote || ""]);
       setCurrentQuote(newQuote.id);
       const newViewedIds = [...viewedQuoteIds, newQuote.id];
       setViewedQuoteIds(newViewedIds);
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.setItem("viewed-quote-ids", JSON.stringify(newViewedIds));
-        } catch (e) {
-          // Ignore errors
-        }
-      }
+      writeJSON(VIEWED_QUOTES_KEY, newViewedIds);
     }
     
     // Reset animation after transition
@@ -173,21 +142,11 @@ export default function DailyInspiration({ compact = false }: DailyInspirationPr
         next.add(missionId);
       }
       
-      // Save to localStorage
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.setItem(
-            "daily-missions-completed",
-            JSON.stringify({
-              completed: Array.from(next),
-              date: dailyMissions.date,
-            })
-          );
-        } catch (e) {
-          // Ignore errors
-        }
-      }
-      
+      writeJSON(COMPLETED_MISSIONS_KEY, {
+        completed: Array.from(next),
+        date: dailyMissions.date,
+      });
+
       return next;
     });
   };

@@ -5,6 +5,7 @@ import { Users, Activity, MessageSquare, AlertTriangle, Lightbulb, TrendingUp } 
 import { supabase } from '@/lib/supabase/client';
 import ActivityFeed from '@/components/admin/ActivityFeed';
 import SystemHealth from '@/components/admin/SystemHealth';
+import LoadingSpinner from '@/components/shared/LoadingSpinner';
 
 interface DashboardStats {
   totalUsers: number;
@@ -176,11 +177,7 @@ export default function AdminDashboard() {
   ];
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500" />
-      </div>
-    );
+    return <LoadingSpinner containerClassName="h-64" />;
   }
 
   return (

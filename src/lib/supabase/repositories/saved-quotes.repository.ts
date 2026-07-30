@@ -1,4 +1,5 @@
 import { supabase } from '../client';
+import { requireRow, requireRows, rowExists, runQuery } from '../queryHelpers';
 import {
   SavedQuote,
   SavedQuoteInsert,
@@ -9,60 +10,53 @@ export class SavedQuotesRepository {
    * Get saved quotes for a user
    */
   async getSavedQuotes(userId: string): Promise<SavedQuote[]> {
-    const { data, error } = await supabase
-      .from('saved_quotes')
-      .select('*')
-      .eq('user_id', userId)
-      .order('saved_at', { ascending: false });
-
-    if (error) throw error;
-    return data || [];
+    return requireRows(
+      supabase
+        .from('saved_quotes')
+        .select('*')
+        .eq('user_id', userId)
+        .order('saved_at', { ascending: false })
+    );
   }
 
   /**
    * Check if a quote is saved
    */
   async isQuoteSaved(userId: string, quoteId: string): Promise<boolean> {
-    const { data, error } = await supabase
-      .from('saved_quotes')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('quote_id', quoteId)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') return false;
-      throw error;
-    }
-
-    return !!data;
+    return rowExists(
+      supabase
+        .from('saved_quotes')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('quote_id', quoteId)
+        .single()
+    );
   }
 
   /**
    * Save a quote
    */
   async saveQuote(quote: SavedQuoteInsert): Promise<SavedQuote> {
-    const { data, error } = await supabase
-      .from('saved_quotes')
-      .insert(quote)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    return requireRow(
+      supabase
+        .from('saved_quotes')
+        .insert(quote)
+        .select()
+        .single()
+    );
   }
 
   /**
    * Unsave a quote
    */
   async unsaveQuote(userId: string, quoteId: string): Promise<void> {
-    const { error } = await supabase
-      .from('saved_quotes')
-      .delete()
-      .eq('user_id', userId)
-      .eq('quote_id', quoteId);
-
-    if (error) throw error;
+    await runQuery(
+      supabase
+        .from('saved_quotes')
+        .delete()
+        .eq('user_id', userId)
+        .eq('quote_id', quoteId)
+    );
   }
 
   /**
@@ -83,13 +77,12 @@ export class SavedQuotesRepository {
    * Batch save quotes
    */
   async batchSaveQuotes(quotes: SavedQuoteInsert[]): Promise<SavedQuote[]> {
-    const { data, error } = await supabase
-      .from('saved_quotes')
-      .insert(quotes)
-      .select();
-
-    if (error) throw error;
-    return data || [];
+    return requireRows(
+      supabase
+        .from('saved_quotes')
+        .insert(quotes)
+        .select()
+    );
   }
 }
 

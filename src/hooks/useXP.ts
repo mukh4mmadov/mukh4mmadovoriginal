@@ -1,62 +1,43 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 import { xpRepository } from '@/lib/supabase/repositories';
 import { XP } from '@/lib/supabase/models';
+import { useUserResource, withErrorLog } from './useUserResource';
+
+interface LevelProgress {
+  current: number;
+  needed: number;
+  percentage: number;
+}
+
+interface XPState {
+  xp: XP | null;
+  levelProgress: LevelProgress | null;
+}
 
 export function useXP() {
-  const { user } = useAuth();
-  const [xp, setXP] = useState<XP | null>(null);
-  const [levelProgress, setLevelProgress] = useState<{ current: number; needed: number; percentage: number } | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    if (!user) {
-      setXP(null);
-      setLevelProgress(null);
-      setIsLoading(false);
-      return;
-    }
-
-    const loadXP = async () => {
-      setIsLoading(true);
-      try {
-        const data = await xpRepository.getXP(user.id);
-        setXP(data);
-        
-        if (data) {
-          const progress = await xpRepository.getLevelProgress(user.id);
-          setLevelProgress(progress);
-        }
-      } catch (error) {
-        console.error('Error loading XP:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadXP();
-  }, [user]);
+  const { user, data, setData, isLoading } = useUserResource<XPState>(
+    { xp: null, levelProgress: null },
+    async (currentUser) => {
+      const xp = await xpRepository.getXP(currentUser.id);
+      return {
+        xp,
+        levelProgress: xp ? await xpRepository.getLevelProgress(currentUser.id) : null,
+      };
+    },
+    { label: 'XP' }
+  );
 
   const addXP = async (amount: number) => {
     if (!user) return;
 
-    try {
-      const updated = await xpRepository.addXP(user.id, amount);
-      setXP(updated);
-      
-      const progress = await xpRepository.getLevelProgress(user.id);
-      setLevelProgress(progress);
-      
-      return updated;
-    } catch (error) {
-      console.error('Error adding XP:', error);
-      throw error;
-    }
+    const updated = await withErrorLog('adding XP', () => xpRepository.addXP(user.id, amount));
+    const levelProgress = await xpRepository.getLevelProgress(user.id);
+    setData({ xp: updated, levelProgress });
+    return updated;
   };
 
   return {
-    xp,
-    levelProgress,
+    xp: data.xp,
+    levelProgress: data.levelProgress,
     isLoading,
     addXP,
   };

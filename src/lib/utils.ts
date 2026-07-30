@@ -1,4 +1,7 @@
 import clsx from "clsx";
+import { readJSON, writeJSON } from "./storage";
+
+const PROGRESS_KEY = "linguaflow-progress";
 
 export function cn(...inputs: (string | undefined | null | false)[]) {
   return clsx(inputs);
@@ -58,16 +61,9 @@ export function calculateSM2(
 }
 
 export function getStoredProgress() {
-  if (typeof window === "undefined") return null;
-  try {
-    const data = localStorage.getItem("linguaflow-progress");
-    return data ? JSON.parse(data) : null;
-  } catch {
-    return null;
-  }
+  return readJSON<Record<string, unknown>>(PROGRESS_KEY);
 }
 
 export function saveProgress(data: Record<string, unknown>) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem("linguaflow-progress", JSON.stringify(data));
+  writeJSON(PROGRESS_KEY, data);
 }

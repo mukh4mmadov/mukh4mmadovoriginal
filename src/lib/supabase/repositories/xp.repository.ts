@@ -1,4 +1,5 @@
 import { supabase } from '../client';
+import { maybeRow, requireRow } from '../queryHelpers';
 import {
   XP,
   XPInsert,
@@ -10,47 +11,40 @@ export class XPRepository {
    * Get XP for a user
    */
   async getXP(userId: string): Promise<XP | null> {
-    const { data, error } = await supabase
-      .from('xp')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') return null;
-      throw error;
-    }
-
-    return data;
+    return maybeRow(
+      supabase
+        .from('xp')
+        .select('*')
+        .eq('user_id', userId)
+        .single()
+    );
   }
 
   /**
    * Create XP record
    */
   async createXP(xp: XPInsert): Promise<XP> {
-    const { data, error } = await supabase
-      .from('xp')
-      .insert(xp)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    return requireRow(
+      supabase
+        .from('xp')
+        .insert(xp)
+        .select()
+        .single()
+    );
   }
 
   /**
    * Update XP
    */
   async updateXP(userId: string, updates: XPUpdate): Promise<XP> {
-    const { data, error } = await supabase
-      .from('xp')
-      .update(updates)
-      .eq('user_id', userId)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    return requireRow(
+      supabase
+        .from('xp')
+        .update(updates)
+        .eq('user_id', userId)
+        .select()
+        .single()
+    );
   }
 
   /**

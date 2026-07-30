@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { Calendar, Plus, Edit, Trash2, Tag, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import LoadingSpinner from '@/components/shared/LoadingSpinner';
+import { requireRows, runQuery } from '@/lib/supabase/queryHelpers';
 
 interface ChangelogEntry {
   id: string;
@@ -35,13 +37,12 @@ export default function AdminChangelog() {
 
   async function loadChangelog() {
     try {
-      const { data, error } = await supabase
-        .from('changelog')
-        .select('*')
-        .order('published_at', { ascending: false });
-
-      if (error) throw error;
-      setEntries(data || []);
+      setEntries(await requireRows(
+        supabase
+          .from('changelog')
+          .select('*')
+          .order('published_at', { ascending: false })
+      ));
     } catch (error) {
       console.error('Error loading changelog:', error);
     } finally {
@@ -63,14 +64,14 @@ export default function AdminChangelog() {
 
     try {
       if (editingEntry) {
-        const { error } = await supabase
-          .from('changelog')
-          .update(entry)
-          .eq('id', editingEntry.id);
-        if (error) throw error;
+        await runQuery(
+          supabase
+            .from('changelog')
+            .update(entry)
+            .eq('id', editingEntry.id)
+        );
       } else {
-        const { error } = await supabase.from('changelog').insert(entry);
-        if (error) throw error;
+        await runQuery(supabase.from('changelog').insert(entry));
       }
 
       setIsFormOpen(false);
@@ -93,8 +94,7 @@ export default function AdminChangelog() {
     if (!confirm('Are you sure you want to delete this changelog entry?')) return;
 
     try {
-      const { error } = await supabase.from('changelog').delete().eq('id', id);
-      if (error) throw error;
+      await runQuery(supabase.from('changelog').delete().eq('id', id));
       await loadChangelog();
     } catch (error) {
       console.error('Error deleting changelog:', error);
@@ -127,11 +127,7 @@ export default function AdminChangelog() {
   }
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500" />
-      </div>
-    );
+    return <LoadingSpinner containerClassName="h-64" />;
   }
 
   return (

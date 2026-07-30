@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { CheckCircle, XCircle, Clock, Database, Server, HardDrive } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import LoadingSpinner from '@/components/shared/LoadingSpinner';
 
 interface HealthStatus {
   database: { status: 'online' | 'offline'; latency: number };
@@ -83,9 +84,7 @@ export default function SystemHealth() {
     return (
       <div className="border border-white/10 rounded-xl p-6">
         <h2 className="text-lg font-semibold text-white mb-4">System Health</h2>
-        <div className="flex items-center justify-center h-32">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500" />
-        </div>
+        <LoadingSpinner size="sm" containerClassName="h-32" />
       </div>
     );
   }

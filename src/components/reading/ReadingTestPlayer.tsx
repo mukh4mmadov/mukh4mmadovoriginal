@@ -22,6 +22,9 @@ import AIChatPanel from "@/components/ai/AIChatPanel";
 import { saveProgress } from "@/lib/progressTracker";
 import { useAuth } from "@/contexts/AuthContext";
 import { analyticsService } from "@/lib/analytics/analytics.service";
+import { readFreshJSON, removeKey, writeTimestampedJSON } from "@/lib/storage";
+
+const savedTestKey = (slug: string) => `ielts-reading-${slug}`;
 
 function allQuestions(passage: ReadingPassage): ReadingQuestion[] {
   return passage.questionGroups.flatMap((g) => g.questions);
@@ -167,52 +170,30 @@ export default function ReadingTestPlayer({
   }, [isResizing, isDesktop]);
 
   useEffect(() => {
-    if (submitted || typeof window === "undefined") return;
+    if (submitted) return;
 
-    try {
-      const saveData = {
-        answers,
-        timeSpent,
-        timerRunning,
-        timestamp: Date.now(),
-      };
-
-      window.localStorage.setItem(
-        `ielts-reading-${passage.slug}`,
-        JSON.stringify(saveData),
-      );
-    } catch (e) {
-      // Ignore save errors
-    }
+    writeTimestampedJSON(savedTestKey(passage.slug), {
+      answers,
+      timeSpent,
+      timerRunning,
+    });
   }, [answers, timeSpent, timerRunning, submitted, passage.slug]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    const saved = readFreshJSON<{
+      answers?: Record<string, string>;
+      timeSpent?: number;
+      timerRunning?: boolean;
+    }>(savedTestKey(passage.slug));
 
-    try {
-      const savedData = window.localStorage.getItem(
-        `ielts-reading-${passage.slug}`,
-      );
-      let hasValidSavedData = false;
-
-      if (savedData) {
-        const parsed = JSON.parse(savedData);
-        if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
-          setAnswers(parsed.answers || {});
-          setTimeSpent(parsed.timeSpent || 0);
-          setTimerRunning(parsed.timerRunning ?? true);
-          startTimeRef.current = Date.now() - parsed.timeSpent * 1000;
-          previousAnswersRef.current = parsed.answers || {};
-          hasValidSavedData = true;
-        }
-      }
-
+    if (saved) {
+      setAnswers(saved.answers || {});
+      setTimeSpent(saved.timeSpent || 0);
+      setTimerRunning(saved.timerRunning ?? true);
+      startTimeRef.current = Date.now() - (saved.timeSpent || 0) * 1000;
+      previousAnswersRef.current = saved.answers || {};
+    } else {
       // Track test opened event (only if not loading saved data)
-      if (!hasValidSavedData) {
-        setEvents([{ type: "opened", timestamp: Date.now() }]);
-      }
-    } catch (e) {
-      // Ignore load errors
       setEvents([{ type: "opened", timestamp: Date.now() }]);
     }
   }, [passage.slug]);
@@ -345,7 +326,7 @@ export default function ReadingTestPlayer({
     setTimerRunning(false);
     setShowSubmitDialog(false);
 
-    localStorage.removeItem(`ielts-reading-${passage.slug}`);
+    removeKey(savedTestKey(passage.slug));
 
     const correctCount = questions.filter((q) =>
       isCorrect(q, answers[q.id]),
