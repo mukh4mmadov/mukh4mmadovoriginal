@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 import { AIProviderFactory } from '@/lib/ai/providers';
 import { AIMessage, AIConversationContext, AIPersonality } from '@/types/aiCoach';
 
@@ -37,8 +38,38 @@ function sanitizeMessage(message: AIMessage): AIMessage {
   };
 }
 
+async function authenticateRequest(
+  request: NextRequest
+): Promise<{ userId: string } | null> {
+  const authHeader = request.headers.get('authorization') || '';
+  const token = authHeader.startsWith('Bearer ')
+    ? authHeader.slice('Bearer '.length).trim()
+    : null;
+  if (!token) return null;
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseAnonKey) return null;
+
+  const authClient = createClient(supabaseUrl, supabaseAnonKey);
+  const { data, error } = await authClient.auth.getUser(token);
+  if (error || !data.user) return null;
+
+  return { userId: data.user.id };
+}
+
 export async function POST(request: NextRequest) {
   try {
+    // Require an authenticated session before doing any work. This prevents
+    // anonymous callers from abusing the server-side AI provider credentials.
+    const auth = await authenticateRequest(request);
+    if (!auth) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const {
       messages,
@@ -52,11 +83,8 @@ export async function POST(request: NextRequest) {
       provider?: 'openai' | 'gemini' | 'claude' | 'openrouter';
     } = body;
 
-    // Rate limiting by IP
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
-              request.headers.get('x-real-ip') || 
-              'unknown';
-    if (!checkRateLimit(ip)) {
+    // Rate limiting per authenticated user (not a client-supplied header)
+    if (!checkRateLimit(auth.userId)) {
       return NextResponse.json(
         { error: 'Rate limit exceeded. Please try again later.' },
         { status: 429 }

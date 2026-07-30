@@ -19,6 +19,7 @@ import {
 import { parseAIResponse, formatParsedResponse } from "@/lib/ai/parseResponse";
 import { useAuth } from "@/contexts/AuthContext";
 import { analyticsService } from "@/lib/analytics/analytics.service";
+import { supabase } from "@/lib/supabase/client";
 
 interface AIChatPanelProps {
   isOpen: boolean;
@@ -219,10 +220,21 @@ export default function AIChatPanel({
     );
 
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        setError("Please sign in to use the AI coach.");
+        setIsLoading(false);
+        return;
+      }
+
       const response = await fetch("/api/ai-chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           messages: [...messages, userMessage],
