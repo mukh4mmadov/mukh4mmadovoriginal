@@ -83,7 +83,7 @@ export function getDailyContent<T>(
         }
       }
     } catch (e) {
-      // Ignore cache errors
+      console.warn(`Failed to read daily content cache "${cacheKey}":`, e);
     }
   }
   
@@ -102,7 +102,7 @@ export function getDailyContent<T>(
     try {
       localStorage.setItem(cacheKey, JSON.stringify(result));
     } catch (e) {
-      // Ignore cache errors
+      console.warn(`Failed to write daily content cache "${cacheKey}":`, e);
     }
   }
   

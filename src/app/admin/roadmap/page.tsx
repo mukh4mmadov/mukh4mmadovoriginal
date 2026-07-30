@@ -101,6 +101,7 @@ export default function AdminRoadmap() {
       await loadRoadmap();
     } catch (error) {
       console.error('Error saving roadmap item:', error);
+      alert(`Failed to save roadmap item: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -113,6 +114,7 @@ export default function AdminRoadmap() {
       await loadRoadmap();
     } catch (error) {
       console.error('Error deleting roadmap item:', error);
+      alert(`Failed to delete roadmap item: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 

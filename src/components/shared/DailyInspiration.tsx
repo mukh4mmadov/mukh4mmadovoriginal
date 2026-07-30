@@ -50,7 +50,7 @@ export default function DailyInspiration({ compact = false }: DailyInspirationPr
           }
         }
       } catch (e) {
-        // Ignore errors
+        console.warn('Failed to load daily inspiration state from localStorage:', e);
       }
     }
   }, [dailyMissions.date]);
@@ -70,7 +70,7 @@ export default function DailyInspiration({ compact = false }: DailyInspirationPr
         try {
           localStorage.setItem("viewed-quote-ids", JSON.stringify([randomQuote.id]));
         } catch (e) {
-          // Ignore errors
+          console.warn('Failed to persist viewed quote ids:', e);
         }
       }
     } else {
@@ -82,7 +82,7 @@ export default function DailyInspiration({ compact = false }: DailyInspirationPr
         try {
           localStorage.setItem("viewed-quote-ids", JSON.stringify(newViewedIds));
         } catch (e) {
-          // Ignore errors
+          console.warn('Failed to persist viewed quote ids:', e);
         }
       }
     }
@@ -104,7 +104,7 @@ export default function DailyInspiration({ compact = false }: DailyInspirationPr
         try {
           localStorage.setItem("viewed-quote-ids", JSON.stringify([newQuote.id]));
         } catch (e) {
-          // Ignore errors
+          console.warn('Failed to persist viewed quote ids:', e);
         }
       }
     } else {
@@ -116,7 +116,7 @@ export default function DailyInspiration({ compact = false }: DailyInspirationPr
         try {
           localStorage.setItem("viewed-quote-ids", JSON.stringify(newViewedIds));
         } catch (e) {
-          // Ignore errors
+          console.warn('Failed to persist viewed quote ids:', e);
         }
       }
     }
@@ -184,7 +184,7 @@ export default function DailyInspiration({ compact = false }: DailyInspirationPr
             })
           );
         } catch (e) {
-          // Ignore errors
+          console.warn('Failed to persist completed missions:', e);
         }
       }
       

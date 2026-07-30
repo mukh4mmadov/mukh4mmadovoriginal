@@ -182,7 +182,7 @@ export default function ReadingTestPlayer({
         JSON.stringify(saveData),
       );
     } catch (e) {
-      // Ignore save errors
+      console.warn('Failed to save reading test progress to localStorage:', e);
     }
   }, [answers, timeSpent, timerRunning, submitted, passage.slug]);
 
@@ -212,7 +212,7 @@ export default function ReadingTestPlayer({
         setEvents([{ type: "opened", timestamp: Date.now() }]);
       }
     } catch (e) {
-      // Ignore load errors
+      console.warn('Failed to load saved reading test progress from localStorage:', e);
       setEvents([{ type: "opened", timestamp: Date.now() }]);
     }
   }, [passage.slug]);

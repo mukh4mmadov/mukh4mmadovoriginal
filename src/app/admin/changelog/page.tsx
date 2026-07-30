@@ -86,6 +86,7 @@ export default function AdminChangelog() {
       await loadChangelog();
     } catch (error) {
       console.error('Error saving changelog:', error);
+      alert(`Failed to save changelog entry: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -98,6 +99,7 @@ export default function AdminChangelog() {
       await loadChangelog();
     } catch (error) {
       console.error('Error deleting changelog:', error);
+      alert(`Failed to delete changelog entry: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 

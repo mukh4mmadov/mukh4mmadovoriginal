@@ -48,8 +48,8 @@ export class MigrationService {
     if (progress) {
       try {
         data.readingProgress = JSON.parse(progress);
-      } catch {
-        // Ignore parse errors
+      } catch (e) {
+        console.warn('Skipping corrupt "reading-progress" localStorage data during migration:', e);
       }
     }
 
@@ -58,8 +58,8 @@ export class MigrationService {
     if (history) {
       try {
         data.readingHistory = JSON.parse(history);
-      } catch {
-        // Ignore parse errors
+      } catch (e) {
+        console.warn('Skipping corrupt "reading-history" localStorage data during migration:', e);
       }
     }
 
@@ -68,8 +68,8 @@ export class MigrationService {
     if (highlights) {
       try {
         data.highlights = JSON.parse(highlights);
-      } catch {
-        // Ignore parse errors
+      } catch (e) {
+        console.warn('Skipping corrupt "highlights" localStorage data during migration:', e);
       }
     }
 
@@ -78,8 +78,8 @@ export class MigrationService {
     if (conversations) {
       try {
         data.aiConversations = JSON.parse(conversations);
-      } catch {
-        // Ignore parse errors
+      } catch (e) {
+        console.warn('Skipping corrupt "ai-conversation" localStorage data during migration:', e);
       }
     }
 
@@ -90,8 +90,8 @@ export class MigrationService {
         const quoteIds = JSON.parse(savedQuotes);
         // This would need to be mapped to actual quote data
         data.savedQuotes = quoteIds;
-      } catch {
-        // Ignore parse errors
+      } catch (e) {
+        console.warn('Skipping corrupt "saved-quote-ids" localStorage data during migration:', e);
       }
     }
 
@@ -101,8 +101,8 @@ export class MigrationService {
       try {
         const parsed = JSON.parse(missions);
         data.dailyMissions = parsed;
-      } catch {
-        // Ignore parse errors
+      } catch (e) {
+        console.warn('Skipping corrupt "daily-missions-completed" localStorage data during migration:', e);
       }
     }
 
@@ -111,8 +111,8 @@ export class MigrationService {
     if (xp) {
       try {
         data.xp = JSON.parse(xp);
-      } catch {
-        // Ignore parse errors
+      } catch (e) {
+        console.warn('Skipping corrupt "user-xp" localStorage data during migration:', e);
       }
     }
 
@@ -121,8 +121,8 @@ export class MigrationService {
     if (streak) {
       try {
         data.streak = JSON.parse(streak);
-      } catch {
-        // Ignore parse errors
+      } catch (e) {
+        console.warn('Skipping corrupt "user-streak" localStorage data during migration:', e);
       }
     }
 
@@ -131,8 +131,8 @@ export class MigrationService {
     if (settings) {
       try {
         data.settings = JSON.parse(settings);
-      } catch {
-        // Ignore parse errors
+      } catch (e) {
+        console.warn('Skipping corrupt "user-settings" localStorage data during migration:', e);
       }
     }
 
@@ -274,8 +274,8 @@ export class MigrationService {
     keys.forEach(key => {
       try {
         localStorage.removeItem(key);
-      } catch {
-        // Ignore errors
+      } catch (e) {
+        console.warn(`Failed to clear "${key}" from localStorage after migration:`, e);
       }
     });
   }

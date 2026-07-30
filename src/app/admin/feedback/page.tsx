@@ -96,6 +96,7 @@ export default function FeedbackManagement() {
       await loadFeedback();
     } catch (error) {
       console.error('Error updating status:', error);
+      alert(`Failed to update status: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -112,6 +113,7 @@ export default function FeedbackManagement() {
       await loadFeedback();
     } catch (error) {
       console.error('Error deleting feedback:', error);
+      alert(`Failed to delete feedback: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
