@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { Activity, BookOpen, MessageSquare, AlertTriangle, UserPlus, Clock } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import LoadingSpinner from '@/components/shared/LoadingSpinner';
+import { requireRows } from '@/lib/supabase/queryHelpers';
 
 interface ActivityItem {
   id: string;
@@ -23,14 +25,13 @@ export default function ActivityFeed() {
 
   async function loadActivities() {
     try {
-      const { data, error } = await supabase
-        .from('analytics_events')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-      if (error) throw error;
-      setActivities(data || []);
+      setActivities(await requireRows(
+        supabase
+          .from('analytics_events')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(20)
+      ));
     } catch (error) {
       console.error('Error loading activities:', error);
     } finally {
@@ -135,9 +136,7 @@ export default function ActivityFeed() {
     return (
       <div className="border border-white/10 rounded-xl p-6">
         <h2 className="text-lg font-semibold text-white mb-4">Live Activity Feed</h2>
-        <div className="flex items-center justify-center h-32">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500" />
-        </div>
+        <LoadingSpinner size="sm" containerClassName="h-32" />
       </div>
     );
   }

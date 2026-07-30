@@ -3,21 +3,13 @@
  * Ensures the same content is displayed for the entire day
  */
 
+import { toLocalISODate } from './date';
+import { readJSON, writeJSON } from './storage';
+
 export interface DailyContent<T> {
   content: T;
   date: string;
   index: number;
-}
-
-/**
- * Get today's date as a string (YYYY-MM-DD)
- */
-function getTodayDateString(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
 }
 
 /**
@@ -69,22 +61,11 @@ export function getDailyContent<T>(
   array: T[],
   cacheKey: string
 ): DailyContent<T> {
-  const today = getTodayDateString();
-  
-  // Try to get from cache first
-  if (typeof window !== 'undefined') {
-    try {
-      const cached = localStorage.getItem(cacheKey);
-      if (cached) {
-        const parsed = JSON.parse(cached) as DailyContent<T>;
-        // Return cached content if it's from today
-        if (parsed.date === today) {
-          return parsed;
-        }
-      }
-    } catch (e) {
-      // Ignore cache errors
-    }
+  const today = toLocalISODate();
+
+  const cached = readJSON<DailyContent<T>>(cacheKey);
+  if (cached && cached.date === today) {
+    return cached;
   }
   
   // Select new content based on today's date
@@ -97,15 +78,8 @@ export function getDailyContent<T>(
     index,
   };
   
-  // Cache the result
-  if (typeof window !== 'undefined') {
-    try {
-      localStorage.setItem(cacheKey, JSON.stringify(result));
-    } catch (e) {
-      // Ignore cache errors
-    }
-  }
-  
+  writeJSON(cacheKey, result);
+
   return result;
 }
 
@@ -119,7 +93,7 @@ export function getDailyContentNoCache<T>(
   array: T[],
   dateString?: string
 ): DailyContent<T> {
-  const date = dateString || getTodayDateString();
+  const date = dateString || toLocalISODate();
   const index = getSeededRandom(date, array.length);
   
   return {

@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react';
 import { Search, Filter, Check, X, Download, Eye, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import LoadingSpinner from '@/components/shared/LoadingSpinner';
+import { requireRows, runQuery } from '@/lib/supabase/queryHelpers';
+import { todayISODate } from '@/lib/date';
 
 interface FeedbackMessage {
   id: string;
@@ -47,13 +50,12 @@ export default function FeedbackManagement() {
 
   async function loadFeedback() {
     try {
-      const { data, error } = await supabase
-        .from('feedback_messages')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setFeedback(data || []);
+      setFeedback(await requireRows(
+        supabase
+          .from('feedback_messages')
+          .select('*')
+          .order('created_at', { ascending: false })
+      ));
     } catch (error) {
       console.error('Error loading feedback:', error);
     } finally {
@@ -87,12 +89,12 @@ export default function FeedbackManagement() {
 
   async function updateStatus(id: string, status: 'new' | 'read' | 'replied') {
     try {
-      const { error } = await supabase
-        .from('feedback_messages')
-        .update({ status })
-        .eq('id', id);
-
-      if (error) throw error;
+      await runQuery(
+        supabase
+          .from('feedback_messages')
+          .update({ status })
+          .eq('id', id)
+      );
       await loadFeedback();
     } catch (error) {
       console.error('Error updating status:', error);
@@ -103,12 +105,12 @@ export default function FeedbackManagement() {
     if (!confirm('Are you sure you want to delete this feedback?')) return;
 
     try {
-      const { error } = await supabase
-        .from('feedback_messages')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      await runQuery(
+        supabase
+          .from('feedback_messages')
+          .delete()
+          .eq('id', id)
+      );
       await loadFeedback();
     } catch (error) {
       console.error('Error deleting feedback:', error);
@@ -131,7 +133,7 @@ export default function FeedbackManagement() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `feedback-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `feedback-${todayISODate()}.csv`;
     a.click();
   }
 
@@ -149,11 +151,7 @@ export default function FeedbackManagement() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500" />
-      </div>
-    );
+    return <LoadingSpinner containerClassName="h-64" />;
   }
 
   return (

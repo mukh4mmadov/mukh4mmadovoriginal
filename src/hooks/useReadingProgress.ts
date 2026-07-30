@@ -1,75 +1,57 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 import { readingProgressRepository } from '@/lib/supabase/repositories';
 import { ReadingProgress, ReadingProgressInsert } from '@/lib/supabase/models';
+import { useUserResource, withErrorLog } from './useUserResource';
+
+interface ProgressState {
+  progress: ReadingProgress | null;
+  allProgress: ReadingProgress[];
+}
 
 export function useReadingProgress(passageId?: string) {
-  const { user } = useAuth();
-  const [progress, setProgress] = useState<ReadingProgress | null>(null);
-  const [allProgress, setAllProgress] = useState<ReadingProgress[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, data, setData, isLoading } = useUserResource<ProgressState>(
+    { progress: null, allProgress: [] },
+    async (currentUser) =>
+      passageId
+        ? {
+            progress: await readingProgressRepository.getProgress(currentUser.id, passageId),
+            allProgress: [],
+          }
+        : {
+            progress: null,
+            allProgress: await readingProgressRepository.getAllProgress(currentUser.id),
+          },
+    { label: 'reading progress', deps: [passageId] }
+  );
 
-  useEffect(() => {
-    if (!user) {
-      setIsLoading(false);
-      return;
-    }
+  const setProgress = (progress: ReadingProgress | null) =>
+    setData((prev) => ({ ...prev, progress }));
 
-    const loadProgress = async () => {
-      setIsLoading(true);
-      try {
-        if (passageId) {
-          const data = await readingProgressRepository.getProgress(user.id, passageId);
-          setProgress(data);
-        } else {
-          const data = await readingProgressRepository.getAllProgress(user.id);
-          setAllProgress(data);
-        }
-      } catch (error) {
-        console.error('Error loading reading progress:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadProgress();
-  }, [user, passageId]);
-
-  const upsertProgress = async (data: Partial<ReadingProgressInsert>) => {
+  const upsertProgress = async (progressData: Partial<ReadingProgressInsert>) => {
     if (!user || !passageId) return;
 
-    try {
-      const updated = await readingProgressRepository.upsertProgress(user.id, passageId, data);
-      setProgress(updated);
-    } catch (error) {
-      console.error('Error updating reading progress:', error);
-      throw error;
-    }
+    const updated = await withErrorLog('updating reading progress', () =>
+      readingProgressRepository.upsertProgress(user.id, passageId, progressData)
+    );
+    setProgress(updated);
   };
 
-  const updateProgress = async (id: string, data: Partial<ReadingProgressInsert>) => {
-    try {
-      const updated = await readingProgressRepository.updateProgress(id, data);
-      setProgress(updated);
-    } catch (error) {
-      console.error('Error updating reading progress:', error);
-      throw error;
-    }
+  const updateProgress = async (id: string, progressData: Partial<ReadingProgressInsert>) => {
+    const updated = await withErrorLog('updating reading progress', () =>
+      readingProgressRepository.updateProgress(id, progressData)
+    );
+    setProgress(updated);
   };
 
   const deleteProgress = async (id: string) => {
-    try {
-      await readingProgressRepository.deleteProgress(id);
-      setProgress(null);
-    } catch (error) {
-      console.error('Error deleting reading progress:', error);
-      throw error;
-    }
+    await withErrorLog('deleting reading progress', () =>
+      readingProgressRepository.deleteProgress(id)
+    );
+    setProgress(null);
   };
 
   return {
-    progress,
-    allProgress,
+    progress: data.progress,
+    allProgress: data.allProgress,
     isLoading,
     upsertProgress,
     updateProgress,

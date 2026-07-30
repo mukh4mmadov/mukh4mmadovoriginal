@@ -5,6 +5,9 @@ import { BookOpenText, Moon, Sun, LogOut, User, ChevronDown } from "lucide-react
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import AuthModal from "@/components/auth/AuthModal";
+import { readString, writeString } from "@/lib/storage";
+
+const DARK_MODE_KEY = "darkMode";
 
 export default function Navbar() {
   const { user, profile, signOut, isLoading } = useAuth();
@@ -14,7 +17,7 @@ export default function Navbar() {
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
 
   useEffect(() => {
-    const saved = window.localStorage.getItem("darkMode");
+    const saved = readString(DARK_MODE_KEY);
     const systemPrefersDark = window.matchMedia(
       "(prefers-color-scheme: dark)",
     ).matches;
@@ -25,7 +28,7 @@ export default function Navbar() {
 
   useEffect(() => {
     if (!mounted) return;
-    window.localStorage.setItem("darkMode", darkMode.toString());
+    writeString(DARK_MODE_KEY, darkMode.toString());
     document.documentElement.classList.toggle("dark", darkMode);
     document.documentElement.style.colorScheme = darkMode ? "dark" : "light";
   }, [darkMode, mounted]);

@@ -1,4 +1,5 @@
 import { supabase } from '../client';
+import { maybeRow, requireRow } from '../queryHelpers';
 import {
   UserSettings,
   UserSettingsInsert,
@@ -10,47 +11,40 @@ export class UserSettingsRepository {
    * Get user settings
    */
   async getSettings(userId: string): Promise<UserSettings | null> {
-    const { data, error } = await supabase
-      .from('user_settings')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') return null;
-      throw error;
-    }
-
-    return data;
+    return maybeRow(
+      supabase
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', userId)
+        .single()
+    );
   }
 
   /**
    * Create settings record
    */
   async createSettings(settings: UserSettingsInsert): Promise<UserSettings> {
-    const { data, error } = await supabase
-      .from('user_settings')
-      .insert(settings)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    return requireRow(
+      supabase
+        .from('user_settings')
+        .insert(settings)
+        .select()
+        .single()
+    );
   }
 
   /**
    * Update settings
    */
   async updateSettings(userId: string, updates: UserSettingsUpdate): Promise<UserSettings> {
-    const { data, error } = await supabase
-      .from('user_settings')
-      .update(updates)
-      .eq('user_id', userId)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    return requireRow(
+      supabase
+        .from('user_settings')
+        .update(updates)
+        .eq('user_id', userId)
+        .select()
+        .single()
+    );
   }
 
   /**

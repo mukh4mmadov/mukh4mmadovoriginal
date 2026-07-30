@@ -1,6 +1,9 @@
 import { supabase } from '../client';
 import { authService } from '../auth';
 import * as repositories from '../repositories';
+import { readJSON, removeKey, writeJSON } from '@/lib/storage';
+
+const syncKey = (key: string) => `sync-${key}`;
 
 export interface SyncStatus {
   isOnline: boolean;
@@ -266,40 +269,21 @@ export class SyncService {
    * Get local data
    */
   private getLocalData(key: string): any[] | null {
-    if (typeof window === 'undefined') return null;
-    
-    try {
-      const data = localStorage.getItem(`sync-${key}`);
-      return data ? JSON.parse(data) : null;
-    } catch {
-      return null;
-    }
+    return readJSON<any[]>(syncKey(key));
   }
 
   /**
    * Remove local data
    */
   private removeLocalData(key: string) {
-    if (typeof window === 'undefined') return;
-    
-    try {
-      localStorage.removeItem(`sync-${key}`);
-    } catch {
-      // Ignore
-    }
+    removeKey(syncKey(key));
   }
 
   /**
    * Save data locally for later sync
    */
   saveLocalData(key: string, data: any[]) {
-    if (typeof window === 'undefined') return;
-    
-    try {
-      localStorage.setItem(`sync-${key}`, JSON.stringify(data));
-    } catch {
-      // Ignore
-    }
+    writeJSON(syncKey(key), data);
   }
 }
 

@@ -1,4 +1,5 @@
 import { supabase } from '../client';
+import { maybeRow, requireRow, requireRows } from '../queryHelpers';
 import {
   DailyMission,
   DailyMissionInsert,
@@ -10,49 +11,42 @@ export class DailyMissionsRepository {
    * Get daily missions for a user and date
    */
   async getDailyMissions(userId: string, date: string): Promise<DailyMission | null> {
-    const { data, error } = await supabase
-      .from('daily_missions')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('date', date)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') return null;
-      throw error;
-    }
-
-    return data;
+    return maybeRow(
+      supabase
+        .from('daily_missions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('date', date)
+        .single()
+    );
   }
 
   /**
    * Create daily missions record
    */
   async createDailyMissions(missions: DailyMissionInsert): Promise<DailyMission> {
-    const { data, error } = await supabase
-      .from('daily_missions')
-      .insert(missions)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    return requireRow(
+      supabase
+        .from('daily_missions')
+        .insert(missions)
+        .select()
+        .single()
+    );
   }
 
   /**
    * Update daily missions
    */
   async updateDailyMissions(userId: string, date: string, updates: DailyMissionUpdate): Promise<DailyMission> {
-    const { data, error } = await supabase
-      .from('daily_missions')
-      .update(updates)
-      .eq('user_id', userId)
-      .eq('date', date)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    return requireRow(
+      supabase
+        .from('daily_missions')
+        .update(updates)
+        .eq('user_id', userId)
+        .eq('date', date)
+        .select()
+        .single()
+    );
   }
 
   /**
@@ -89,15 +83,14 @@ export class DailyMissionsRepository {
    * Get recent daily missions
    */
   async getRecentMissions(userId: string, days = 7): Promise<DailyMission[]> {
-    const { data, error } = await supabase
-      .from('daily_missions')
-      .select('*')
-      .eq('user_id', userId)
-      .order('date', { ascending: false })
-      .limit(days);
-
-    if (error) throw error;
-    return data || [];
+    return requireRows(
+      supabase
+        .from('daily_missions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('date', { ascending: false })
+        .limit(days)
+    );
   }
 }
 

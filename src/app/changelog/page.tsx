@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { Calendar, Tag, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import LoadingSpinner from '@/components/shared/LoadingSpinner';
+import { requireRows } from '@/lib/supabase/queryHelpers';
 
 interface ChangelogEntry {
   id: string;
@@ -25,13 +27,12 @@ export default function ChangelogPage() {
 
   async function loadChangelog() {
     try {
-      const { data, error } = await supabase
-        .from('changelog')
-        .select('*')
-        .order('published_at', { ascending: false });
-
-      if (error) throw error;
-      setEntries(data || []);
+      setEntries(await requireRows(
+        supabase
+          .from('changelog')
+          .select('*')
+          .order('published_at', { ascending: false })
+      ));
     } catch (error) {
       console.error('Error loading changelog:', error);
     } finally {
@@ -40,11 +41,7 @@ export default function ChangelogPage() {
   }
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500" />
-      </div>
-    );
+    return <LoadingSpinner containerClassName="min-h-screen" />;
   }
 
   return (

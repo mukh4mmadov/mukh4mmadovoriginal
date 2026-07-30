@@ -1,4 +1,5 @@
 import { supabase } from './client';
+import { maybeRow, requireRow } from './queryHelpers';
 
 export type AuthProvider = 'google' | 'email' | 'guest';
 
@@ -107,33 +108,27 @@ export class AuthService {
    * Get user profile
    */
   async getUserProfile(userId: string): Promise<AuthUser | null> {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') return null; // No rows returned
-      throw error;
-    }
-
-    return data as AuthUser;
+    return maybeRow<AuthUser>(
+      supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
+    );
   }
 
   /**
    * Update user profile
    */
   async updateProfile(userId: string, updates: Partial<AuthUser>) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', userId)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data as AuthUser;
+    return requireRow<AuthUser>(
+      supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', userId)
+        .select()
+        .single()
+    );
   }
 
   /**

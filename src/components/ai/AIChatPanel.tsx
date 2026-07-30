@@ -19,6 +19,7 @@ import {
 import { parseAIResponse, formatParsedResponse } from "@/lib/ai/parseResponse";
 import { useAuth } from "@/contexts/AuthContext";
 import { analyticsService } from "@/lib/analytics/analytics.service";
+import { readFreshJSON, writeTimestampedJSON } from "@/lib/storage";
 
 interface AIChatPanelProps {
   isOpen: boolean;
@@ -101,44 +102,18 @@ export default function AIChatPanel({
     }
   }, [isOpen, user?.id, context.passage.title]);
 
-  // Load conversation from localStorage on mount
+  // Load conversation from localStorage on mount, ignoring day-old conversations
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem(conversationKey);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          // Only load if less than 24 hours old
-          if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
-            setMessages(parsed.messages);
-          }
-        }
-      } catch (e) {
-        // Ignore parse errors or quota exceeded
-      }
+    const saved = readFreshJSON<{ messages: AIMessage[] }>(conversationKey);
+    if (saved) {
+      setMessages(saved.messages);
     }
   }, [conversationKey]);
 
   // Save conversation to localStorage whenever messages change
   useEffect(() => {
-    if (messages.length > 0 && typeof window !== "undefined") {
-      try {
-        localStorage.setItem(
-          conversationKey,
-          JSON.stringify({
-            messages,
-            timestamp: Date.now(),
-          }),
-        );
-      } catch (e) {
-        // Handle quota exceeded or other localStorage errors
-        // Try to clear old data to free space
-        try {
-          localStorage.clear();
-        } catch (clearError) {
-          // Ignore clear errors
-        }
-      }
+    if (messages.length > 0) {
+      writeTimestampedJSON(conversationKey, { messages });
     }
   }, [messages, conversationKey]);
 

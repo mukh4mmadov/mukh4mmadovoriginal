@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { TrendingUp, Clock, Award, MessageSquare, Users, Calendar } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import LoadingSpinner from '@/components/shared/LoadingSpinner';
+import { toISODate } from '@/lib/date';
 
 interface AnalyticsData {
   dailyUsers: { date: string; count: number }[];
@@ -91,7 +93,7 @@ export default function AdminAnalytics() {
     const dailyMap = new Map<string, number>();
     
     events.forEach((event) => {
-      const date = new Date(event[dateField]).toISOString().split('T')[0];
+      const date = toISODate(new Date(event[dateField]));
       dailyMap.set(date, (dailyMap.get(date) || 0) + 1);
     });
 
@@ -107,7 +109,7 @@ export default function AdminAnalytics() {
       const date = new Date(session.created_at);
       const weekStart = new Date(date);
       weekStart.setDate(date.getDate() - date.getDay());
-      const weekKey = weekStart.toISOString().split('T')[0];
+      const weekKey = toISODate(weekStart);
       const minutes = (session.event_data?.timeSpent || 0) / 60;
       weeklyMap.set(weekKey, (weeklyMap.get(weekKey) || 0) + minutes);
     });
@@ -148,11 +150,7 @@ export default function AdminAnalytics() {
   }
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500" />
-      </div>
-    );
+    return <LoadingSpinner containerClassName="h-64" />;
   }
 
   return (

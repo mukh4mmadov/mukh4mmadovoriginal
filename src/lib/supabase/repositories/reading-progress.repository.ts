@@ -1,4 +1,5 @@
 import { supabase } from '../client';
+import { maybeRow, requireRow, requireRows, runQuery } from '../queryHelpers';
 import {
   ReadingProgress,
   ReadingProgressInsert,
@@ -10,32 +11,26 @@ export class ReadingProgressRepository {
    * Get reading progress for a user and passage
    */
   async getProgress(userId: string, passageId: string): Promise<ReadingProgress | null> {
-    const { data, error } = await supabase
-      .from('reading_progress')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('passage_id', passageId)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') return null;
-      throw error;
-    }
-
-    return data;
+    return maybeRow(
+      supabase
+        .from('reading_progress')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('passage_id', passageId)
+        .single()
+    );
   }
 
   /**
    * Get all reading progress for a user
    */
   async getAllProgress(userId: string): Promise<ReadingProgress[]> {
-    const { data, error } = await supabase
-      .from('reading_progress')
-      .select('*')
-      .eq('user_id', userId);
-
-    if (error) throw error;
-    return data || [];
+    return requireRows(
+      supabase
+        .from('reading_progress')
+        .select('*')
+        .eq('user_id', userId)
+    );
   }
 
   /**
@@ -46,18 +41,17 @@ export class ReadingProgressRepository {
     passageId: string,
     progress: Partial<ReadingProgressInsert>
   ): Promise<ReadingProgress> {
-    const { data, error } = await supabase
-      .from('reading_progress')
-      .upsert({
-        user_id: userId,
-        passage_id: passageId,
-        ...progress,
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    return requireRow(
+      supabase
+        .from('reading_progress')
+        .upsert({
+          user_id: userId,
+          passage_id: passageId,
+          ...progress,
+        })
+        .select()
+        .single()
+    );
   }
 
   /**
@@ -67,27 +61,26 @@ export class ReadingProgressRepository {
     id: string,
     updates: ReadingProgressUpdate
   ): Promise<ReadingProgress> {
-    const { data, error } = await supabase
-      .from('reading_progress')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    return requireRow(
+      supabase
+        .from('reading_progress')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single()
+    );
   }
 
   /**
    * Delete reading progress
    */
   async deleteProgress(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('reading_progress')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
+    await runQuery(
+      supabase
+        .from('reading_progress')
+        .delete()
+        .eq('id', id)
+    );
   }
 
   /**
