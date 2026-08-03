@@ -1,5 +1,5 @@
 /**
- * Extracts authentic Cambridge IELTS reading passages from HTML test files
+ * Extracts authentic IELTS reading passages from HTML test files
  * and generates src/data/readingTests.ts
  */
 import fs from "fs";
