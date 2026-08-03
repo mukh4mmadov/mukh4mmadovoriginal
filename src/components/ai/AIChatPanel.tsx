@@ -346,7 +346,9 @@ export default function AIChatPanel({
   };
 
   const handleCopy = (content: string) => {
-    navigator.clipboard.writeText(content);
+    if (typeof window !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(content);
+    }
   };
 
   const handleRegenerate = () => {

@@ -1,19 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpenText, Moon, Sun, LogOut, User, ChevronDown } from "lucide-react";
+import { BookOpenText, Moon, Sun, LogOut, User, ChevronDown, Settings, BarChart3 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import AuthModal from "@/components/auth/AuthModal";
 
 export default function Navbar() {
   const { user, profile, signOut, isLoading } = useAuth();
   const [darkMode, setDarkMode] = useState(true);
   const [mounted, setMounted] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const saved = window.localStorage.getItem("darkMode");
     const systemPrefersDark = window.matchMedia(
       "(prefers-color-scheme: dark)",
@@ -125,6 +124,30 @@ export default function Navbar() {
                     <p className="text-sm font-medium text-white">{getDisplayName()}</p>
                     <p className="text-xs text-slate-400">{user.email}</p>
                   </div>
+                  <Link
+                    href="/profile"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
+                    onClick={() => setIsProfileDropdownOpen(false)}
+                  >
+                    <User size={16} />
+                    My Profile
+                  </Link>
+                  <Link
+                    href="/settings"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
+                    onClick={() => setIsProfileDropdownOpen(false)}
+                  >
+                    <Settings size={16} />
+                    Settings
+                  </Link>
+                  <Link
+                    href="/statistics"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
+                    onClick={() => setIsProfileDropdownOpen(false)}
+                  >
+                    <BarChart3 size={16} />
+                    Statistics
+                  </Link>
                   <button
                     onClick={handleSignOut}
                     className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
@@ -136,12 +159,12 @@ export default function Navbar() {
               )}
             </div>
           ) : (
-            <button
-              onClick={() => setIsAuthModalOpen(true)}
+            <Link
+              href="/login"
               className="rounded-full bg-brand-500 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-brand-600"
             >
               Sign in
-            </button>
+            </Link>
           )}
           
           <button
@@ -155,11 +178,6 @@ export default function Navbar() {
           </button>
         </nav>
       </div>
-      
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-      />
     </header>
   );
 }

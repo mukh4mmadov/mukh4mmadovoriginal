@@ -169,6 +169,7 @@ export default function AdminNotifications() {
               <button
                 onClick={() => setIsOpen(false)}
                 className="text-slate-400 hover:text-white"
+                aria-label="Close notifications"
               >
                 <X size={18} />
               </button>

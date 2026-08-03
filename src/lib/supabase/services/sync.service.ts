@@ -16,6 +16,7 @@ export class SyncService {
   private lastSyncTime: Date | null = null;
 
   constructor() {
+    this.isOnline = typeof window !== 'undefined' ? navigator.onLine : true;
     if (typeof window !== 'undefined') {
       window.addEventListener('online', this.handleOnline);
       window.addEventListener('offline', this.handleOffline);

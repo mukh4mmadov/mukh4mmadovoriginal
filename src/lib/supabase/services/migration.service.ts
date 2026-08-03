@@ -13,6 +13,12 @@ export interface LocalStorageData {
   settings?: { theme: string; language: string; notifications: boolean; reminderTime: string | null; autoSave: boolean; fontSize: number };
 }
 
+export interface MigrationResult {
+  success: boolean;
+  failedDatasets: string[];
+  errors: Error[];
+}
+
 export class MigrationService {
   /**
    * Check if user has localStorage data
@@ -36,8 +42,8 @@ export class MigrationService {
   }
 
   /**
-   * Extract all localStorage data
-   */
+    * Extract all localStorage data
+    */
   extractLocalStorageData(): LocalStorageData {
     if (typeof window === 'undefined') return {};
 
@@ -47,9 +53,14 @@ export class MigrationService {
     const progress = localStorage.getItem('reading-progress');
     if (progress) {
       try {
-        data.readingProgress = JSON.parse(progress);
-      } catch {
-        // Ignore parse errors
+        const parsed = JSON.parse(progress);
+        if (Array.isArray(parsed)) {
+          data.readingProgress = parsed;
+        } else {
+          console.error('Migration: "reading-progress" is not a valid array');
+        }
+      } catch (error) {
+        console.error('Migration: Failed to parse "reading-progress":', error);
       }
     }
 
@@ -57,9 +68,14 @@ export class MigrationService {
     const history = localStorage.getItem('reading-history');
     if (history) {
       try {
-        data.readingHistory = JSON.parse(history);
-      } catch {
-        // Ignore parse errors
+        const parsed = JSON.parse(history);
+        if (Array.isArray(parsed)) {
+          data.readingHistory = parsed;
+        } else {
+          console.error('Migration: "reading-history" is not a valid array');
+        }
+      } catch (error) {
+        console.error('Migration: Failed to parse "reading-history":', error);
       }
     }
 
@@ -67,9 +83,14 @@ export class MigrationService {
     const highlights = localStorage.getItem('highlights');
     if (highlights) {
       try {
-        data.highlights = JSON.parse(highlights);
-      } catch {
-        // Ignore parse errors
+        const parsed = JSON.parse(highlights);
+        if (Array.isArray(parsed)) {
+          data.highlights = parsed;
+        } else {
+          console.error('Migration: "highlights" is not a valid array');
+        }
+      } catch (error) {
+        console.error('Migration: Failed to parse "highlights":', error);
       }
     }
 
@@ -77,9 +98,14 @@ export class MigrationService {
     const conversations = localStorage.getItem('ai-conversation');
     if (conversations) {
       try {
-        data.aiConversations = JSON.parse(conversations);
-      } catch {
-        // Ignore parse errors
+        const parsed = JSON.parse(conversations);
+        if (Array.isArray(parsed)) {
+          data.aiConversations = parsed;
+        } else {
+          console.error('Migration: "ai-conversation" is not a valid array');
+        }
+      } catch (error) {
+        console.error('Migration: Failed to parse "ai-conversation":', error);
       }
     }
 
@@ -88,10 +114,13 @@ export class MigrationService {
     if (savedQuotes) {
       try {
         const quoteIds = JSON.parse(savedQuotes);
-        // This would need to be mapped to actual quote data
-        data.savedQuotes = quoteIds;
-      } catch {
-        // Ignore parse errors
+        if (Array.isArray(quoteIds)) {
+          data.savedQuotes = quoteIds;
+        } else {
+          console.error('Migration: "saved-quote-ids" is not a valid array');
+        }
+      } catch (error) {
+        console.error('Migration: Failed to parse "saved-quote-ids":', error);
       }
     }
 
@@ -100,9 +129,13 @@ export class MigrationService {
     if (missions) {
       try {
         const parsed = JSON.parse(missions);
-        data.dailyMissions = parsed;
-      } catch {
-        // Ignore parse errors
+        if (parsed && typeof parsed === 'object') {
+          data.dailyMissions = parsed;
+        } else {
+          console.error('Migration: "daily-missions-completed" is not a valid object');
+        }
+      } catch (error) {
+        console.error('Migration: Failed to parse "daily-missions-completed":', error);
       }
     }
 
@@ -110,9 +143,14 @@ export class MigrationService {
     const xp = localStorage.getItem('user-xp');
     if (xp) {
       try {
-        data.xp = JSON.parse(xp);
-      } catch {
-        // Ignore parse errors
+        const parsed = JSON.parse(xp);
+        if (parsed && typeof parsed === 'object') {
+          data.xp = parsed;
+        } else {
+          console.error('Migration: "user-xp" is not a valid object');
+        }
+      } catch (error) {
+        console.error('Migration: Failed to parse "user-xp":', error);
       }
     }
 
@@ -120,9 +158,14 @@ export class MigrationService {
     const streak = localStorage.getItem('user-streak');
     if (streak) {
       try {
-        data.streak = JSON.parse(streak);
-      } catch {
-        // Ignore parse errors
+        const parsed = JSON.parse(streak);
+        if (parsed && typeof parsed === 'object') {
+          data.streak = parsed;
+        } else {
+          console.error('Migration: "user-streak" is not a valid object');
+        }
+      } catch (error) {
+        console.error('Migration: Failed to parse "user-streak":', error);
       }
     }
 
@@ -130,9 +173,14 @@ export class MigrationService {
     const settings = localStorage.getItem('user-settings');
     if (settings) {
       try {
-        data.settings = JSON.parse(settings);
-      } catch {
-        // Ignore parse errors
+        const parsed = JSON.parse(settings);
+        if (parsed && typeof parsed === 'object') {
+          data.settings = parsed;
+        } else {
+          console.error('Migration: "user-settings" is not a valid object');
+        }
+      } catch (error) {
+        console.error('Migration: Failed to parse "user-settings":', error);
       }
     }
 
@@ -140,12 +188,15 @@ export class MigrationService {
   }
 
   /**
-   * Migrate localStorage data to Supabase
-   */
-  async migrateToSupabase(userId: string, data: LocalStorageData): Promise<void> {
-    try {
-      // Migrate reading progress
-      if (data.readingProgress && data.readingProgress.length > 0) {
+    * Migrate localStorage data to Supabase
+    */
+  async migrateToSupabase(userId: string, data: LocalStorageData): Promise<MigrationResult> {
+    const failedDatasets: string[] = [];
+    const errors: Error[] = [];
+
+    // Migrate reading progress
+    if (data.readingProgress && data.readingProgress.length > 0) {
+      try {
         for (const progress of data.readingProgress) {
           await repositories.readingProgressRepository.upsertProgress(
             userId,
@@ -158,10 +209,16 @@ export class MigrationService {
             }
           );
         }
+      } catch (error) {
+        console.error('Migration: Failed to migrate reading progress:', error);
+        failedDatasets.push('readingProgress');
+        errors.push(error instanceof Error ? error : new Error(String(error)));
       }
+    }
 
-      // Migrate reading history
-      if (data.readingHistory && data.readingHistory.length > 0) {
+    // Migrate reading history
+    if (data.readingHistory && data.readingHistory.length > 0) {
+      try {
         const historyToInsert = data.readingHistory.map((h: any) => ({
           user_id: userId,
           passage_id: h.passageId,
@@ -172,10 +229,16 @@ export class MigrationService {
           question_breakdown: h.questionBreakdown,
         }));
         await repositories.readingHistoryRepository.batchCreateHistory(historyToInsert);
+      } catch (error) {
+        console.error('Migration: Failed to migrate reading history:', error);
+        failedDatasets.push('readingHistory');
+        errors.push(error instanceof Error ? error : new Error(String(error)));
       }
+    }
 
-      // Migrate highlights
-      if (data.highlights && data.highlights.length > 0) {
+    // Migrate highlights
+    if (data.highlights && data.highlights.length > 0) {
+      try {
         const highlightsToInsert = data.highlights.map((h: any) => ({
           user_id: userId,
           passage_id: h.passageId,
@@ -186,10 +249,16 @@ export class MigrationService {
           note: h.note,
         }));
         await repositories.highlightsRepository.batchCreateHighlights(highlightsToInsert);
+      } catch (error) {
+        console.error('Migration: Failed to migrate highlights:', error);
+        failedDatasets.push('highlights');
+        errors.push(error instanceof Error ? error : new Error(String(error)));
       }
+    }
 
-      // Migrate AI conversations
-      if (data.aiConversations && data.aiConversations.length > 0) {
+    // Migrate AI conversations
+    if (data.aiConversations && data.aiConversations.length > 0) {
+      try {
         for (const conversation of data.aiConversations) {
           await repositories.aiConversationsRepository.createConversation({
             user_id: userId,
@@ -197,16 +266,22 @@ export class MigrationService {
             messages: conversation.messages,
           });
         }
+      } catch (error) {
+        console.error('Migration: Failed to migrate AI conversations:', error);
+        failedDatasets.push('aiConversations');
+        errors.push(error instanceof Error ? error : new Error(String(error)));
       }
+    }
 
-      // Migrate saved quotes (would need to fetch actual quote data)
-      if (data.savedQuotes && data.savedQuotes.length > 0) {
-        // This would need to be implemented with actual quote data
-        // For now, we'll skip this as it requires the quote database
-      }
+    // Migrate saved quotes (would need to fetch actual quote data)
+    if (data.savedQuotes && data.savedQuotes.length > 0) {
+      // This would need to be implemented with actual quote data
+      // For now, we'll skip this as it requires the quote database
+    }
 
-      // Migrate daily missions
-      if (data.dailyMissions) {
+    // Migrate daily missions
+    if (data.dailyMissions) {
+      try {
         const today = new Date().toISOString().split('T')[0];
         await repositories.dailyMissionsRepository.createDailyMissions({
           user_id: userId,
@@ -214,29 +289,47 @@ export class MigrationService {
           missions: data.dailyMissions.missions || [],
           completed_missions: data.dailyMissions.completed || [],
         });
+      } catch (error) {
+        console.error('Migration: Failed to migrate daily missions:', error);
+        failedDatasets.push('dailyMissions');
+        errors.push(error instanceof Error ? error : new Error(String(error)));
       }
+    }
 
-      // Migrate XP
-      if (data.xp) {
+    // Migrate XP
+    if (data.xp) {
+      try {
         await repositories.xpRepository.createXP({
           user_id: userId,
           total_xp: data.xp.total || 0,
           level: data.xp.level || 1,
         });
+      } catch (error) {
+        console.error('Migration: Failed to migrate XP:', error);
+        failedDatasets.push('xp');
+        errors.push(error instanceof Error ? error : new Error(String(error)));
       }
+    }
 
-      // Migrate streak
-      if (data.streak) {
+    // Migrate streak
+    if (data.streak) {
+      try {
         await repositories.streaksRepository.createStreak({
           user_id: userId,
           current_streak: data.streak.current || 0,
           longest_streak: data.streak.longest || 0,
           last_activity_date: data.streak.lastDate || null,
         });
+      } catch (error) {
+        console.error('Migration: Failed to migrate streak:', error);
+        failedDatasets.push('streak');
+        errors.push(error instanceof Error ? error : new Error(String(error)));
       }
+    }
 
-      // Migrate settings
-      if (data.settings) {
+    // Migrate settings
+    if (data.settings) {
+      try {
         await repositories.userSettingsRepository.createSettings({
           user_id: userId,
           theme: data.settings.theme || 'dark',
@@ -246,11 +339,18 @@ export class MigrationService {
           auto_save_enabled: data.settings.autoSave ?? true,
           reading_font_size: data.settings.fontSize || 16,
         });
+      } catch (error) {
+        console.error('Migration: Failed to migrate settings:', error);
+        failedDatasets.push('settings');
+        errors.push(error instanceof Error ? error : new Error(String(error)));
       }
-    } catch (error) {
-      console.error('Migration error:', error);
-      throw error;
     }
+
+    return {
+      success: failedDatasets.length === 0,
+      failedDatasets,
+      errors,
+    };
   }
 
   /**

@@ -43,8 +43,32 @@ CREATE POLICY "Service role can update admin status"
 CREATE TABLE IF NOT EXISTS analytics_events (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
-  event_type TEXT NOT NULL CHECK (event_type IN ('reading_session', 'ai_conversation', 'passage_completed', 'signup', 'login')),
-  event_data JSONB,
+  event_type TEXT NOT NULL CHECK (
+    event_type IN (
+      'reading_session',
+      'ai_conversation',
+      'passage_completed',
+      'signup',
+      'login',
+      'user_registered',
+      'user_login',
+      'user_logout',
+      'reading_started',
+      'reading_finished',
+      'question_answered',
+      'highlight_created',
+      'highlight_removed',
+      'ai_coach_opened',
+      'ai_message_sent',
+      'quote_saved',
+      'feedback_submitted',
+      'bug_report_submitted'
+    )
+  ),
+  event_data JSONB DEFAULT '{}'::jsonb,
+  browser_info JSONB,
+  device_info JSONB,
+  page_url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

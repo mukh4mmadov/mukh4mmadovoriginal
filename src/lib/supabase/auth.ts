@@ -8,6 +8,10 @@ export interface AuthUser {
   full_name: string | null;
   avatar_url: string | null;
   is_guest: boolean;
+  username: string | null;
+  date_of_birth: string | null;
+  country: string | null;
+  bio: string | null;
 }
 
 export interface SignUpData {
@@ -26,6 +30,8 @@ export class AuthService {
    * Sign up with email and password
    */
   async signUp(data: SignUpData) {
+    console.log('[SIGNUP] Attempting signup with email:', data.email);
+    
     const { data: authData, error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
@@ -36,6 +42,12 @@ export class AuthService {
       },
     });
 
+    console.log("[SIGNUP] error:", error);
+    console.log("[SIGNUP] user:", authData.user);
+    console.log("[SIGNUP] session:", authData.session);
+    console.log("[SIGNUP] identities:", authData.user?.identities);
+    console.log("[SIGNUP] email_confirmed_at:", authData.user?.email_confirmed_at);
+
     if (error) throw error;
     return authData;
   }
@@ -44,10 +56,19 @@ export class AuthService {
    * Sign in with email and password
    */
   async signIn(data: SignInData) {
+    console.log('[SIGNIN] Attempting signin with email:', data.email);
+    
     const { data: authData, error } = await supabase.auth.signInWithPassword({
       email: data.email,
       password: data.password,
     });
+
+    console.log("[SIGNIN] error:", error);
+    console.log("[SIGNIN] error.message:", error?.message);
+    console.log("[SIGNIN] error.status:", error?.status);
+    console.log("[SIGNIN] error.code:", error?.code);
+    console.log("[SIGNIN] user:", authData.user);
+    console.log("[SIGNIN] session:", authData.session);
 
     if (error) throw error;
     return authData;
@@ -60,7 +81,7 @@ export class AuthService {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : '/auth/callback',
       },
     });
 
@@ -72,9 +93,7 @@ export class AuthService {
    * Create guest account (anonymous user)
    */
   async createGuestAccount() {
-    const { data: authData, error } = await supabase.auth.signUp({
-      email: `guest_${Date.now()}@temp.local`,
-      password: Math.random().toString(36).substring(2),
+    const { data: authData, error } = await supabase.auth.signInAnonymously({
       options: {
         data: {
           is_guest: true,
@@ -99,7 +118,13 @@ export class AuthService {
    */
   async getCurrentUser() {
     const { data: { user }, error } = await supabase.auth.getUser();
-    if (error) throw error;
+    if (error) {
+      // AuthSessionMissingError is expected when no user is logged in
+      if (error.name === 'AuthSessionMissingError') {
+        return null;
+      }
+      throw error;
+    }
     return user;
   }
 

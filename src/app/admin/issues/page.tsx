@@ -11,7 +11,7 @@ interface Issue {
   subject: string;
   message: string;
   message_type: 'bug' | 'feature' | 'incorrect_answer' | 'general';
-  status: 'new' | 'in_progress' | 'fixed' | 'closed';
+  status: 'new' | 'read' | 'replied';
   created_at: string;
 }
 
@@ -20,7 +20,7 @@ export default function IssueTracker() {
   const [filteredIssues, setFilteredIssues] = useState<Issue[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'bugs' | 'features' | 'general'>('all');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'new' | 'in_progress' | 'fixed' | 'closed'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'new' | 'read' | 'replied'>('all');
 
   useEffect(() => {
     loadIssues();
@@ -64,7 +64,7 @@ export default function IssueTracker() {
     setFilteredIssues(filtered);
   }
 
-  async function updateStatus(id: string, status: 'new' | 'in_progress' | 'fixed' | 'closed') {
+  async function updateStatus(id: string, status: 'new' | 'read' | 'replied') {
     try {
       const { error } = await supabase
         .from('feedback_messages')
@@ -87,9 +87,8 @@ export default function IssueTracker() {
 
   const statusConfig = {
     new: { label: 'New', icon: Clock, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
-    in_progress: { label: 'In Progress', icon: Clock, color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' },
-    fixed: { label: 'Fixed', icon: CheckCircle, color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20' },
-    closed: { label: 'Closed', icon: X, color: 'text-slate-400', bg: 'bg-slate-500/10', border: 'border-slate-500/20' },
+    read: { label: 'Read', icon: CheckCircle, color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' },
+    replied: { label: 'Replied', icon: CheckCircle, color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20' },
   };
 
   if (isLoading) {
@@ -135,7 +134,7 @@ export default function IssueTracker() {
 
       {/* Status Filter */}
       <div className="flex gap-2 mb-6">
-        {(['all', 'new', 'in_progress', 'fixed', 'closed'] as const).map((status) => (
+        {(['all', 'new', 'read', 'replied'] as const).map((status) => (
           <button
             key={status}
             onClick={() => setStatusFilter(status)}
@@ -182,7 +181,7 @@ export default function IssueTracker() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  {(['new', 'in_progress', 'fixed', 'closed'] as const).map((s) => (
+                  {(['new', 'read', 'replied'] as const).map((s) => (
                     <button
                       key={s}
                       onClick={() => updateStatus(issue.id, s)}

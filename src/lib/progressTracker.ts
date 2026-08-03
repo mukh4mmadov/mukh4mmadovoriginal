@@ -37,11 +37,14 @@ async function getSupabaseProgress(userId: string, slug: string): Promise<TestPr
   try {
     const data = await readingProgressRepository.getProgress(userId, slug);
     if (!data) return null;
-    
+
+    const bestScoreEntry = data.answers?.find((a: any) => a?.type === '_best_score');
+    const bestScore = bestScoreEntry?.value ?? (data.answers?.filter((a: any) => a?.isCorrect === true).length || 0);
+
     return {
       slug: data.passage_id,
       completed: data.is_completed,
-      bestScore: data.answers?.filter((a: any) => a.isCorrect).length || 0,
+      bestScore,
       attempts: 1,
       lastAttempt: new Date(data.updated_at).getTime(),
       totalTime: data.time_spent_seconds,
@@ -54,9 +57,14 @@ async function getSupabaseProgress(userId: string, slug: string): Promise<TestPr
 
 async function saveSupabaseProgress(userId: string, slug: string, progress: TestProgress): Promise<void> {
   try {
+    const existing = await readingProgressRepository.getProgress(userId, slug);
+    const existingAnswers = existing?.answers ?? [];
+    const filtered = existingAnswers.filter((a: any) => a?.type !== '_best_score');
+    const mergedAnswers = [...filtered, { type: '_best_score', value: progress.bestScore }];
+
     await readingProgressRepository.upsertProgress(userId, slug, {
       current_question_index: 0,
-      answers: [],
+      answers: mergedAnswers,
       time_spent_seconds: progress.totalTime,
       is_completed: progress.completed,
     });
@@ -67,14 +75,19 @@ async function saveSupabaseProgress(userId: string, slug: string, progress: Test
 }
 
 export async function getProgress(slug: string, userId?: string): Promise<TestProgress | null> {
-  // Try Supabase first if user is authenticated
+  const localProgress = readStoredProgress(`${LOCAL_STORAGE_PREFIX}${slug}`);
+
   if (userId) {
     const supabaseProgress = await getSupabaseProgress(userId, slug);
-    if (supabaseProgress) return supabaseProgress;
+    if (supabaseProgress) {
+      if (localProgress && localProgress.bestScore > supabaseProgress.bestScore) {
+        return { ...supabaseProgress, bestScore: localProgress.bestScore };
+      }
+      return supabaseProgress;
+    }
   }
-  
-  // Fallback to localStorage
-  return readStoredProgress(`${LOCAL_STORAGE_PREFIX}${slug}`);
+
+  return localProgress;
 }
 
 export async function saveProgress(
@@ -106,7 +119,7 @@ export async function saveProgress(
   }
 
   // Sync to Supabase if user is authenticated and online
-  if (userId && navigator.onLine) {
+  if (userId && typeof window !== 'undefined' && navigator.onLine) {
     try {
       await saveSupabaseProgress(userId, slug, updated);
     } catch (error) {
@@ -121,14 +134,25 @@ export async function getAllProgress(userId?: string): Promise<TestProgress[]> {
     try {
       const supabaseData = await readingProgressRepository.getAllProgress(userId);
       if (supabaseData.length > 0) {
-        return supabaseData.map((data: any) => ({
-          slug: data.passage_id,
-          completed: data.is_completed,
-          bestScore: data.answers?.filter((a: any) => a.isCorrect).length || 0,
-          attempts: 1,
-          lastAttempt: new Date(data.updated_at).getTime(),
-          totalTime: data.time_spent_seconds,
-        }));
+        return supabaseData.map((data: any) => {
+          const slug = data.passage_id;
+          const localProgress = readStoredProgress(`${LOCAL_STORAGE_PREFIX}${slug}`);
+          const bestScoreEntry = data.answers?.find((a: any) => a?.type === '_best_score');
+          const supabaseBestScore =
+            bestScoreEntry?.value ?? (data.answers?.filter((a: any) => a?.isCorrect === true).length || 0);
+
+          return {
+            slug,
+            completed: data.is_completed,
+            bestScore:
+              localProgress && localProgress.bestScore > supabaseBestScore
+                ? localProgress.bestScore
+                : supabaseBestScore,
+            attempts: 1,
+            lastAttempt: new Date(data.updated_at).getTime(),
+            totalTime: data.time_spent_seconds,
+          };
+        });
       }
     } catch (error) {
       console.error('Error fetching Supabase progress:', error);

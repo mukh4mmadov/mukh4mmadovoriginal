@@ -183,22 +183,32 @@ CREATE POLICY "Users can update own daily missions"
 -- Function to handle new user signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+  user_full_name TEXT;
 BEGIN
+  -- Try to get full_name from various sources (Google OAuth, signup form, etc.)
+  user_full_name := COALESCE(
+    NEW.raw_user_meta_data->>'full_name',
+    NEW.raw_user_meta_data->>'name',
+    NEW.raw_user_meta_data->>'user_name',
+    NULL
+  );
+
   INSERT INTO public.profiles (id, email, full_name, avatar_url, is_guest)
   VALUES (
     NEW.id,
     NEW.email,
-    NEW.raw_user_meta_data->>'full_name',
+    user_full_name,
     NEW.raw_user_meta_data->>'avatar_url',
     COALESCE((NEW.raw_user_meta_data->>'is_guest')::boolean, FALSE)
   );
-  
+
   -- Initialize user data
   INSERT INTO public.streaks (user_id) VALUES (NEW.id);
   INSERT INTO public.xp (user_id) VALUES (NEW.id);
   INSERT INTO public.study_statistics (user_id) VALUES (NEW.id);
   INSERT INTO public.user_settings (user_id) VALUES (NEW.id);
-  
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

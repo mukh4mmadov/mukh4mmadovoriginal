@@ -73,12 +73,12 @@ export default function ContactForm({ isOpen, onClose }: ContactFormProps) {
         subject: formData.subject,
         message: formData.message,
         message_type: "general",
-        page_url: window.location.href,
-        browser_info: {
+        page_url: typeof window !== 'undefined' ? window.location.href : '',
+        browser_info: typeof window !== 'undefined' ? {
           userAgent: navigator.userAgent,
           language: navigator.language,
-        },
-        screen_size: `${window.innerWidth}x${window.innerHeight}`,
+        } : { userAgent: '', language: '' },
+        screen_size: typeof window !== 'undefined' ? `${window.innerWidth}x${window.innerHeight}` : 'unknown',
       });
 
       setToastMessage("Thank you! Your feedback has been received.");

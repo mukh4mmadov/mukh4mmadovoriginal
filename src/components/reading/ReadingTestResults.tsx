@@ -279,7 +279,7 @@ export default function ReadingTestResults({
             onClick={onRetry}
             className="flex items-center gap-2 text-sm text-slate-400 transition-colors hover:text-white"
           >
-            <ArrowLeft size={16} />
+            <ArrowLeft size={16} aria-hidden="true" />
             Back to test
           </button>
         </div>
@@ -289,8 +289,9 @@ export default function ReadingTestResults({
             onClick={() => setAiChatOpen(true)}
             className="flex items-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/10 px-3 py-2 text-sm font-medium text-brand-300 hover:bg-brand-500/20 transition-colors"
             title="Open AI Coach"
+            aria-label="Open AI Coach"
           >
-            <Bot size={16} />
+            <Bot size={16} aria-hidden="true" />
             <span className="hidden sm:inline">AI Coach</span>
           </button>
         </div>

@@ -7,10 +7,38 @@ import MigrationPrompt from "@/components/auth/MigrationPrompt";
 import ReportIssueButton from "@/components/shared/ReportIssueButton";
 
 export const metadata: Metadata = {
-  title: "Muhammadov IELTS Reading",
+  title: {
+    default: "Muhammadov IELTS Reading",
+    template: "%s | Muhammadov IELTS Reading",
+  },
   description:
     "Practice IELTS Reading with exam-format passages, a built-in highlighter, and instant band estimates.",
   keywords: ["IELTS", "reading", "practice", "exam", "study"],
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    siteName: "Muhammadov IELTS Reading",
+    title: "Muhammadov IELTS Reading",
+    description:
+      "Practice IELTS Reading with exam-format passages, a built-in highlighter, and instant band estimates.",
+  },
+  twitter: {
+    card: "summary",
+    title: "Muhammadov IELTS Reading",
+    description:
+      "Practice IELTS Reading with exam-format passages, a built-in highlighter, and instant band estimates.",
+  },
 };
 
 export const viewport: Viewport = {

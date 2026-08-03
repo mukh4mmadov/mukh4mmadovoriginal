@@ -1,166 +1,79 @@
 "use client";
 
-import { useMemo, useState, useRef } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { analyticsService } from "@/lib/analytics/analytics.service";
+import {
+  Eraser,
+  Trash2,
+} from "lucide-react";
+import {
+  HIGHLIGHT_COLOR,
+  fontSizeMap,
+  type FontSize,
+  tokenize,
+} from "@/lib/highlightConstants";
+import type { UseTextHighlightReturn } from "@/hooks/useTextHighlight";
 
 interface HighlightablePassageProps {
   paragraphs: { label: string; text: string }[];
-  passageId?: string;
-  fontSize?: "small" | "medium" | "large";
-  onHighlight?: (text: string) => void;
-  onHighlightRemove?: (text: string) => void;
-}
-
-const HIGHLIGHT_COLOR = "rgba(250,204,21,0.35)";
-
-const fontSizeMap = {
-  small: "text-[15px] sm:text-[16px]",
-  medium: "text-[16px] sm:text-[17px]",
-  large: "text-[17px] sm:text-[18px]",
-};
-
-function tokenize(text: string): string[] {
-  return text.match(/\S+|\s+/g) || [];
+  fontSize?: FontSize;
+  highlightState: UseTextHighlightReturn;
 }
 
 export default function HighlightablePassage({
   paragraphs,
-  passageId,
   fontSize = "medium",
-  onHighlight,
-  onHighlightRemove,
+  highlightState,
 }: HighlightablePassageProps) {
-  const { user } = useAuth();
-  const [highlights, setHighlights] = useState<Record<string, Set<string>>>({});
-  const lastClickRef = useRef<{ key: string; time: number } | null>(null);
-
-  const totalHighlights = useMemo(
-    () => Object.values(highlights).reduce((sum, items) => sum + items.size, 0),
-    [highlights],
-  );
-
-  const handleDoubleClick = (
-    tokenKey: string,
-    paragraphKey: string,
-    tokenText: string,
-  ) => {
-    const now = Date.now();
-    const lastClick = lastClickRef.current;
-
-    // Check if this is a double-click on the same token
-    if (lastClick && lastClick.key === tokenKey && now - lastClick.time < 300) {
-      // Double-click detected - toggle highlight
-      setHighlights((prev) => {
-        const next = { ...prev };
-        const currentSet = next[paragraphKey] || new Set<string>();
-        const current = new Set(currentSet);
-
-        if (current.has(tokenKey)) {
-          current.delete(tokenKey);
-          onHighlightRemove?.(tokenText);
-          if (passageId) {
-            analyticsService.trackHighlightRemoved(
-              user?.id ?? null,
-              passageId,
-              { text: tokenText },
-            );
-          }
-        } else {
-          current.add(tokenKey);
-          onHighlight?.(tokenText);
-          if (passageId) {
-            analyticsService.trackHighlightCreated(
-              user?.id ?? null,
-              passageId,
-              { text: tokenText },
-            );
-          }
-        }
-
-        next[paragraphKey] = current;
-        return next;
-      });
-      lastClickRef.current = null;
-    } else {
-      lastClickRef.current = { key: tokenKey, time: now };
-    }
-  };
-
-  const handleSelection = (
-    paragraphKey: string,
-    paragraphElement: HTMLParagraphElement,
-  ) => {
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
-      return;
-    }
-
-    const range = selection.getRangeAt(0);
-    const paragraphRange = document.createRange();
-    paragraphRange.selectNodeContents(paragraphElement);
-
-    const isWithinParagraph =
-      range.compareBoundaryPoints(Range.START_TO_START, paragraphRange) >= 0 &&
-      range.compareBoundaryPoints(Range.END_TO_END, paragraphRange) <= 0;
-
-    if (!isWithinParagraph) return;
-
-    const selectedText = selection.toString().trim();
-    if (selectedText.length === 0) return;
-
-    // New algorithm: Use DOM Range intersection to detect overlapping tokens
-    const tokenElements = Array.from(
-      paragraphElement.querySelectorAll<HTMLElement>("[data-token-key]"),
-    );
-
-    const selectedKeys: string[] = [];
-
-    for (const tokenElement of tokenElements) {
-      const tokenRange = document.createRange();
-      tokenRange.selectNodeContents(tokenElement);
-
-      // Check if the selection range intersects with this token range
-      const startToEnd = range.compareBoundaryPoints(
-        Range.START_TO_END,
-        tokenRange,
-      );
-      const endToStart = range.compareBoundaryPoints(
-        Range.END_TO_START,
-        tokenRange,
-      );
-
-      // If START_TO_END >= 0 and END_TO_START <= 0, the ranges intersect
-      const intersects = startToEnd >= 0 && endToStart <= 0;
-
-      if (intersects) {
-        const tokenKey = tokenElement.getAttribute("data-token-key");
-        if (tokenKey) {
-          selectedKeys.push(tokenKey);
-        }
-      }
-    }
-
-    if (selectedKeys.length === 0) return;
-
-    setHighlights((prev) => {
-      const next = { ...prev };
-      const currentSet = next[paragraphKey] || new Set<string>();
-      const current = new Set(currentSet);
-
-      selectedKeys.forEach((key) => {
-        current.add(key);
-      });
-
-      next[paragraphKey] = current;
-      return next;
-    });
-
-    selection.removeAllRanges();
-  };
+  const {
+    highlights,
+    eraseMode,
+    toggleEraseMode,
+    clearAll,
+    totalHighlights,
+    handleSelection,
+    handleDoubleClick,
+    toggleToken,
+  } = highlightState;
 
   return (
     <div className="space-y-4">
+      {/* Highlighting toolbar */}
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 backdrop-blur-sm">
+        <button
+          type="button"
+          onClick={toggleEraseMode}
+          className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
+            eraseMode
+              ? "border-rose-500/30 bg-rose-500/10 text-rose-300"
+              : "border-white/10 bg-white/5 text-slate-300 hover:border-white/20 hover:text-slate-100"
+          }`}
+          title={eraseMode ? "Exit eraser mode" : "Enable eraser mode"}
+        >
+          <Eraser size={12} />
+          {eraseMode ? "Erasing" : "Eraser"}
+        </button>
+
+        <button
+          type="button"
+          onClick={clearAll}
+          disabled={totalHighlights === 0}
+          className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
+            totalHighlights === 0
+              ? "cursor-not-allowed opacity-40"
+              : "border-white/10 bg-white/5 text-slate-300 hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-300"
+          }`}
+          title="Clear all highlights"
+        >
+          <Trash2 size={12} />
+          Clear all
+        </button>
+
+        {totalHighlights > 0 && (
+          <span className="text-xs text-slate-500">
+            {totalHighlights} highlight{totalHighlights !== 1 ? "s" : ""}
+          </span>
+        )}
+      </div>
+
       <div
         className={`overflow-x-hidden text-slate-200 ${fontSizeMap[fontSize]}`}
         style={{
@@ -171,9 +84,7 @@ export default function HighlightablePassage({
       >
         {paragraphs.map((p, paragraphIndex) => {
           const paragraphKey = p.label || `paragraph-${paragraphIndex}`;
-          const paragraphHighlights =
-            highlights[paragraphKey] ?? new Set<string>();
-          const highlightMap = paragraphHighlights;
+          const paragraphHighlights = highlights[paragraphKey] || {};
 
           return (
             <p
@@ -195,21 +106,31 @@ export default function HighlightablePassage({
                 }
 
                 const tokenKey = `${paragraphKey}-${i}`;
-                const isHighlighted = highlightMap.has(tokenKey);
+                const isHighlighted = paragraphHighlights[tokenKey];
 
                 return (
                   <span
                     key={tokenKey}
                     data-token-key={tokenKey}
+                    tabIndex={0}
                     onDoubleClick={() =>
                       handleDoubleClick(tokenKey, paragraphKey, tok.trim())
                     }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        toggleToken(tokenKey, paragraphKey, tok.trim());
+                      }
+                    }}
                     style={
                       isHighlighted
-                        ? { backgroundColor: HIGHLIGHT_COLOR, borderRadius: 3 }
+                        ? {
+                            backgroundColor: HIGHLIGHT_COLOR,
+                            borderRadius: 3,
+                          }
                         : undefined
                     }
-                    className="cursor-text transition-colors duration-200"
+                    className="cursor-text transition-colors duration-200 outline-none focus:ring-2 focus:ring-brand-500/50 focus:rounded"
                   >
                     {tok}
                   </span>

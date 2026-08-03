@@ -31,16 +31,25 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   useEffect(() => {
     async function checkAdmin() {
-      if (user) {
+      if (!user) {
+        // No user logged in, redirect to home
+        router.push('/');
+        return;
+      }
+      try {
         const admin = await isAdmin(user.id);
         setIsAdminUser(admin);
         if (!admin) {
           router.push('/');
         }
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+        setIsAdminUser(false);
+        router.push('/');
       }
     }
     checkAdmin();
-  }, [user]);
+  }, [user, router]);
 
   if (isAdminUser === null) {
     return (

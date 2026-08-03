@@ -36,7 +36,7 @@ export default function Timer({
   }, [initialSeconds]);
 
   useEffect(() => {
-    if (!running) return;
+    if (!running || typeof window === 'undefined') return;
 
     const interval = window.setInterval(() => {
       setRemaining((prev) => {
@@ -92,16 +92,20 @@ export default function Timer({
         <div className="flex items-center gap-1">
           {running ? (
             <button
+              type="button"
               onClick={handlePause}
               className="flex items-center justify-center w-8 h-8 rounded-full bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 hover:border-white/20 transition-all"
+              aria-label="Pause timer"
               title="Pause timer"
             >
               <Pause size={14} />
             </button>
           ) : (
             <button
+              type="button"
               onClick={handleResume}
               className="flex items-center justify-center w-8 h-8 rounded-full bg-brand-500/20 border border-brand-500/30 text-brand-300 hover:bg-brand-500/30 hover:border-brand-500/50 transition-all"
+              aria-label="Resume timer"
               title="Resume timer"
               disabled={remaining === 0}
             >
@@ -109,8 +113,10 @@ export default function Timer({
             </button>
           )}
           <button
+            type="button"
             onClick={handleReset}
             className="flex items-center justify-center w-8 h-8 rounded-full bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 hover:border-white/20 transition-all"
+            aria-label="Reset timer"
             title="Reset timer"
           >
             <RotateCcw size={14} />

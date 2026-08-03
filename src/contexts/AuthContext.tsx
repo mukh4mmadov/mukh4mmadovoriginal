@@ -57,8 +57,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user || null);
 
         if (session?.user) {
-          const userProfile = await authService.getUserProfile(session.user.id);
-          setProfile(userProfile);
+          try {
+            const userProfile = await authService.getUserProfile(session.user.id);
+            setProfile(userProfile);
+          } catch (error) {
+            console.error('Error fetching user profile:', error);
+            setProfile(null);
+          }
         } else {
           setProfile(null);
         }
@@ -76,9 +81,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(authData.user);
     
     if (authData.user) {
-      const userProfile = await authService.getUserProfile(authData.user.id);
-      setProfile(userProfile);
-      await analyticsService.trackUserLogin(authData.user.id);
+      try {
+        const userProfile = await authService.getUserProfile(authData.user.id);
+        setProfile(userProfile);
+        await analyticsService.trackUserLogin(authData.user.id);
+      } catch (error) {
+        console.error('Error fetching user profile after sign in:', error);
+      }
     }
   };
 
@@ -87,9 +96,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(authData.user);
     
     if (authData.user) {
-      const userProfile = await authService.getUserProfile(authData.user.id);
-      setProfile(userProfile);
-      await analyticsService.trackUserRegistration(authData.user.id, { fullName });
+      try {
+        const userProfile = await authService.getUserProfile(authData.user.id);
+        setProfile(userProfile);
+        await analyticsService.trackUserRegistration(authData.user.id, { fullName });
+      } catch (error) {
+        console.error('Error fetching user profile after sign up:', error);
+      }
     }
   };
 
@@ -112,9 +125,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(authData.user);
     
     if (authData.user) {
-      const userProfile = await authService.getUserProfile(authData.user.id);
-      setProfile(userProfile);
-      await analyticsService.trackUserRegistration(authData.user.id, { isGuest: true });
+      try {
+        const userProfile = await authService.getUserProfile(authData.user.id);
+        setProfile(userProfile);
+        await analyticsService.trackUserRegistration(authData.user.id, { isGuest: true });
+      } catch (error) {
+        console.error('Error fetching user profile after guest creation:', error);
+      }
     }
   };
 
@@ -122,9 +139,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) return;
 
     const data = migrationService.extractLocalStorageData();
-    await migrationService.migrateToSupabase(user.id, data);
-    migrationService.clearLocalStorage();
-    setHasLocalStorageData(false);
+    const result = await migrationService.migrateToSupabase(user.id, data);
+
+    if (result.success) {
+      migrationService.clearLocalStorage();
+      setHasLocalStorageData(false);
+    } else {
+      console.error('Migration completed with failures. Local data retained:',
+        result.failedDatasets.join(', '), result.errors);
+    }
   };
 
   const value: AuthContextType = {

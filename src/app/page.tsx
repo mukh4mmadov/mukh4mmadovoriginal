@@ -26,7 +26,7 @@ export default function Home() {
   const [progressData, setProgressData] = useState<any[]>([]);
   const [todayStats, setTodayStats] = useState({
     readingTime: 0,
-    questionsAnswered: 0,
+    testsCompleted: 0,
     highlightsCreated: 0,
     accuracy: 0,
   });
@@ -38,7 +38,7 @@ export default function Home() {
       const progress = await getAllProgress(user?.id);
       setProgressData(progress);
 
-      // Calculate today's stats (simplified for demo)
+      // Calculate today's stats
       const todayProgress = progress.filter(p => {
         const lastAttempt = new Date(p.lastAttempt);
         const today = new Date();
@@ -46,15 +46,15 @@ export default function Home() {
       });
 
       const totalTime = todayProgress.reduce((sum, p) => sum + (p.totalTime || 0), 0);
-      const totalQuestions = todayProgress.reduce((sum, p) => sum + (p.attempts * 13), 0); // Assuming 13 questions per test
-      const avgAccuracy = todayProgress.length > 0 
-        ? todayProgress.reduce((sum, p) => sum + p.bestScore, 0) / todayProgress.length 
+      const completedToday = todayProgress.filter(p => p.completed).length;
+      const avgAccuracy = todayProgress.length > 0
+        ? todayProgress.reduce((sum, p) => sum + p.bestScore, 0) / todayProgress.length
         : 0;
 
       setTodayStats({
-        readingTime: Math.round(totalTime / 60), // Convert to minutes
-        questionsAnswered: totalQuestions,
-        highlightsCreated: 0, // Would need to track this separately
+        readingTime: Math.round(totalTime / 60),
+        testsCompleted: completedToday,
+        highlightsCreated: 0,
         accuracy: Math.round(avgAccuracy),
       });
     };
@@ -63,11 +63,12 @@ export default function Home() {
   }, [user]);
 
   const lastTest = progressData[0];
+  const lastTestPassage = lastTest ? readingTests.find(t => t.slug === lastTest.slug) : null;
   return (
     <>
       <main>
         {/* Continue Last Test Banner */}
-        {lastTest && lastTest.completed < 13 && (
+        {lastTest && !lastTest.completed && lastTestPassage && (
           <section className="border-b border-white/10 bg-gradient-to-r from-brand-500/10 via-brand-500/5 to-transparent">
             <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
               <div className="flex items-center justify-between rounded-xl border border-brand-500/20 bg-brand-500/10 p-4">
@@ -78,12 +79,12 @@ export default function Home() {
                   <div>
                     <p className="text-sm font-semibold text-white">Continue Your Last Test</p>
                     <p className="text-xs text-slate-400">
-                      {lastTest.passageTitle} • {lastTest.completed}/13 questions answered
+                      {lastTestPassage.title}
                     </p>
                   </div>
                 </div>
                 <Link
-                  href={`/reading/${lastTest.passageId}`}
+                  href={`/reading/${lastTest.slug}`}
                   className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-brand-600 hover:scale-105 hover:shadow-lg hover:shadow-brand-500/25 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-surface"
                 >
                   Resume
@@ -97,34 +98,34 @@ export default function Home() {
       <section className="border-b border-white/10 bg-white/[0.02]">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex items-center gap-2 mb-4">
-            <TrendingUp size={20} className="text-brand-400" />
+            <TrendingUp size={20} className="text-brand-400" aria-hidden="true" />
             <h2 className="text-lg font-semibold text-white">Today's Study</h2>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-xl border border-white/10 bg-white/5 p-4 transition-all duration-200 hover:border-brand-500/30 hover:bg-white/10 hover:shadow-lg hover:shadow-brand-500/10">
               <div className="flex items-center gap-2 text-slate-400 mb-2">
-                <Clock size={16} />
+                <Clock size={16} aria-hidden="true" />
                 <p className="text-xs font-medium uppercase tracking-wider">Reading Time</p>
               </div>
               <p className="text-2xl font-bold text-white">{todayStats.readingTime}m</p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 p-4 transition-all duration-200 hover:border-brand-500/30 hover:bg-white/10 hover:shadow-lg hover:shadow-brand-500/10">
               <div className="flex items-center gap-2 text-slate-400 mb-2">
-                <CheckCircle size={16} />
-                <p className="text-xs font-medium uppercase tracking-wider">Questions</p>
+                <CheckCircle size={16} aria-hidden="true" />
+                <p className="text-xs font-medium uppercase tracking-wider">Tests Completed</p>
               </div>
-              <p className="text-2xl font-bold text-white">{todayStats.questionsAnswered}</p>
+              <p className="text-2xl font-bold text-white">{todayStats.testsCompleted}</p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 p-4 transition-all duration-200 hover:border-brand-500/30 hover:bg-white/10 hover:shadow-lg hover:shadow-brand-500/10">
               <div className="flex items-center gap-2 text-slate-400 mb-2">
-                <Highlighter size={16} />
+                <Highlighter size={16} aria-hidden="true" />
                 <p className="text-xs font-medium uppercase tracking-wider">Highlights</p>
               </div>
               <p className="text-2xl font-bold text-white">{todayStats.highlightsCreated}</p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 p-4 transition-all duration-200 hover:border-brand-500/30 hover:bg-white/10 hover:shadow-lg hover:shadow-brand-500/10">
               <div className="flex items-center gap-2 text-slate-400 mb-2">
-                <Target size={16} />
+                <Target size={16} aria-hidden="true" />
                 <p className="text-xs font-medium uppercase tracking-wider">Accuracy</p>
               </div>
               <p className="text-2xl font-bold text-white">{todayStats.accuracy}%</p>
@@ -206,7 +207,7 @@ export default function Home() {
           className="surface-card group mt-8 flex items-center justify-between"
         >
           <div className="flex items-center gap-4">
-            <BookOpen className="text-brand-400" size={28} />
+            <BookOpen className="text-brand-400" size={28} aria-hidden="true" />
             <div>
               <h3 className="font-display text-xl font-bold">All passages</h3>
               <p className="text-sm text-slate-400">
@@ -217,6 +218,7 @@ export default function Home() {
           <ArrowRight
             className="text-brand-400 transition-transform group-hover:translate-x-1"
             size={22}
+            aria-hidden="true"
           />
         </Link>
       </section>

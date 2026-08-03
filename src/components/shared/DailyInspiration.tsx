@@ -206,7 +206,7 @@ export default function DailyInspiration({ compact = false }: DailyInspirationPr
       <div className="bg-gradient-to-br from-brand-500/10 via-transparent to-surface/50 border border-white/10 rounded-xl p-4 space-y-3">
         {/* Compact Study Wisdom */}
         <div className="flex items-start gap-3">
-          <BookOpen className="text-brand-400 shrink-0" size={16} />
+          <BookOpen className="text-brand-400 shrink-0" size={16} aria-hidden="true" />
           <div className="flex-1 min-w-0">
             <p className="text-slate-200 text-sm font-medium leading-relaxed">
               {quoteData.quote}
@@ -241,7 +241,7 @@ export default function DailyInspiration({ compact = false }: DailyInspirationPr
 
         {/* Compact Strategy */}
         <div className="flex items-start gap-3">
-          <Lightbulb className="text-amber-400 shrink-0" size={16} />
+          <Lightbulb className="text-amber-400 shrink-0" size={16} aria-hidden="true" />
           <div className="flex-1 min-w-0">
             <p className="text-xs text-slate-400 mb-1">IELTS Strategy</p>
             <p className="text-slate-200 text-sm">{dailyStrategy.content.tip}</p>
@@ -257,7 +257,7 @@ export default function DailyInspiration({ compact = false }: DailyInspirationPr
       <div className="flex items-start gap-4">
         <div className="relative shrink-0">
           <div className="absolute inset-0 bg-brand-500/20 blur-lg rounded-full" />
-          <BookOpen className="text-brand-400 relative" size={20} />
+          <BookOpen className="text-brand-400 relative" size={20} aria-hidden="true" />
         </div>
         <div className="flex-1 min-w-0">
           <div className={`transition-opacity duration-300 ${isRefreshing ? 'opacity-0' : 'opacity-100'}`}>
@@ -306,7 +306,7 @@ export default function DailyInspiration({ compact = false }: DailyInspirationPr
 
       {/* Strategy Section */}
       <div className="flex items-start gap-4">
-        <Lightbulb className="text-amber-400 shrink-0" size={18} />
+        <Lightbulb className="text-amber-400 shrink-0" size={18} aria-hidden="true" />
         <div className="flex-1 min-w-0">
           <p className="text-xs text-slate-400 mb-1.5 uppercase tracking-wider font-medium">
             📚 IELTS Strategy of the Day
@@ -319,7 +319,7 @@ export default function DailyInspiration({ compact = false }: DailyInspirationPr
       <div className="flex items-start gap-4">
         <div className="relative shrink-0">
           <div className="absolute inset-0 bg-emerald-500/20 blur-lg rounded-full" />
-          <Lightbulb className="text-emerald-400 relative" size={18} />
+          <Lightbulb className="text-emerald-400 relative" size={18} aria-hidden="true" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-xs text-slate-400 mb-1.5 uppercase tracking-wider font-medium">
@@ -335,7 +335,7 @@ export default function DailyInspiration({ compact = false }: DailyInspirationPr
 
       {/* Today's Missions */}
       <div className="flex items-start gap-4">
-        <Target className="text-purple-400 shrink-0" size={18} />
+        <Target className="text-purple-400 shrink-0" size={18} aria-hidden="true" />
         <div className="flex-1 min-w-0">
           <p className="text-xs text-slate-400 mb-2 uppercase tracking-wider font-medium">
             🎯 Today's Mission

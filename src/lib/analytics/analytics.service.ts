@@ -35,13 +35,23 @@ export class AnalyticsService {
 
   async track(event: AnalyticsEvent, userId?: string | null): Promise<void> {
     try {
+      const browserInfo = this.getBrowserInfo();
+      const deviceInfo = this.getDeviceInfo();
+      const pageUrl =
+        typeof window !== "undefined" ? window.location.href : null;
+
       const eventData = {
         user_id: userId || null,
         event_type: event.event_type,
-        event_data: event.metadata || {},
-        browser_info: this.getBrowserInfo(),
-        device_info: this.getDeviceInfo(),
-        page_url: typeof window !== "undefined" ? window.location.href : null,
+        event_data: {
+          ...(event.metadata || {}),
+          browser_info: browserInfo,
+          device_info: deviceInfo,
+          page_url: pageUrl,
+        },
+        browser_info: browserInfo,
+        device_info: deviceInfo,
+        page_url: pageUrl,
       };
 
       await supabase.from("analytics_events").insert(eventData);

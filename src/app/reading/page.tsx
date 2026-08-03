@@ -146,9 +146,10 @@ export default function ReadingListPage() {
                       <FileText
                         className="text-brand-400 group-hover:scale-110 group-hover:text-brand-300 transition-all duration-300"
                         size={26}
+                        aria-hidden="true"
                       />
                       {progressData[t.slug]?.completed && (
-                        <CheckCircle2 className="text-emerald-400" size={18} />
+                        <CheckCircle2 className="text-emerald-400" size={18} aria-hidden="true" />
                       )}
                     </div>
                     {t.difficulty && (
@@ -167,7 +168,7 @@ export default function ReadingListPage() {
                   </h3>
                   <div className="mb-4 flex items-center gap-4 text-xs text-slate-400">
                     <span className="flex items-center gap-1 group-hover:text-brand-300 transition-colors">
-                      <Clock size={14} /> 20 min
+                      <Clock size={14} aria-hidden="true" /> 20 min
                     </span>
                     <span className="group-hover:text-brand-300 transition-colors">
                       {passage.wordCount} words
@@ -179,7 +180,7 @@ export default function ReadingListPage() {
                       }{" "}
                       questions
                     </span>
-                    {progressData[t.slug]?.bestScore && (
+                    {progressData[t.slug]?.bestScore !== undefined && (
                       <span className="flex items-center gap-1 text-emerald-400">
                         Best: {progressData[t.slug].bestScore.toFixed(0)}%
                       </span>

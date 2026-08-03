@@ -110,13 +110,13 @@ export default function ReportIssueButton() {
         subject: formData.subject,
         message: formData.message,
         message_type: formData.message_type,
-        page_url: window.location.href,
-        browser_info: {
+        page_url: typeof window !== 'undefined' ? window.location.href : '',
+        browser_info: typeof window !== 'undefined' ? {
           userAgent: navigator.userAgent,
           language: navigator.language,
           platform: navigator.platform,
-        },
-        screen_size: `${window.innerWidth}x${window.innerHeight}`,
+        } : { userAgent: '', language: '', platform: '' },
+        screen_size: typeof window !== 'undefined' ? `${window.innerWidth}x${window.innerHeight}` : 'unknown',
       });
 
       setToastMessage("Thank you! Your report has been received.");
@@ -324,9 +324,9 @@ export default function ReportIssueButton() {
 
               <div className="text-xs text-slate-500">
                 <p>System info will be automatically included:</p>
-                <p>• Page: {window.location.href}</p>
+                <p>• Page: {typeof window !== 'undefined' ? window.location.href : 'N/A'}</p>
                 <p>
-                  • Screen: {window.innerWidth}x{window.innerHeight}
+                  • Screen: {typeof window !== 'undefined' ? `${window.innerWidth}x${window.innerHeight}` : 'N/A'}
                 </p>
                 <p>• User: {user?.id ? "Logged in" : "Guest"}</p>
               </div>

@@ -178,7 +178,7 @@ export default function AIReadingTutor({
     >
       <div className="mb-4 flex items-start gap-3">
         <div className="rounded-2xl border border-brand-500/30 bg-brand-500/15 p-2.5 text-brand-300">
-          <BrainCircuit size={18} />
+          <BrainCircuit size={18} aria-hidden="true" />
         </div>
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-brand-300">

@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import HighlightablePassage from "@/components/reading/HighlightablePassage";
 import HighlightableText from "@/components/reading/HighlightableText";
+import type { UseTextHighlightReturn } from "@/hooks/useTextHighlight";
+import { useTextHighlight } from "@/hooks/useTextHighlight";
 import ReadingTestResults from "@/components/reading/ReadingTestResults";
 import AIReadingTutor from "@/components/reading/AIReadingTutor";
 import AIChatPanel from "@/components/ai/AIChatPanel";
@@ -235,7 +237,7 @@ export default function ReadingTestPlayer({
   };
 
   useEffect(() => {
-    if (!timerRunning) return;
+    if (!timerRunning || typeof window === 'undefined') return;
 
     const tick = () => {
       setTimeSpent(getElapsedSeconds());
@@ -279,6 +281,11 @@ export default function ReadingTestPlayer({
       text,
       timestamp: Date.now(),
     });
+    analyticsService.trackHighlightCreated(
+      user?.id ?? null,
+      passage.slug,
+      { text },
+    );
   };
 
   const handleHighlightRemove = (text: string) => {
@@ -287,7 +294,19 @@ export default function ReadingTestPlayer({
       text,
       timestamp: Date.now(),
     });
+    analyticsService.trackHighlightRemoved(
+      user?.id ?? null,
+      passage.slug,
+      { text },
+    );
   };
+
+  // Shared highlight state – controls HighlightablePassage + all HighlightableText instances
+  const highlightState: UseTextHighlightReturn = useTextHighlight(
+    passage.slug,
+    handleHighlight,
+    handleHighlightRemove,
+  );
 
   const setAnswer = (id: string, value: string) => {
     if (submitted) return;
@@ -338,14 +357,12 @@ export default function ReadingTestPlayer({
     performSubmit();
   };
 
-  const performSubmit = () => {
+  const performSubmit = async () => {
     const finalTime = getElapsedSeconds();
     setTimeSpent(finalTime);
     setSubmitted(true);
     setTimerRunning(false);
     setShowSubmitDialog(false);
-
-    localStorage.removeItem(`ielts-reading-${passage.slug}`);
 
     const correctCount = questions.filter((q) =>
       isCorrect(q, answers[q.id]),
@@ -367,16 +384,22 @@ export default function ReadingTestPlayer({
       score,
     );
 
-    saveProgress(
-      passage.slug,
-      {
-        completed: true,
-        bestScore: score,
-        attempts: 1,
-        totalTime: finalTime,
-      },
-      user?.id,
-    );
+    try {
+      await saveProgress(
+        passage.slug,
+        {
+          completed: true,
+          bestScore: score,
+          attempts: 1,
+          totalTime: finalTime,
+        },
+        user?.id,
+      );
+
+      localStorage.removeItem(`ielts-reading-${passage.slug}`);
+    } catch (error) {
+      console.error("Failed to save progress on submit, draft retained:", error);
+    }
   };
 
   const resetTestState = () => {
@@ -471,6 +494,7 @@ export default function ReadingTestPlayer({
               type="button"
               onClick={() => setAiChatOpen(true)}
               className="flex items-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/10 px-3 py-2 text-sm font-medium text-brand-300 hover:bg-brand-500/20 transition-colors"
+              aria-label="Open AI Coach"
               title="Open AI Coach"
             >
               <Bot size={16} />
@@ -512,8 +536,7 @@ export default function ReadingTestPlayer({
             <HighlightablePassage
               paragraphs={passage.paragraphs}
               fontSize={fontSize}
-              onHighlight={handleHighlight}
-              onHighlightRemove={handleHighlightRemove}
+              highlightState={highlightState}
             />
           </div>
         </div>
@@ -634,9 +657,14 @@ export default function ReadingTestPlayer({
                   key={gi}
                   className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.1)] backdrop-blur-sm transition-all duration-300 hover:border-white/20 hover:bg-white/10"
                 >
-                  <p className="mb-4 text-sm leading-6 text-slate-400">
+                  <HighlightableText
+                    fontSize={fontSize}
+                    containerKey={`instructions-${gi}`}
+                    highlightState={highlightState}
+                    className="block mb-4 text-sm text-slate-400"
+                  >
                     {group.instructions}
-                  </p>
+                  </HighlightableText>
 
                   {group.questions[0].type === "matching-headings" &&
                     passage.headingBank && (
@@ -685,9 +713,8 @@ export default function ReadingTestPlayer({
                               <p className="text-sm leading-7 text-slate-200">
                                 <HighlightableText
                                   fontSize={fontSize}
-                                  onHighlight={handleHighlight}
-                                  onHighlightRemove={handleHighlightRemove}
                                   containerKey={`${q.id}-before`}
+                                  highlightState={highlightState}
                                 >
                                   {q.before}
                                 </HighlightableText>{" "}
@@ -701,9 +728,8 @@ export default function ReadingTestPlayer({
                                 />{" "}
                                 <HighlightableText
                                   fontSize={fontSize}
-                                  onHighlight={handleHighlight}
-                                  onHighlightRemove={handleHighlightRemove}
                                   containerKey={`${q.id}-after`}
+                                  highlightState={highlightState}
                                 >
                                   {q.after}
                                 </HighlightableText>
@@ -712,9 +738,8 @@ export default function ReadingTestPlayer({
                               <p className="text-sm leading-7 text-slate-200">
                                 <HighlightableText
                                   fontSize={fontSize}
-                                  onHighlight={handleHighlight}
-                                  onHighlightRemove={handleHighlightRemove}
                                   containerKey={`${q.id}-prompt`}
+                                  highlightState={highlightState}
                                 >
                                   {q.type === "matching-headings"
                                     ? q.paragraphLabel
@@ -825,7 +850,7 @@ export default function ReadingTestPlayer({
 
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.08)] backdrop-blur-sm">
               <div className="flex items-start gap-3">
-                <MessageCircle size={18} className="mt-0.5 text-brand-400" />
+                <MessageCircle size={18} className="mt-0.5 text-brand-400" aria-hidden="true" />
                 <div>
                   <p className="mb-1 text-sm font-semibold text-slate-200">
                     Found a bug or have suggestions?
@@ -842,8 +867,8 @@ export default function ReadingTestPlayer({
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-sm text-slate-400 transition-colors duration-200 hover:text-brand-400"
                 >
-                  <Send size={14} />
-                  @mukh4mmadov
+                  <Send size={14} aria-hidden="true" />
+                  Contact on Telegram
                 </a>
               </div>
             </div>
@@ -869,7 +894,7 @@ export default function ReadingTestPlayer({
           >
             <div className="mb-4 flex items-start gap-4">
               <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-amber-500/20">
-                <AlertTriangle className="text-amber-400" size={24} />
+                <AlertTriangle className="text-amber-400" size={24} aria-hidden="true" />
               </div>
               <div className="flex-1">
                 <h3
