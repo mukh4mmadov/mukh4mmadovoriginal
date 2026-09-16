@@ -143,7 +143,6 @@ export function AuthProvider({ children }) {
     isGuest: profile?.is_guest || false,
     signInWithGoogle,
     signOut,
-    createGuestAccount,
     migrateLocalStorage,
     hasLocalStorageData,
   };

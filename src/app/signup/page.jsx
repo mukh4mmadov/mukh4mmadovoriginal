@@ -9,7 +9,7 @@ import Toast from '@/components/shared/Toast';
 
 export default function SignUpPage() {
   const router = useRouter();
-  const { signInWithGoogle, createGuestAccount, user, isLoading: authLoading } = useAuth();
+  const { signInWithGoogle, user, isLoading: authLoading } = useAuth();
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState(null);
@@ -55,17 +55,6 @@ export default function SignUpPage() {
       } else {
         setError(err.message || 'Google sign-in failed');
       }
-    }
-  };
-
-  const handleGuestAccess = async () => {
-    setIsSubmitting(true);
-    try {
-      await createGuestAccount();
-      router.push('/');
-    } catch (err) {
-      setError(err.message || 'Failed to create guest account');
-      setIsSubmitting(false);
     }
   };
 
@@ -158,7 +147,6 @@ export default function SignUpPage() {
                 error={error}
                 isLoading={isSubmitting}
                 onGoogleSignIn={handleGoogleSignIn}
-                onGuestAccess={handleGuestAccess}
               />
             </div>
           </div>
@@ -181,7 +169,6 @@ export default function SignUpPage() {
                 error={error}
                 isLoading={isSubmitting}
                 onGoogleSignIn={handleGoogleSignIn}
-                onGuestAccess={handleGuestAccess}
               />
             </div>
           </div>
@@ -204,7 +191,6 @@ function AuthCard({
   error,
   isLoading,
   onGoogleSignIn,
-  onGuestAccess,
 }) {
   return (
     <div className="w-full max-w-md">
@@ -227,14 +213,6 @@ function AuthCard({
           >
             <Chrome className="w-5 h-5" />
             <span>Continue with Google</span>
-          </button>
-
-          <button
-            onClick={onGuestAccess}
-            disabled={isLoading}
-            className="w-full py-3 px-4 bg-white/5 border border-white/10 text-slate-300 font-medium rounded-lg hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Continue as Guest
           </button>
         </div>
 

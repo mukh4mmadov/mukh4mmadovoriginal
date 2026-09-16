@@ -7,22 +7,13 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
-  const { signInWithGoogle, createGuestAccount } = useAuth();
+  const { signInWithGoogle } = useAuth();
 
   const handleGoogleSignIn = async () => {
     try {
       await signInWithGoogle();
     } catch (err) {
       console.error('Google sign-in failed:', err);
-    }
-  };
-
-  const handleGuestAccess = async () => {
-    try {
-      await createGuestAccount();
-      router.push('/');
-    } catch (err) {
-      console.error('Guest access failed:', err);
     }
   };
 
@@ -62,7 +53,7 @@ export default function ForgotPasswordPage() {
               <span className="text-2xl font-bold text-white">IELTS Reading Pro</span>
             </div>
             <h1 className="text-3xl font-bold text-white mb-2">Email authentication disabled</h1>
-            <p className="text-slate-400">Please use Google sign-in or continue as guest</p>
+            <p className="text-slate-400">Please use Google sign-in</p>
           </div>
 
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
@@ -73,13 +64,6 @@ export default function ForgotPasswordPage() {
               >
                 <Chrome className="w-5 h-5" />
                 <span>Continue with Google</span>
-              </button>
-
-              <button
-                onClick={handleGuestAccess}
-                className="w-full py-3 px-4 bg-white/5 border border-white/10 text-slate-300 font-medium rounded-lg hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all"
-              >
-                Continue as Guest
               </button>
             </div>
 
