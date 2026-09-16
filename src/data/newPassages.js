@@ -7,6 +7,7 @@ export const newPassages = [
     slug: "the-wonder-plant",
     title: "The Wonder Plant",
     subtitle: "Bamboo is used for a wide range of purposes, but now it seems it may be under threat.",
+    wordCount: 920,
     paragraphs: [
       {
         label: "A",
@@ -220,6 +221,7 @@ export const newPassages = [
     slug: "renewable-energy",
     title: "Renewable Energy",
     subtitle: "An insight into the progress in renewable energy research",
+    wordCount: 1050,
     paragraphs: [
       {
         label: "",
@@ -425,6 +427,7 @@ export const newPassages = [
     slug: "inside-the-mind-of-a-fan",
     title: "Inside the mind of a fan",
     subtitle: "How watching sport affects the brain",
+    wordCount: 980,
     paragraphs: [
       {
         label: "A",
@@ -611,6 +614,7 @@ export const newPassages = [
     slug: "caral-ancient-south-american-city",
     title: "Caral: an ancient South American city",
     subtitle: "",
+    wordCount: 890,
     paragraphs: [
       {
         label: "",
@@ -778,6 +782,7 @@ export const newPassages = [
     slug: "should-space-be-explored-by-robots-or-humans",
     title: "Should space be explored by robots or by humans?",
     subtitle: "",
+    wordCount: 1120,
     headingBank: [
       { id: "i", text: "Robots on Earth – a re-evaluation" },
       { id: "ii", text: "The barriers to cooperation in space exploration" },
@@ -973,6 +978,7 @@ export const newPassages = [
     slug: "the-dark-side-of-the-technological-boom",
     title: "The dark side of the technological boom",
     subtitle: "What are the effects on the individual of working in modern technological workplaces?",
+    wordCount: 1080,
     paragraphs: [
       {
         label: "",
@@ -1204,6 +1210,7 @@ export const newPassages = [
     slug: "answers-underground",
     title: "Answers Underground",
     subtitle: "Burying greenhouse gases to slow global warming",
+    wordCount: 950,
     paragraphs: [
       {
         label: "A",
@@ -1425,6 +1432,7 @@ export const newPassages = [
     slug: "science-and-the-stradivarius",
     title: "Science and the Stradivarius: Uncovering the secret of quality",
     subtitle: "",
+    wordCount: 1010,
     headingBank: [
       { id: "i", text: "An analysis of protective coatings" },
       { id: "ii", text: "Applying technology to violin production" },
@@ -1608,6 +1616,7 @@ export const newPassages = [
     slug: "when-people-are-deaf-to-music",
     title: "When people are deaf to music",
     subtitle: "",
+    wordCount: 970,
     paragraphs: [
       {
         label: "",

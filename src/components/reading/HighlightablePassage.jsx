@@ -3,8 +3,10 @@
 import {
   Eraser,
   Trash2,
+  Palette,
 } from "lucide-react";
 import {
+  HIGHLIGHT_COLORS,
   HIGHLIGHT_COLOR,
   fontSizeMap,
   tokenize,
@@ -26,12 +28,37 @@ export default function HighlightablePassage({
     handleSelection,
     handleDoubleClick,
     toggleToken,
+    selectedColor,
+    setSelectedColor,
   } = highlightState;
 
   return (
     <div className="space-y-4">
       {/* Highlighting toolbar */}
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 backdrop-blur-sm">
+        {/* Color selector */}
+        <div className="flex items-center gap-2">
+          <Palette size={14} className="text-slate-400" />
+          <div className="flex gap-1">
+            {Object.entries(HIGHLIGHT_COLORS).map(([colorName, colorValue]) => (
+              <button
+                key={colorName}
+                type="button"
+                onClick={() => setSelectedColor(colorName)}
+                className={`w-6 h-6 rounded-full border-2 transition-all ${
+                  selectedColor === colorName
+                    ? "border-white scale-110"
+                    : "border-transparent hover:border-white/50"
+                }`}
+                style={{ backgroundColor: colorValue }}
+                title={`Select ${colorName} highlight`}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="w-px h-6 bg-white/10" />
+
         <button
           type="button"
           onClick={toggleEraseMode}
@@ -100,7 +127,7 @@ export default function HighlightablePassage({
                 }
 
                 const tokenKey = `${paragraphKey}-${i}`;
-                const isHighlighted = paragraphHighlights[tokenKey];
+                const highlightColor = paragraphHighlights[tokenKey];
 
                 return (
                   <span
@@ -117,9 +144,9 @@ export default function HighlightablePassage({
                       }
                     }}
                     style={
-                      isHighlighted
+                      highlightColor
                         ? {
-                            backgroundColor: HIGHLIGHT_COLOR,
+                            backgroundColor: HIGHLIGHT_COLORS[highlightColor] || HIGHLIGHT_COLOR,
                             borderRadius: 3,
                           }
                         : undefined

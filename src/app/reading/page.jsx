@@ -77,24 +77,31 @@ export default function ReadingListPage() {
 
       <div className="mb-8 flex flex-col gap-4 rounded-[1.5rem] border border-white/10 bg-white/5 p-4 shadow-[0_12px_40px_rgba(2,8,23,0.12)] sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1 max-w-md">
+          <label htmlFor="search-input" className="sr-only">Search passages</label>
           <Search
             className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
             size={18}
+            aria-hidden="true"
           />
           <input
+            id="search-input"
             type="text"
             placeholder="Search passages..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="input-field pl-10"
+            aria-label="Search passages by title or subtitle"
           />
         </div>
         <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-slate-950/40 px-3 py-2">
-          <Filter className="text-slate-400" size={18} />
+          <label htmlFor="difficulty-select" className="sr-only">Filter by difficulty level</label>
+          <Filter className="text-slate-400" size={18} aria-hidden="true" />
           <select
+            id="difficulty-select"
             value={selectedDifficulty}
             onChange={(e) => setSelectedDifficulty(e.target.value)}
             className="rounded-xl bg-transparent px-2 py-1 text-sm text-white focus:border-brand-500 focus:outline-none"
+            aria-label="Filter passages by difficulty level"
           >
             <option value="all">All Levels</option>
             <option value="easy">Easy</option>

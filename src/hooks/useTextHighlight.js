@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { HIGHLIGHT_COLOR } from "@/lib/highlightConstants";
+import { HIGHLIGHT_COLORS } from "@/lib/highlightConstants";
 
 export function useTextHighlight(
   storageKey,
@@ -19,6 +19,7 @@ export function useTextHighlight(
   });
 
   const [eraseMode, setEraseMode] = useState(false);
+  const [selectedColor, setSelectedColor] = useState("yellow");
 
   const totalHighlights = Object.values(highlights).reduce(
     (sum, container) => sum + Object.keys(container).length,
@@ -70,7 +71,7 @@ export function useTextHighlight(
             delete current[tokenKey];
             onHighlightRemove?.(tokenText);
           } else {
-            current[tokenKey] = true;
+            current[tokenKey] = selectedColor;
             onHighlight?.(tokenText);
           }
         }
@@ -79,7 +80,7 @@ export function useTextHighlight(
         return next;
       });
     },
-    [eraseMode, onHighlight, onHighlightRemove],
+    [eraseMode, selectedColor, onHighlight, onHighlightRemove],
   );
 
   const handleDoubleClick = useCallback(
@@ -171,7 +172,7 @@ export function useTextHighlight(
             }
           } else {
             if (!current[key]) {
-              current[key] = true;
+              current[key] = selectedColor;
               onHighlight?.(tokenText);
             }
           }
@@ -196,5 +197,7 @@ export function useTextHighlight(
     handleSelection,
     handleDoubleClick,
     toggleToken,
+    selectedColor,
+    setSelectedColor,
   };
 }

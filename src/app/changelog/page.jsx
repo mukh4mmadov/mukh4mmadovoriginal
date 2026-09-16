@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase/client';
 export default function ChangelogPage() {
   const [entries, setEntries] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     loadChangelog();
@@ -23,9 +24,61 @@ export default function ChangelogPage() {
       setEntries(data || []);
     } catch (error) {
       console.error('Error loading changelog:', error);
+      setError(error.message);
+      // Load demo data as fallback
+      setEntries(getDemoChangelog());
     } finally {
       setIsLoading(false);
     }
+  }
+
+  function getDemoChangelog() {
+    return [
+      {
+        id: 1,
+        version: '1.0.0',
+        title: 'Initial Release',
+        description: 'First stable release of IELTS Reading Practice platform',
+        published_at: '2024-09-15',
+        features: [
+          '33 IELTS reading passages with full test functionality',
+          'Real-time timer with pause/resume/reset controls',
+          'Text highlighting with eraser mode',
+          'Instant band score calculation and analytics',
+          'User authentication and progress tracking',
+          'Responsive design for desktop and mobile',
+          'Daily study missions and streak tracking',
+          'Contact form and issue reporting'
+        ],
+        fixes: [
+          'Fixed React key duplication in paragraph rendering',
+          'Fixed roadmap data loading with demo fallback',
+          'Improved error handling across all pages'
+        ],
+        breaking_changes: []
+      },
+      {
+        id: 2,
+        version: '0.9.0',
+        title: 'Beta Release',
+        description: 'Public beta testing phase',
+        published_at: '2024-08-20',
+        features: [
+          'Core reading test functionality',
+          'Basic highlighting features',
+          'Timer and scoring system',
+          'Passage catalogue with filters'
+        ],
+        fixes: [
+          'Fixed navigation issues',
+          'Improved mobile responsiveness'
+        ],
+        breaking_changes: [
+          'Changed API endpoint structure',
+          'Updated authentication flow'
+        ]
+      }
+    ];
   }
 
   if (isLoading) {
@@ -35,6 +88,23 @@ export default function ChangelogPage() {
       </div>
     );
   }
+
+  return (
+    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-white mb-4">Changelog</h1>
+          <p className="text-slate-400 text-lg">
+            Track the latest updates, features, and improvements
+          </p>
+        </div>
+
+        {error && (
+          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-6 text-center mb-8">
+            <p className="text-yellow-400 mb-2">⚠️ Database connection error</p>
+            <p className="text-slate-400 text-sm">Showing demo data instead</p>
+          </div>
+        )}
 
   return (
     <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">

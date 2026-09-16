@@ -3,16 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, Lock, User, ArrowRight, BookOpenText, CheckCircle, Zap, Shield, Chrome } from 'lucide-react';
+import { BookOpenText, Chrome } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Toast from '@/components/shared/Toast';
 
 export default function SignUpPage() {
   const router = useRouter();
-  const { signUp, signInWithGoogle, createGuestAccount, user, isLoading: authLoading } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
+  const { signInWithGoogle, createGuestAccount, user, isLoading: authLoading } = useAuth();
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState(null);
@@ -44,20 +41,6 @@ export default function SignUpPage() {
   if (user) {
     return null;
   }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setIsSubmitting(true);
-
-    try {
-      await signUp(email, password, fullName);
-      router.push('/');
-    } catch (err) {
-      setError(err.message || 'Registration failed');
-      setIsSubmitting(false);
-    }
-  };
 
   const handleGoogleSignIn = async () => {
     setError('');
@@ -172,18 +155,10 @@ export default function SignUpPage() {
             {/* Right side - Signup card */}
             <div className="flex justify-center">
               <AuthCard
-                email={email}
-                setEmail={setEmail}
-                password={password}
-                setPassword={setPassword}
-                fullName={fullName}
-                setFullName={setFullName}
                 error={error}
                 isLoading={isSubmitting}
-                onSubmit={handleSubmit}
                 onGoogleSignIn={handleGoogleSignIn}
                 onGuestAccess={handleGuestAccess}
-                isLogin={false}
               />
             </div>
           </div>
@@ -203,18 +178,10 @@ export default function SignUpPage() {
               </div>
 
               <AuthCard
-                email={email}
-                setEmail={setEmail}
-                password={password}
-                setPassword={setPassword}
-                fullName={fullName}
-                setFullName={setFullName}
                 error={error}
                 isLoading={isSubmitting}
-                onSubmit={handleSubmit}
                 onGoogleSignIn={handleGoogleSignIn}
                 onGuestAccess={handleGuestAccess}
-                isLogin={false}
               />
             </div>
           </div>
@@ -234,152 +201,50 @@ export default function SignUpPage() {
 }
 
 function AuthCard({
-  email,
-  setEmail,
-  password,
-  setPassword,
-  fullName,
-  setFullName,
   error,
   isLoading,
-  onSubmit,
   onGoogleSignIn,
   onGuestAccess,
-  isLogin,
 }) {
   return (
     <div className="w-full max-w-md">
       <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
         <h2 className="text-2xl font-bold text-white mb-6">
-          {isLogin ? 'Sign in' : 'Create account'}
+          Create account
         </h2>
 
-        <form onSubmit={onSubmit} className="space-y-5">
-          {!isLogin && (
-            <div className="space-y-2">
-              <label htmlFor="fullName" className="text-sm font-medium text-slate-300">
-                Full Name
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <input
-                  id="fullName"
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="John Doe"
-                  required
-                  aria-label="Full name"
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium text-slate-300">
-              Email
-            </label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                placeholder="you@example.com"
-                required
-                aria-label="Email address"
-                disabled={isLoading}
-              />
-            </div>
+        {error && (
+          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg mb-6">
+            <p className="text-sm text-red-400">{error}</p>
           </div>
+        )}
 
-          <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium text-slate-300">
-              Password
-            </label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                placeholder="••••••••"
-                required
-                minLength={6}
-                aria-label="Password"
-                disabled={isLoading}
-              />
-            </div>
-          </div>
-
-          {error && (
-            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-              <p className="text-sm text-red-400">{error}</p>
-            </div>
-          )}
+        <div className="space-y-3">
+          <button
+            onClick={onGoogleSignIn}
+            disabled={isLoading}
+            className="w-full py-3 px-4 bg-white/5 border border-white/10 text-white font-medium rounded-lg hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+          >
+            <Chrome className="w-5 h-5" />
+            <span>Continue with Google</span>
+          </button>
 
           <button
-            type="submit"
+            onClick={onGuestAccess}
             disabled={isLoading}
-            className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full py-3 px-4 bg-white/5 border border-white/10 text-slate-300 font-medium rounded-lg hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>Loading...</span>
-              </>
-            ) : (
-              <>
-                <span>{isLogin ? 'Sign in' : 'Create account'}</span>
-                <ArrowRight className="w-4 h-4" />
-              </>
-            )}
+            Continue as Guest
           </button>
-        </form>
-
-        <div className="mt-6">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/10" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-transparent text-slate-500">Or continue with</span>
-            </div>
-          </div>
-
-          <div className="mt-4 space-y-3">
-            <button
-              onClick={onGoogleSignIn}
-              disabled={isLoading}
-              className="w-full py-3 px-4 bg-white/5 border border-white/10 text-white font-medium rounded-lg hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
-            >
-              <Chrome className="w-5 h-5" />
-              <span>Continue with Google</span>
-            </button>
-
-            <button
-              onClick={onGuestAccess}
-              disabled={isLoading}
-              className="w-full py-3 px-4 bg-white/5 border border-white/10 text-slate-300 font-medium rounded-lg hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Continue as Guest
-            </button>
-          </div>
         </div>
 
         <p className="mt-6 text-center text-sm text-slate-400">
-          {isLogin ? "Don't have an account? " : "Already have an account? "}
+          Already have an account?{" "}
           <Link
-            href={isLogin ? "/signup" : "/login"}
+            href="/login"
             className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
           >
-            {isLogin ? "Sign up" : "Sign in"}
+            Sign in
           </Link>
         </p>
       </div>

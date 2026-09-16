@@ -141,8 +141,6 @@ export function AuthProvider({ children }) {
     profile,
     isLoading,
     isGuest: profile?.is_guest || false,
-    signIn,
-    signUp,
     signInWithGoogle,
     signOut,
     createGuestAccount,
