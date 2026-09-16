@@ -37,6 +37,17 @@ export default function ProfilePage() {
     }
   }, [user, profile, isLoading, router]);
 
+  // Add error boundary
+  useEffect(() => {
+    const handleError = (error) => {
+      console.error('Profile page error:', error);
+      router.push('/login');
+    };
+
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, [router]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');

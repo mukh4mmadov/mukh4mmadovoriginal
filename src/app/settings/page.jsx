@@ -28,6 +28,17 @@ export default function SettingsPage() {
     }
   }, [user, isLoading, router]);
 
+  // Add error boundary
+  useEffect(() => {
+    const handleError = (error) => {
+      console.error('Settings page error:', error);
+      router.push('/login');
+    };
+
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, [router]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');

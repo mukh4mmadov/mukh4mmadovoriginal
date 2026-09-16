@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { BookOpenText, Chrome } from 'lucide-react';
+import { BookOpenText, Chrome, CheckCircle, Zap, Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Toast from '@/components/shared/Toast';
 

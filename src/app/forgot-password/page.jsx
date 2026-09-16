@@ -88,6 +88,10 @@ export default function ForgotPasswordPage() {
               <Link
                 href="/login"
                 className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
+                onClick={(e) => {
+                  e.preventDefault();
+                  router.push('/login');
+                }}
               >
                 Sign in
               </Link>

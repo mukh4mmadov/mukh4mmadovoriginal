@@ -18,6 +18,17 @@ export default function StatisticsPage() {
     }
   }, [user, isLoading, router]);
 
+  // Add error boundary
+  useEffect(() => {
+    const handleError = (error) => {
+      console.error('Statistics page error:', error);
+      router.push('/login');
+    };
+
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, [router]);
+
   useEffect(() => {
     if (user) {
       // TODO: Fetch actual statistics from database
