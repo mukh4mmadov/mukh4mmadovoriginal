@@ -66,6 +66,9 @@ export default function LoginPage() {
     setError('');
     setIsSubmitting(true);
 
+    // Force a small delay to show loading state
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     try {
       await signInWithGoogle();
     } catch (err) {
@@ -198,7 +201,7 @@ function AuthCard({
         </h2>
 
         {error && (
-          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg mb-6">
+          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg mb-6" role="alert" aria-live="polite">
             <p className="text-sm text-red-400">{error}</p>
           </div>
         )}
@@ -209,8 +212,17 @@ function AuthCard({
             disabled={isLoading}
             className="w-full py-3 px-4 bg-white/5 border border-white/10 text-white font-medium rounded-lg hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
           >
-            <Chrome className="w-5 h-5" />
-            <span>Continue with Google</span>
+            {isLoading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Redirecting to Google...</span>
+              </>
+            ) : (
+              <>
+                <Chrome className="w-5 h-5" />
+                <span>Continue with Google</span>
+              </>
+            )}
           </button>
         </div>
 
