@@ -26,8 +26,28 @@ export default function LoginPage() {
   }, [toast]);
 
   useEffect(() => {
+    // Handle URL error parameters from auth callback
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlError = urlParams.get('error');
+    const errorDescription = urlParams.get('error_description');
+
+    if (urlError) {
+      setError(errorDescription || 'Authentication failed. Please try again.');
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
+  useEffect(() => {
     if (user && !authLoading) {
-      router.replace('/');
+      // Check for redirect parameter
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirect = urlParams.get('redirect');
+      if (redirect) {
+        router.replace(decodeURIComponent(redirect));
+      } else {
+        router.replace('/');
+      }
     }
   }, [user, authLoading, router]);
 
@@ -86,10 +106,10 @@ export default function LoginPage() {
       {/* Content */}
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-6xl mx-auto">
-          {/* Desktop: Split layout */}
-          <div className="hidden lg:grid lg:grid-cols-2 lg:gap-12 items-center">
+          {/* Single responsive layout - no duplicate rendering */}
+          <div className="flex flex-col lg:flex-row lg:gap-12 items-center">
             {/* Left side - Hero */}
-            <div className="text-white space-y-8">
+            <div className="text-white space-y-8 lg:w-1/2">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
                   <BookOpenText className="w-7 h-7 text-white" />
@@ -97,14 +117,14 @@ export default function LoginPage() {
                 <span className="text-2xl font-bold">IELTS Reading Pro</span>
               </div>
 
-              <h1 className="text-5xl font-bold leading-tight">
-                Master IELTS Reading
+              <h1 className="text-3xl lg:text-5xl font-bold leading-tight">
+                <span className="lg:block">Master IELTS Reading</span>
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
                   Like a Pro
                 </span>
               </h1>
 
-              <p className="text-xl text-slate-300 leading-relaxed">
+              <p className="text-base lg:text-xl text-slate-300 leading-relaxed">
                 Practice with authentic Cambridge passages, get AI-powered coaching, and track your progress to achieve your target band score.
               </p>
 
@@ -142,29 +162,7 @@ export default function LoginPage() {
             </div>
 
             {/* Right side - Login card */}
-            <div className="flex justify-center">
-              <AuthCard
-                error={error}
-                isLoading={isSubmitting}
-                onGoogleSignIn={handleGoogleSignIn}
-              />
-            </div>
-          </div>
-
-          {/* Mobile: Centered card */}
-          <div className="lg:hidden flex justify-center">
-            <div className="w-full max-w-md">
-              <div className="text-center mb-8">
-                <div className="flex items-center justify-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-                    <BookOpenText className="w-7 h-7 text-white" />
-                  </div>
-                  <span className="text-2xl font-bold text-white">IELTS Reading Pro</span>
-                </div>
-                <h1 className="text-3xl font-bold text-white mb-2">Welcome back</h1>
-                <p className="text-slate-400">Sign in to continue your IELTS journey</p>
-              </div>
-
+            <div className="flex justify-center lg:w-1/2">
               <AuthCard
                 error={error}
                 isLoading={isSubmitting}

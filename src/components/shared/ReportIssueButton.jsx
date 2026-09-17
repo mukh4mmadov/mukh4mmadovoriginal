@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import {
   AlertTriangle,
   X,
@@ -14,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Toast from "./Toast";
 
 export default function ReportIssueButton() {
+  const pathname = usePathname();
   const { user, profile } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -27,6 +29,9 @@ export default function ReportIssueButton() {
   const [isLoading, setIsLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+
+  // Hide button on auth pages to prevent overlap
+  const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password';
 
   function isFeedbackMessageType(value) {
     return (
@@ -146,14 +151,16 @@ export default function ReportIssueButton() {
 
   return (
     <>
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-40 bg-brand-500 hover:bg-brand-600 text-white p-3 rounded-full shadow-lg transition-all hover:scale-110"
-        aria-label="Report an issue"
-        title="Report an issue"
-      >
-        <AlertTriangle size={24} />
-      </button>
+      {!isAuthPage && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="fixed bottom-6 right-6 z-40 bg-brand-500 hover:bg-brand-600 text-white p-3 rounded-full shadow-lg transition-all hover:scale-110"
+          aria-label="Report an issue"
+          title="Report an issue"
+        >
+          <AlertTriangle size={24} />
+        </button>
+      )}
 
       {isOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">

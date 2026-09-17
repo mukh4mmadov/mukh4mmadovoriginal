@@ -24,7 +24,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!isLoading) {
       if (!user) {
-        router.push('/login');
+        router.push(`/login?redirect=${encodeURIComponent('/profile')}`);
       } else if (profile) {
         setFormData({
           full_name: profile.full_name || '',
@@ -41,7 +41,7 @@ export default function ProfilePage() {
   useEffect(() => {
     const handleError = (error) => {
       console.error('Profile page error:', error);
-      router.push('/login');
+      router.push(`/login?redirect=${encodeURIComponent('/profile')}`);
     };
 
     window.addEventListener('error', handleError);

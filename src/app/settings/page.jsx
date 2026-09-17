@@ -24,7 +24,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!isLoading && !user) {
-      router.push('/login');
+      router.push(`/login?redirect=${encodeURIComponent('/settings')}`);
     }
   }, [user, isLoading, router]);
 
@@ -32,7 +32,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const handleError = (error) => {
       console.error('Settings page error:', error);
-      router.push('/login');
+      router.push(`/login?redirect=${encodeURIComponent('/settings')}`);
     };
 
     window.addEventListener('error', handleError);

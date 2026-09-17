@@ -86,10 +86,10 @@ export default function SignUpPage() {
       {/* Content */}
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-6xl mx-auto">
-          {/* Desktop: Split layout */}
-          <div className="hidden lg:grid lg:grid-cols-2 lg:gap-12 items-center">
+          {/* Single responsive layout - no duplicate rendering */}
+          <div className="flex flex-col lg:flex-row lg:gap-12 items-center">
             {/* Left side - Hero */}
-            <div className="text-white space-y-8">
+            <div className="text-white space-y-8 lg:w-1/2">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
                   <BookOpenText className="w-7 h-7 text-white" />
@@ -97,14 +97,14 @@ export default function SignUpPage() {
                 <span className="text-2xl font-bold">IELTS Reading Pro</span>
               </div>
 
-              <h1 className="text-5xl font-bold leading-tight">
-                Start Your IELTS
+              <h1 className="text-3xl lg:text-5xl font-bold leading-tight">
+                <span className="lg:block">Start Your IELTS</span>
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
                   Journey Today
                 </span>
               </h1>
 
-              <p className="text-xl text-slate-300 leading-relaxed">
+              <p className="text-base lg:text-xl text-slate-300 leading-relaxed">
                 Join thousands of students practicing with authentic Cambridge passages, getting AI-powered coaching, and achieving their target band scores.
               </p>
 
@@ -142,29 +142,7 @@ export default function SignUpPage() {
             </div>
 
             {/* Right side - Signup card */}
-            <div className="flex justify-center">
-              <AuthCard
-                error={error}
-                isLoading={isSubmitting}
-                onGoogleSignIn={handleGoogleSignIn}
-              />
-            </div>
-          </div>
-
-          {/* Mobile: Centered card */}
-          <div className="lg:hidden flex justify-center">
-            <div className="w-full max-w-md">
-              <div className="text-center mb-8">
-                <div className="flex items-center justify-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-                    <BookOpenText className="w-7 h-7 text-white" />
-                  </div>
-                  <span className="text-2xl font-bold text-white">IELTS Reading Pro</span>
-                </div>
-                <h1 className="text-3xl font-bold text-white mb-2">Create account</h1>
-                <p className="text-slate-400">Start your IELTS reading journey today</p>
-              </div>
-
+            <div className="flex justify-center lg:w-1/2">
               <AuthCard
                 error={error}
                 isLoading={isSubmitting}

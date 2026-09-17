@@ -14,7 +14,7 @@ export default function StatisticsPage() {
 
   useEffect(() => {
     if (!isLoading && !user) {
-      router.push('/login');
+      router.push(`/login?redirect=${encodeURIComponent('/statistics')}`);
     }
   }, [user, isLoading, router]);
 
@@ -22,7 +22,7 @@ export default function StatisticsPage() {
   useEffect(() => {
     const handleError = (error) => {
       console.error('Statistics page error:', error);
-      router.push('/login');
+      router.push(`/login?redirect=${encodeURIComponent('/statistics')}`);
     };
 
     window.addEventListener('error', handleError);
