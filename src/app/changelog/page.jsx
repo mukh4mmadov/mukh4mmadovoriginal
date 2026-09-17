@@ -7,7 +7,6 @@ import { supabase } from '@/lib/supabase/client';
 export default function ChangelogPage() {
   const [entries, setEntries] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     loadChangelog();
@@ -24,8 +23,7 @@ export default function ChangelogPage() {
       setEntries(data || []);
     } catch (error) {
       console.error('Error loading changelog:', error);
-      setError(error.message);
-      // Load demo data as fallback
+      // Silently load demo data as fallback - no user-facing error needed
       setEntries(getDemoChangelog());
     } finally {
       setIsLoading(false);
@@ -98,13 +96,6 @@ export default function ChangelogPage() {
             Track the latest updates, features, and improvements
           </p>
         </div>
-
-        {error && (
-          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-6 text-center mb-8">
-            <p className="text-yellow-400 mb-2">⚠️ Database connection error</p>
-            <p className="text-slate-400 text-sm">Showing demo data instead</p>
-          </div>
-        )}
 
         <div className="space-y-8">
           {entries.map((entry) => (

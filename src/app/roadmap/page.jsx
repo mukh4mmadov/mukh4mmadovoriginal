@@ -7,7 +7,6 @@ import { supabase } from '@/lib/supabase/client';
 export default function RoadmapPage() {
   const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     loadRoadmap();
@@ -24,8 +23,7 @@ export default function RoadmapPage() {
       setItems(data || []);
     } catch (error) {
       console.error('Error loading roadmap:', error);
-      setError(error.message);
-      // Load demo data as fallback
+      // Silently load demo data as fallback - no user-facing error needed
       setItems(getDemoRoadmap());
     } finally {
       setIsLoading(false);
@@ -122,13 +120,6 @@ export default function RoadmapPage() {
             See what we're working on and what's coming next
           </p>
         </div>
-
-        {error && (
-          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-6 text-center mb-8">
-            <p className="text-yellow-400 mb-2">⚠️ Database connection error</p>
-            <p className="text-slate-400 text-sm">Showing demo data instead</p>
-          </div>
-        )}
 
         <div className="space-y-12">
           {['completed', 'in_progress', 'planned'].map((status) => {
