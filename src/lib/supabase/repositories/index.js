@@ -1,0 +1,11 @@
+export { readingProgressRepository } from './reading-progress.repository';
+export { readingHistoryRepository } from './reading-history.repository';
+export { highlightsRepository } from './highlights.repository';
+export { aiConversationsRepository } from './ai-conversations.repository';
+export { savedQuotesRepository } from './saved-quotes.repository';
+export { achievementsRepository } from './achievements.repository';
+export { streaksRepository } from './streaks.repository';
+export { xpRepository } from './xp.repository';
+export { studyStatisticsRepository } from './study-statistics.repository';
+export { userSettingsRepository } from './user-settings.repository';
+export { dailyMissionsRepository } from './daily-missions.repository';
