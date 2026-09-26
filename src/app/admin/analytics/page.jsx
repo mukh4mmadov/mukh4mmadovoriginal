@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { TrendingUp, Clock, Award, MessageSquare, Users, Calendar } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import { AdminPageError, AdminPageLoading } from '@/components/admin/AdminPageStatus';
 
 export default function AdminAnalytics() {
   const [data, setData] = useState({
@@ -15,6 +16,7 @@ export default function AdminAnalytics() {
     deviceTypes: [],
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     loadAnalytics();
@@ -22,6 +24,7 @@ export default function AdminAnalytics() {
 
   async function loadAnalytics() {
     try {
+      setLoadError('');
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
       const [dailyUsers, readingFinished, aiUsage, registrationTrend, questionAnswered, allEvents] = await Promise.all([
@@ -54,6 +57,10 @@ export default function AdminAnalytics() {
           .gte('created_at', thirtyDaysAgo),
       ]);
 
+      const requestError = [dailyUsers, readingFinished, aiUsage, registrationTrend, questionAnswered, allEvents]
+        .find((result) => result.error)?.error;
+      if (requestError) throw requestError;
+
       const dailyUsersData = processDailyData(dailyUsers.data || []);
       const weeklyReadingTimeData = processWeeklyReadingTime(readingFinished.data || []);
       const aiUsageData = processDailyData(aiUsage.data || []);
@@ -72,6 +79,7 @@ export default function AdminAnalytics() {
       });
     } catch (error) {
       console.error('Error loading analytics:', error);
+      setLoadError(error.message || 'Analytics data could not be loaded.');
     } finally {
       setIsLoading(false);
     }
@@ -143,11 +151,11 @@ export default function AdminAnalytics() {
   }
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500" />
-      </div>
-    );
+    return <AdminPageLoading label="Loading analytics" />;
+  }
+
+  if (loadError) {
+    return <AdminPageError message={loadError} onRetry={() => window.location.reload()} />;
   }
 
   return (

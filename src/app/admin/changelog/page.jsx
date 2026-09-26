@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react';
 import { Calendar, Plus, Edit, Trash2, Tag, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import { AdminPageError, AdminPageLoading } from '@/components/admin/AdminPageStatus';
 
 export default function AdminChangelog() {
   const [entries, setEntries] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
   const [formData, setFormData] = useState({
@@ -24,6 +26,7 @@ export default function AdminChangelog() {
 
   async function loadChangelog() {
     try {
+      setLoadError('');
       const { data, error } = await supabase
         .from('changelog')
         .select('*')
@@ -33,6 +36,7 @@ export default function AdminChangelog() {
       setEntries(data || []);
     } catch (error) {
       console.error('Error loading changelog:', error);
+      setLoadError(error.message || 'Changelog data could not be loaded.');
     } finally {
       setIsLoading(false);
     }
@@ -116,11 +120,11 @@ export default function AdminChangelog() {
   }
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500" />
-      </div>
-    );
+    return <AdminPageLoading label="Loading changelog" />;
+  }
+
+  if (loadError) {
+    return <AdminPageError message={loadError} onRetry={() => window.location.reload()} />;
   }
 
   return (

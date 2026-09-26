@@ -3,11 +3,13 @@
 import { useEffect, useState } from 'react';
 import { Search, Filter, Check, X, Download, Eye, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import { AdminPageError, AdminPageLoading } from '@/components/admin/AdminPageStatus';
 
 export default function FeedbackManagement() {
   const [feedback, setFeedback] = useState([]);
   const [filteredFeedback, setFilteredFeedback] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -23,6 +25,7 @@ export default function FeedbackManagement() {
 
   async function loadFeedback() {
     try {
+      setLoadError('');
       const { data, error } = await supabase
         .from('feedback_messages')
         .select('*')
@@ -32,6 +35,7 @@ export default function FeedbackManagement() {
       setFeedback(data || []);
     } catch (error) {
       console.error('Error loading feedback:', error);
+      setLoadError(error.message || 'Feedback could not be loaded.');
     } finally {
       setIsLoading(false);
     }
@@ -125,11 +129,11 @@ export default function FeedbackManagement() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500" />
-      </div>
-    );
+    return <AdminPageLoading label="Loading feedback" />;
+  }
+
+  if (loadError) {
+    return <AdminPageError message={loadError} onRetry={() => window.location.reload()} />;
   }
 
   return (

@@ -3,11 +3,13 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle, Lightbulb, MessageSquare, CheckCircle, Clock, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import { AdminPageError, AdminPageLoading } from '@/components/admin/AdminPageStatus';
 
 export default function IssueTracker() {
   const [issues, setIssues] = useState([]);
   const [filteredIssues, setFilteredIssues] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -21,6 +23,7 @@ export default function IssueTracker() {
 
   async function loadIssues() {
     try {
+      setLoadError('');
       const { data, error } = await supabase
         .from('feedback_messages')
         .select('*')
@@ -30,6 +33,7 @@ export default function IssueTracker() {
       setIssues(data || []);
     } catch (error) {
       console.error('Error loading issues:', error);
+      setLoadError(error.message || 'Issues could not be loaded.');
     } finally {
       setIsLoading(false);
     }
@@ -81,11 +85,11 @@ export default function IssueTracker() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500" />
-      </div>
-    );
+    return <AdminPageLoading label="Loading issues" />;
+  }
+
+  if (loadError) {
+    return <AdminPageError message={loadError} onRetry={() => window.location.reload()} />;
   }
 
   return (

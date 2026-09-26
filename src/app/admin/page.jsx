@@ -5,6 +5,7 @@ import { Users, Activity, MessageSquare, AlertTriangle, Lightbulb, TrendingUp } 
 import { supabase } from '@/lib/supabase/client';
 import ActivityFeed from '@/components/admin/ActivityFeed';
 import SystemHealth from '@/components/admin/SystemHealth';
+import { AdminPageError, AdminPageLoading } from '@/components/admin/AdminPageStatus';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -18,10 +19,12 @@ export default function AdminDashboard() {
     averageReadingTime: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     async function loadStats() {
       try {
+        setLoadError('');
         const today = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
         const [totalUsers, activeUsers, passageCompleted, questionAnswered, aiMessages, feedback] = await Promise.all([
@@ -45,10 +48,15 @@ export default function AdminDashboard() {
           supabase.from('feedback_messages').select('*', { count: 'exact', head: true }),
         ]);
 
-        const { data: questionData } = await supabase
+        const requestError = [totalUsers, activeUsers, passageCompleted, questionAnswered, aiMessages, feedback]
+          .find((result) => result.error)?.error;
+        if (requestError) throw requestError;
+
+        const { data: questionData, error: questionError } = await supabase
           .from('analytics_events')
           .select('event_data')
           .eq('event_type', 'question_answered');
+        if (questionError) throw questionError;
 
         let totalCorrect = 0;
         let totalQuestions = 0;
@@ -60,10 +68,11 @@ export default function AdminDashboard() {
         });
         const averageAccuracy = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
 
-        const { data: readingData } = await supabase
+        const { data: readingData, error: readingError } = await supabase
           .from('analytics_events')
           .select('event_data')
           .eq('event_type', 'reading_finished');
+        if (readingError) throw readingError;
 
         let totalTime = 0;
         let totalSessions = 0;
@@ -87,6 +96,7 @@ export default function AdminDashboard() {
         });
       } catch (error) {
         console.error('Error loading stats:', error);
+        setLoadError(error.message || 'Dashboard data could not be loaded.');
       } finally {
         setIsLoading(false);
       }
@@ -163,11 +173,11 @@ export default function AdminDashboard() {
   ];
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500" />
-      </div>
-    );
+    return <AdminPageLoading label="Loading dashboard data" />;
+  }
+
+  if (loadError) {
+    return <AdminPageError message={loadError} onRetry={() => window.location.reload()} />;
   }
 
   return (
