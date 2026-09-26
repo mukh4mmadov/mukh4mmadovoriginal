@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { User, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { authService } from '@/lib/supabase/auth';
+import { getSafeRedirectPath } from '@/lib/auth/redirect';
 
 export default function CompleteProfilePage() {
   const router = useRouter();
@@ -15,10 +16,15 @@ export default function CompleteProfilePage() {
 
   useEffect(() => {
     if (!isLoading) {
+      const redirect = getSafeRedirectPath(
+        new URLSearchParams(window.location.search).get('redirect'),
+      );
       if (!user) {
-        router.push('/login');
+        const loginUrl = new URL('/login', window.location.origin);
+        if (redirect) loginUrl.searchParams.set('redirect', redirect);
+        router.replace(`${loginUrl.pathname}${loginUrl.search}`);
       } else if (profile?.full_name || profile?.is_guest) {
-        router.push('/');
+        router.replace(redirect || '/');
       }
     }
   }, [user, profile, isLoading, router]);
@@ -37,7 +43,10 @@ export default function CompleteProfilePage() {
     try {
       if (user) {
         await authService.updateProfile(user.id, { full_name: fullName.trim() });
-        router.push('/');
+        const redirect = getSafeRedirectPath(
+          new URLSearchParams(window.location.search).get('redirect'),
+        );
+        router.replace(redirect || '/');
       }
     } catch (err) {
       setError(err.message || 'Failed to update profile');

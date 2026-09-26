@@ -1,4 +1,5 @@
 import { supabase } from './client';
+import { getSafeRedirectPath } from '@/lib/auth/redirect';
 
 export class AuthService {
   async signUp(data) {
@@ -44,10 +45,26 @@ export class AuthService {
   }
 
   async signInWithGoogle() {
+    const currentOrigin = typeof window !== 'undefined' ? window.location.origin : null;
+    const redirect = currentOrigin
+      ? getSafeRedirectPath(new URLSearchParams(window.location.search).get('redirect'))
+      : null;
+
+    if (currentOrigin) {
+      const redirectResponse = await fetch('/api/auth/redirect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ redirect }),
+      });
+      if (!redirectResponse.ok) {
+        throw new Error('Unable to preserve the sign-in destination. Please try again.');
+      }
+    }
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : '/auth/callback',
+        redirectTo: currentOrigin ? `${currentOrigin}/auth/callback` : '/auth/callback',
       },
     });
 

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { BookOpenText, Chrome, CheckCircle, Zap, Shield } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import Toast from "@/components/shared/Toast";
+import { getSafeRedirectPath } from "@/lib/auth/redirect";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -13,6 +14,9 @@ export default function SignUpPage() {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState(null);
+  const redirect = typeof window === "undefined"
+    ? null
+    : getSafeRedirectPath(new URLSearchParams(window.location.search).get("redirect"));
 
   const showToast = (message, type) => {
     setToast({ message, type });
@@ -27,7 +31,10 @@ export default function SignUpPage() {
 
   useEffect(() => {
     if (user && !authLoading) {
-      router.replace("/");
+      const redirect = getSafeRedirectPath(
+        new URLSearchParams(window.location.search).get("redirect"),
+      );
+      router.replace(redirect || "/");
     }
   }, [user, authLoading, router]);
 
@@ -154,6 +161,7 @@ export default function SignUpPage() {
               <AuthCard
                 error={error}
                 isLoading={isSubmitting}
+                redirect={redirect}
                 onGoogleSignIn={handleGoogleSignIn}
               />
             </div>
@@ -172,7 +180,7 @@ export default function SignUpPage() {
   );
 }
 
-function AuthCard({ error, isLoading, onGoogleSignIn }) {
+function AuthCard({ error, isLoading, redirect, onGoogleSignIn }) {
   return (
     <div className="w-full max-w-md">
       <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
@@ -211,7 +219,7 @@ function AuthCard({ error, isLoading, onGoogleSignIn }) {
         <p className="mt-6 text-center text-sm text-slate-400">
           Already have an account?{" "}
           <Link
-            href="/login"
+            href={redirect ? `/login?redirect=${encodeURIComponent(redirect)}` : "/login"}
             className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
           >
             Sign in
