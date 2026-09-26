@@ -81,7 +81,10 @@ export default function AdminAnalytics() {
     const dailyMap = new Map();
     
     events.forEach((event) => {
-      const date = new Date(event[dateField]).toISOString().split('T')[0];
+      const timestamp = new Date(event[dateField]);
+      if (Number.isNaN(timestamp.getTime())) return;
+
+      const date = timestamp.toISOString().split('T')[0];
       dailyMap.set(date, (dailyMap.get(date) || 0) + 1);
     });
 
@@ -95,6 +98,8 @@ export default function AdminAnalytics() {
     
     sessions.forEach((session) => {
       const date = new Date(session.created_at);
+      if (Number.isNaN(date.getTime())) return;
+
       const weekStart = new Date(date);
       weekStart.setDate(date.getDate() - date.getDay());
       const weekKey = weekStart.toISOString().split('T')[0];
@@ -218,10 +223,17 @@ function SimpleChart({ data, color }) {
       {data.slice(-7).map((item, index) => {
         const value = item.count || item.value || 0;
         const height = (value / maxValue) * 100;
+        const dateValue = item.date || item.week;
+        const date = dateValue ? new Date(dateValue) : null;
+        const label =
+          date && !Number.isNaN(date.getTime())
+            ? `${item.week ? 'Week of ' : ''}${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+            : item.type || item.device || 'Unknown';
+
         return (
           <div key={index} className="flex items-center gap-2">
-            <span className="text-xs text-slate-400 w-20">
-              {new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            <span className="text-xs text-slate-400 w-20 truncate" title={label}>
+              {label}
             </span>
             <div className="flex-1 h-8 bg-white/5 rounded overflow-hidden">
               <div
