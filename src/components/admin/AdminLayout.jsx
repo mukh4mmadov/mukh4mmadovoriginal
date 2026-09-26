@@ -19,34 +19,48 @@ import { isAdmin } from '@/lib/supabase/auth-admin';
 import AdminNotifications from './AdminNotifications';
 
 export default function AdminLayout({ children }) {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isLoading: authLoading } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAdminUser, setIsAdminUser] = useState(null);
 
   useEffect(() => {
+    let isActive = true;
+
     async function checkAdmin() {
+      if (authLoading) return;
+
       if (!user) {
-        router.push('/');
+        setIsAdminUser(false);
+        router.replace('/');
         return;
       }
+
+      setIsAdminUser(null);
       try {
         const admin = await isAdmin(user.id);
+        if (!isActive) return;
         setIsAdminUser(admin);
         if (!admin) {
-          router.push('/');
+          router.replace('/');
         }
       } catch (error) {
         console.error('Error checking admin status:', error);
+        if (!isActive) return;
         setIsAdminUser(false);
-        router.push('/');
+        router.replace('/');
       }
     }
-    checkAdmin();
-  }, [user, router]);
 
-  if (isAdminUser === null) {
+    checkAdmin();
+
+    return () => {
+      isActive = false;
+    };
+  }, [authLoading, user, router]);
+
+  if (authLoading || isAdminUser === null) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500" />
