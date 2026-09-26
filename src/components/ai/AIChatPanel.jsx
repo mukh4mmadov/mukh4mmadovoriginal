@@ -405,7 +405,7 @@ export default function AIChatPanel({
         aria-label="Resize AI panel"
       />
       <div
-        className="hidden sm:block fixed right-0 top-0 h-full bg-surface/95 backdrop-blur-xl border-l border-white/10 shadow-2xl z-50 flex flex-col"
+        className="hidden sm:block fixed right-0 top-0 h-full min-h-0 bg-surface/95 backdrop-blur-xl border-l border-white/10 shadow-2xl z-50 flex flex-col"
         style={{ width: `${panelWidth}px` }}
       >
         <div className="flex items-center justify-between p-4 border-b border-white/10 bg-gradient-to-r from-brand-500/5 via-transparent to-transparent">
@@ -470,7 +470,7 @@ export default function AIChatPanel({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 space-y-4">
           {isNotConfigured && (
             <div className="text-center py-8">
               <div className="relative inline-block mb-3">
@@ -656,7 +656,7 @@ export default function AIChatPanel({
           </div>
         )}
 
-        <div className="p-4 border-t border-white/10">
+        <div className="shrink-0 p-4 border-t border-white/10">
           <div className="flex gap-2">
             <textarea
               ref={inputRef}
@@ -681,7 +681,7 @@ export default function AIChatPanel({
         </div>
       </div>
 
-      <div className="sm:hidden fixed inset-0 z-50 flex flex-col bg-surface">
+      <div className="sm:hidden fixed inset-0 z-50 flex min-h-0 flex-col bg-surface">
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <div className="flex items-center gap-2">
             <Bot className="text-brand-400" size={20} />
@@ -734,7 +734,7 @@ export default function AIChatPanel({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 space-y-4">
           {isNotConfigured && (
             <div className="text-center py-8">
               <div className="relative inline-block mb-3">
@@ -920,7 +920,7 @@ export default function AIChatPanel({
           </div>
         )}
 
-        <div className="p-4 border-t border-white/10">
+        <div className="shrink-0 p-4 border-t border-white/10">
           <div className="flex gap-2">
             <textarea
               ref={inputRef}
