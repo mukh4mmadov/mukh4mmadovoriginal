@@ -180,7 +180,7 @@ export async function POST(request) {
     const providerModels = {
       openai: process.env.OPENAI_MODEL || "gpt-4o-mini",
       claude: process.env.ANTHROPIC_MODEL || "claude-3-haiku-20240307",
-      gemini: process.env.GOOGLE_MODEL || "gemini-pro",
+      gemini: process.env.GOOGLE_MODEL || "gemini-3.8-flash",
       openrouter: process.env.OPENROUTER_MODEL || "openai/gpt-4o-mini",
     };
 
@@ -195,7 +195,7 @@ export async function POST(request) {
         try {
           let fullContent = "";
 
-          await aiProvider.sendMessage(
+          const providerResponse = await aiProvider.sendMessage(
             sanitizedMessages,
             context,
             validatedPersonality,
@@ -206,6 +206,10 @@ export async function POST(request) {
               );
             },
           );
+
+          if (!fullContent && typeof providerResponse === "string") {
+            fullContent = providerResponse;
+          }
 
           controller.enqueue(
             encoder.encode(

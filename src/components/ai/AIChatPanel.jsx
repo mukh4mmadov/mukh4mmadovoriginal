@@ -231,7 +231,7 @@ export default function AIChatPanel({
           ],
           context,
           personality,
-          provider: "openai",
+          provider: "gemini",
         }),
       });
 
