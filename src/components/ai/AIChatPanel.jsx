@@ -94,7 +94,6 @@ export default function AIChatPanel({
   const [error, setError] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
   const [lastFailedPrompt, setLastFailedPrompt] = useState(null);
-  const [isNotConfigured, setIsNotConfigured] = useState(false);
   const [panelWidth, setPanelWidth] = useState(370);
   const [isResizing, setIsResizing] = useState(false);
 
@@ -206,7 +205,6 @@ export default function AIChatPanel({
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setError(null);
-    setIsNotConfigured(false);
     setIsLoading(true);
     setStreamingContent("");
     setLastFailedPrompt(prompt.trim());
@@ -243,7 +241,6 @@ export default function AIChatPanel({
         throw new Error(errorData.error || "Failed to get AI response");
       }
 
-      setIsNotConfigured(false);
 
       const assistantMessage = {
         id: (Date.now() + 1).toString(),
@@ -276,13 +273,11 @@ export default function AIChatPanel({
         if (parsed.error) throw new Error(parsed.error);
 
         if (typeof parsed.chunk === "string") {
-          setIsNotConfigured(false);
           fullContent += parsed.chunk;
           setStreamingContent(fullContent);
         }
 
         if (parsed.done) {
-          setIsNotConfigured(false);
           const content =
             typeof parsed.content === "string" ? parsed.content : fullContent;
           fullContent = content;
@@ -326,15 +321,7 @@ export default function AIChatPanel({
       const errorMessage =
         err instanceof Error ? err.message : "Failed to get AI response";
 
-      if (
-        errorMessage.includes("AI service not configured") ||
-        errorMessage.includes("not configured")
-      ) {
-        setIsNotConfigured(true);
-        setError(null);
-      } else {
-        setError(errorMessage);
-      }
+      setError(errorMessage);
 
       if (assistantMessageId) {
         setMessages((prev) =>
@@ -479,43 +466,7 @@ export default function AIChatPanel({
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain touch-pan-y p-4 space-y-4">
-          {isNotConfigured && (
-            <div className="text-center py-8">
-              <div className="relative inline-block mb-3">
-                <div className="absolute inset-0 bg-brand-500/20 blur-2xl rounded-full animate-pulse" />
-                <Sparkles className="text-brand-400 relative" size={28} />
-              </div>
-              <h3 className="text-white font-semibold text-sm mb-1.5">
-                AI Coach needs an API key
-              </h3>
-              <p className="text-slate-400 text-xs max-w-[220px] mx-auto leading-relaxed">
-                Create a key in OpenAI and add it to your local environment
-                before restarting the app. Then the coach can generate reading
-                feedback in real time.
-              </p>
-              <div className="mt-4 space-y-2 text-left text-xs text-slate-300">
-                <p>1. Open: https://platform.openai.com/api-keys</p>
-                <p>2. Create a new secret key</p>
-                <p>3. Add OPENAI_API_KEY in .env.local</p>
-              </div>
-              <a
-                href="https://platform.openai.com/api-keys"
-                target="_blank"
-                rel="noreferrer"
-                className="mt-4 inline-flex items-center justify-center w-full px-3 py-2 rounded-lg bg-brand-500/15 border border-brand-500/30 text-brand-300 text-xs font-medium hover:bg-brand-500/20 transition-colors"
-              >
-                Get API key
-              </a>
-              <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
-                <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                <span className="text-xs text-amber-300 font-medium">
-                  Requires API key
-                </span>
-              </div>
-            </div>
-          )}
-
-          {messages.length === 0 && !isNotConfigured && (
+          {messages.length === 0 && (
             <div className="text-center py-6">
               <div className="relative inline-block mb-4">
                 <div className="absolute inset-0 bg-brand-500/20 blur-2xl rounded-full" />
@@ -743,43 +694,7 @@ export default function AIChatPanel({
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain touch-pan-y p-4 space-y-4">
-          {isNotConfigured && (
-            <div className="text-center py-8">
-              <div className="relative inline-block mb-3">
-                <div className="absolute inset-0 bg-brand-500/20 blur-2xl rounded-full animate-pulse" />
-                <Sparkles className="text-brand-400 relative" size={28} />
-              </div>
-              <h3 className="text-white font-semibold text-sm mb-1.5">
-                AI Coach needs an API key
-              </h3>
-              <p className="text-slate-400 text-xs max-w-[220px] mx-auto leading-relaxed">
-                Create a key in OpenAI and add it to your local environment
-                before restarting the app. Then the coach can generate reading
-                feedback in real time.
-              </p>
-              <div className="mt-4 space-y-2 text-left text-xs text-slate-300">
-                <p>1. Open: https://platform.openai.com/api-keys</p>
-                <p>2. Create a new secret key</p>
-                <p>3. Add OPENAI_API_KEY in .env.local</p>
-              </div>
-              <a
-                href="https://platform.openai.com/api-keys"
-                target="_blank"
-                rel="noreferrer"
-                className="mt-4 inline-flex items-center justify-center w-full px-3 py-2 rounded-lg bg-brand-500/15 border border-brand-500/30 text-brand-300 text-xs font-medium hover:bg-brand-500/20 transition-colors"
-              >
-                Get API key
-              </a>
-              <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
-                <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                <span className="text-xs text-amber-300 font-medium">
-                  Requires API key
-                </span>
-              </div>
-            </div>
-          )}
-
-          {messages.length === 0 && !isNotConfigured && (
+          {messages.length === 0 && (
             <div className="text-center py-6">
               <div className="relative inline-block mb-4">
                 <div className="absolute inset-0 bg-brand-500/20 blur-2xl rounded-full" />
