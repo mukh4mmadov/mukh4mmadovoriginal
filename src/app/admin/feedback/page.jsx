@@ -153,6 +153,7 @@ export default function FeedbackManagement() {
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input
+            aria-label="Search feedback"
             type="text"
             placeholder="Search feedback..."
             value={searchQuery}
@@ -162,6 +163,7 @@ export default function FeedbackManagement() {
         </div>
 
         <select
+          aria-label="Filter feedback by status"
           value={statusFilter}
           onChange={(e) => {
             const value = e.target.value;
@@ -176,6 +178,7 @@ export default function FeedbackManagement() {
         </select>
 
         <select
+          aria-label="Filter feedback by type"
           value={typeFilter}
           onChange={(e) => {
             const value = e.target.value;
