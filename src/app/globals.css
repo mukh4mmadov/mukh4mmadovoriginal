@@ -134,6 +134,55 @@
   html:not(.dark) .text-white {
     @apply text-slate-900;
   }
+
+  html:not(.dark) [class*="bg-slate-950"] {
+    background-color: rgb(241 245 249 / 0.96) !important;
+  }
+
+  html:not(.dark) [class*="bg-surface"] {
+    background-color: rgb(255 255 255 / 0.96) !important;
+  }
+
+  html:not(.dark) [class*="bg-white/"] {
+    background-color: rgb(15 23 42 / 0.045) !important;
+  }
+
+  html:not(.dark) [class*="border-white/"] {
+    border-color: rgb(100 116 139 / 0.24) !important;
+  }
+
+  html:not(.dark) [class*="ring-offset-slate-900"] {
+    --tw-ring-offset-color: #f8fafc;
+  }
+
+  html:not(.dark) [class*="from-slate-950"],
+  html:not(.dark) [class*="via-slate-950"],
+  html:not(.dark) [class*="to-slate-950"] {
+    --tw-gradient-from: #f8fafc var(--tw-gradient-from-position) !important;
+    --tw-gradient-to: rgb(248 250 252 / 0) var(--tw-gradient-to-position) !important;
+  }
+
+  html:not(.dark) [class*="bg-blue-"],
+  html:not(.dark) [class*="bg-brand-"],
+  html:not(.dark) [class*="bg-red-"],
+  html:not(.dark) [class*="bg-green-"],
+  html:not(.dark) [class*="bg-emerald-"],
+  html:not(.dark) [class*="bg-orange-"],
+  html:not(.dark) [class*="bg-amber-"] {
+    color: #fff;
+  }
+
+  html:not(.dark) .question-option {
+    @apply border-slate-300 bg-white text-slate-800;
+  }
+
+  html:not(.dark) .skill-bar {
+    @apply bg-slate-200;
+  }
+
+  html:not(.dark) :focus-visible {
+    --tw-ring-offset-color: #f8fafc;
+  }
 }
 
 @layer components {

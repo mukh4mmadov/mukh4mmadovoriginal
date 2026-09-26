@@ -888,23 +888,6 @@ export default function ReadingTestPlayer({ passage }) {
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.08)] backdrop-blur-sm">
-              <div className="flex items-center gap-3 mb-3">
-                <Bot className="text-brand-400" size={20} aria-hidden="true" />
-                <div>
-                  <p className="text-sm font-semibold text-slate-200">
-                    AI Coach
-                  </p>
-                  <p className="text-xs text-amber-300">Requires API key</p>
-                </div>
-              </div>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                The server is missing the API key required to generate reading
-                feedback. Add the provider key in the environment settings to
-                enable this feature.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.08)] backdrop-blur-sm">
               <div className="flex items-start gap-3">
                 <MessageCircle
                   size={18}
