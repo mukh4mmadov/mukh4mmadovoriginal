@@ -12,7 +12,7 @@ export class ReadingProgressRepository {
       .select('*')
       .eq('user_id', userId)
       .eq('passage_id', passageId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       if (error.code === 'PGRST116') return null;
