@@ -20,6 +20,7 @@ export default function OfflineNotice() {
 
       if (new URL(link.href).origin === window.location.origin) {
         event.preventDefault();
+        window.location.assign(link.href);
       }
     };
 
