@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { Plus, Edit, Trash2, CheckCircle, Clock, Circle, Calendar } from 'lucide-react';
+import { Plus, Edit, Trash2, CheckCircle, Clock, Circle, Calendar, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { AdminPageError, AdminPageLoading } from '@/components/admin/AdminPageStatus';
 
@@ -81,7 +81,8 @@ export default function AdminRoadmap() {
   }
 
   async function deleteItem(id) {
-    if (!confirm('Are you sure you want to delete this roadmap item?')) return;
+    const item = items.find((roadmapItem) => roadmapItem.id === id);
+    if (!confirm(`Delete “${item?.title || 'this roadmap item'}”? This action cannot be undone.`)) return;
 
     try {
       const { error } = await supabase.from('roadmap').delete().eq('id', id);
@@ -186,12 +187,16 @@ export default function AdminRoadmap() {
                         <button
                           onClick={() => openForm(item)}
                           className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+                          aria-label={`Edit roadmap item: ${item.title}`}
+                          title="Edit roadmap item"
                         >
                           <Edit size={14} className="text-slate-400" />
                         </button>
                         <button
                           onClick={() => deleteItem(item.id)}
                           className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+                          aria-label={`Delete roadmap item: ${item.title}`}
+                          title="Delete roadmap item"
                         >
                           <Trash2 size={14} className="text-red-400" />
                         </button>
@@ -248,8 +253,10 @@ export default function AdminRoadmap() {
               <button
                 onClick={() => setIsFormOpen(false)}
                 className="text-slate-400 hover:text-white"
+                aria-label="Close roadmap item form"
+                title="Close form"
               >
-                <Trash2 size={20} />
+                <X size={20} />
               </button>
             </div>
 

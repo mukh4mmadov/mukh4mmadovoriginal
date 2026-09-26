@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Calendar, Tag, AlertCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -199,8 +200,14 @@ export default function ChangelogPage() {
         </div>
 
         {entries.length === 0 && (
-          <div className="text-center py-12 text-slate-400">
-            No changelog entries yet.
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-12 text-center">
+            <h2 className="mb-2 text-xl font-semibold text-white">No release notes published yet</h2>
+            <p className="mx-auto mb-5 max-w-xl text-slate-400">
+              Updates will appear here after they are released. You can see what is currently planned on the product roadmap.
+            </p>
+            <Link href="/roadmap" className="btn-secondary">
+              View the roadmap
+            </Link>
           </div>
         )}
       </div>

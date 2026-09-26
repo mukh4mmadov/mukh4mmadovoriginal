@@ -139,6 +139,29 @@ export default function RoadmapPage() {
     bug_fix: { label: "Bug Fix", color: "text-red-400", bg: "bg-red-500/10" },
   };
 
+  function getPublicRoadmapCopy(item) {
+    if (item.title?.trim().toLowerCase() === "speaking") {
+      return {
+        title: "Guided Speaking Practice",
+        description:
+          "Explore guided voice or video conversations for English speaking practice. Scope, privacy details, and availability will be shared before release.",
+      };
+    }
+
+    return { title: item.title, description: item.description };
+  }
+
+  function formatTargetDate(value) {
+    const date = new Date(`${value}T00:00:00Z`);
+    if (Number.isNaN(date.getTime())) return value;
+    return new Intl.DateTimeFormat("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      timeZone: "UTC",
+    }).format(date);
+  }
+
   if (isLoading) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center gap-4" aria-busy="true" aria-live="polite">
@@ -162,7 +185,9 @@ export default function RoadmapPage() {
         </div>
 
         <div className="space-y-12">
-          {["completed", "in_progress", "planned"].map((status) => {
+          {["completed", "in_progress", "planned"]
+            .filter((status) => items.some((item) => item.status === status))
+            .map((status) => {
             const config = statusConfig[status];
             const StatusIcon = config.icon;
             const sectionItems = items.filter((i) => i.status === status);
@@ -186,7 +211,9 @@ export default function RoadmapPage() {
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {sectionItems.map((item) => (
+                  {sectionItems.map((item) => {
+                    const publicCopy = getPublicRoadmapCopy(item);
+                    return (
                     <div
                       key={item.id}
                       className="border border-white/10 rounded-xl p-6 hover:border-white/20 transition-all hover:scale-105"
@@ -205,14 +232,15 @@ export default function RoadmapPage() {
                       </div>
 
                       <h3 className="text-xl font-semibold text-white mb-3">
-                        {item.title}
+                        {publicCopy.title}
                       </h3>
                       <p className="text-slate-400 text-sm mb-6">
-                        {item.description}
+                        {publicCopy.description}
                       </p>
 
                       <div className="space-y-3">
-                        <div>
+                        {item.status === "in_progress" && (
+                          <div>
                           <div className="flex items-center justify-between text-sm mb-2">
                             <span className="text-slate-400">Progress</span>
                             <span className="text-white font-medium">
@@ -225,27 +253,24 @@ export default function RoadmapPage() {
                               style={{ width: `${item.progress}%` }}
                             />
                           </div>
-                        </div>
+                          </div>
+                        )}
 
                         {item.target_date && (
                           <div className="flex items-center gap-2 text-sm text-slate-400">
                             <Calendar size={14} />
                             <span>
                               Target:{" "}
-                              {new Date(item.target_date).toLocaleDateString()}
+                              {formatTargetDate(item.target_date)}
                             </span>
                           </div>
                         )}
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
-                {sectionItems.length === 0 && (
-                  <div className="text-center py-12 border border-dashed border-white/10 rounded-xl text-slate-400">
-                    No items in this section yet
-                  </div>
-                )}
               </div>
             );
           })}

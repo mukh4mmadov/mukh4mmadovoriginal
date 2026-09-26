@@ -361,3 +361,12 @@
     }
   }
 }
+
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid #7dd3fc !important;
+  outline-offset: 3px !important;
+}
+
+html:not(.dark) :where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline-color: #0369a1 !important;
+}

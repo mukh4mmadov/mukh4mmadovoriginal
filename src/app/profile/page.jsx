@@ -79,7 +79,7 @@ export default function ProfilePage() {
 
   return (
     <main className="min-h-screen bg-slate-950">
-      <div className="max-w-3xl mx-auto px-4 py-8">
+      <div className="mx-auto max-w-3xl px-4 py-8">
         <button
           onClick={() => router.back()}
           className="flex items-center gap-2 text-slate-400 hover:text-white mb-6 transition-colors"
@@ -88,14 +88,14 @@ export default function ProfilePage() {
           Back
         </button>
 
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8">
-          <div className="flex items-center gap-4 mb-8">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl sm:p-8">
+          <div className="mb-8 flex min-w-0 items-center gap-4">
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600">
               <User className="w-10 h-10 text-white" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h1 className="text-2xl font-bold text-white">My Profile</h1>
-              <p className="text-slate-400">{user?.email}</p>
+              <p className="break-all text-slate-400">{user?.email}</p>
             </div>
           </div>
 

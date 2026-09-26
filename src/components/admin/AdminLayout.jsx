@@ -27,6 +27,18 @@ export default function AdminLayout({ children }) {
   const [isAdminUser, setIsAdminUser] = useState(null);
   const [adminCheckError, setAdminCheckError] = useState('');
   const [adminCheckAttempt, setAdminCheckAttempt] = useState(0);
+  const [isOffline, setIsOffline] = useState(false);
+
+  useEffect(() => {
+    const updateConnectionStatus = () => setIsOffline(!navigator.onLine);
+    updateConnectionStatus();
+    window.addEventListener('online', updateConnectionStatus);
+    window.addEventListener('offline', updateConnectionStatus);
+    return () => {
+      window.removeEventListener('online', updateConnectionStatus);
+      window.removeEventListener('offline', updateConnectionStatus);
+    };
+  }, []);
 
   useEffect(() => {
     let isActive = true;
@@ -191,6 +203,18 @@ export default function AdminLayout({ children }) {
         </header>
 
         <main className="p-4 lg:p-8">
+          {isOffline && (
+            <div className="mb-4 flex flex-col gap-3 rounded-xl border border-amber-400/30 bg-amber-400/10 p-4 text-amber-100 sm:flex-row sm:items-center sm:justify-between" role="status">
+              <p className="text-sm">You are offline. Admin data and changes require an internet connection; nothing can be saved until you reconnect.</p>
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="min-h-11 shrink-0 rounded-lg border border-amber-200/30 px-4 text-sm font-semibold hover:bg-amber-200/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
+              >
+                Retry connection
+              </button>
+            </div>
+          )}
           {children}
         </main>
       </div>
