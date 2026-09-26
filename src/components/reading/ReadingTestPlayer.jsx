@@ -991,6 +991,6 @@ export default function ReadingTestPlayer({ passage }) {
           </div>
         </div>
       )}
-    </div>
+    </main>
   );
 }
