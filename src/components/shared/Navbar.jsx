@@ -14,13 +14,28 @@ export default function Navbar() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    const savedTheme = window.localStorage.getItem("themePreference");
     const saved = window.localStorage.getItem("darkMode");
     const systemPrefersDark = window.matchMedia(
       "(prefers-color-scheme: dark)",
     ).matches;
-    const initialMode = saved !== null ? saved === "true" : systemPrefersDark;
+    const initialMode = savedTheme
+      ? savedTheme === "system" ? systemPrefersDark : savedTheme === "dark"
+      : saved !== null ? saved === "true" : systemPrefersDark;
     setDarkMode(initialMode);
     setMounted(true);
+
+    const handleThemeChange = (event) => setDarkMode(event.detail.darkMode);
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleSystemChange = (event) => {
+      if (window.localStorage.getItem("themePreference") === "system") setDarkMode(event.matches);
+    };
+    window.addEventListener("app-theme-change", handleThemeChange);
+    mediaQuery.addEventListener("change", handleSystemChange);
+    return () => {
+      window.removeEventListener("app-theme-change", handleThemeChange);
+      mediaQuery.removeEventListener("change", handleSystemChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -38,6 +53,12 @@ export default function Navbar() {
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const toggleTheme = () => {
+    const nextDarkMode = !darkMode;
+    window.localStorage.setItem("themePreference", nextDarkMode ? "dark" : "light");
+    setDarkMode(nextDarkMode);
   };
 
   const getUserInitials = () => {
@@ -186,7 +207,7 @@ export default function Navbar() {
 
           <button
             type="button"
-            onClick={() => setDarkMode(!darkMode)}
+            onClick={toggleTheme}
             aria-label="Toggle theme"
             aria-pressed={darkMode}
             className="control-button"
@@ -277,7 +298,7 @@ export default function Navbar() {
               <span className="text-sm text-slate-400">Theme</span>
               <button
                 type="button"
-                onClick={() => setDarkMode(!darkMode)}
+                onClick={toggleTheme}
                 aria-label="Toggle theme"
                 aria-pressed={darkMode}
                 className="p-2 rounded-lg hover:bg-white/10 transition-colors"

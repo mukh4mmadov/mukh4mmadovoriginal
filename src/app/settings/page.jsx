@@ -29,6 +29,11 @@ export default function SettingsPage() {
   }, [user, isLoading, router]);
 
   useEffect(() => {
+    const savedTheme = window.localStorage.getItem('themePreference');
+    if (savedTheme) setFormData((current) => ({ ...current, theme: savedTheme }));
+  }, []);
+
+  useEffect(() => {
     const handleError = (error) => {
       console.error('Settings page error:', error);
       router.push(`/login?redirect=${encodeURIComponent('/settings')}`);
@@ -45,6 +50,14 @@ export default function SettingsPage() {
     setIsSubmitting(true);
 
     try {
+      window.localStorage.setItem('themePreference', formData.theme);
+      const darkMode = formData.theme === 'system'
+        ? window.matchMedia('(prefers-color-scheme: dark)').matches
+        : formData.theme === 'dark';
+      window.localStorage.setItem('darkMode', String(darkMode));
+      document.documentElement.classList.toggle('dark', darkMode);
+      document.documentElement.style.colorScheme = darkMode ? 'dark' : 'light';
+      window.dispatchEvent(new CustomEvent('app-theme-change', { detail: { darkMode } }));
       setSuccess('Settings updated successfully');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
