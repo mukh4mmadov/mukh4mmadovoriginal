@@ -43,12 +43,14 @@ export default function HighlightablePassage({
                 key={colorName}
                 type="button"
                 onClick={() => setSelectedColor(colorName)}
-                className={`w-6 h-6 rounded-full border-2 transition-all ${
+                className={`min-h-11 min-w-11 rounded-full border-2 transition-all ${
                   selectedColor === colorName
                     ? "border-white scale-110"
                     : "border-transparent hover:border-white/50"
                 }`}
                 style={{ backgroundColor: colorValue }}
+                aria-label={`Select ${colorName} highlight color`}
+                aria-pressed={selectedColor === colorName}
                 title={`Select ${colorName} highlight`}
               />
             ))}
@@ -60,12 +62,14 @@ export default function HighlightablePassage({
         <button
           type="button"
           onClick={toggleEraseMode}
-          className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
+          className={`flex min-h-11 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
             eraseMode
               ? "border-rose-500/30 bg-rose-500/10 text-rose-300"
               : "border-white/10 bg-white/5 text-slate-300 hover:border-white/20 hover:text-slate-100"
           }`}
           title={eraseMode ? "Exit eraser mode" : "Enable eraser mode"}
+          aria-label={eraseMode ? "Exit eraser mode" : "Enable eraser mode"}
+          aria-pressed={eraseMode}
         >
           <Eraser size={12} />
           {eraseMode ? "Erasing" : "Eraser"}
@@ -75,12 +79,13 @@ export default function HighlightablePassage({
           type="button"
           onClick={clearAll}
           disabled={totalHighlights === 0}
-          className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
+          className={`flex min-h-11 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
             totalHighlights === 0
               ? "cursor-not-allowed opacity-40"
               : "border-white/10 bg-white/5 text-slate-300 hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-300"
           }`}
           title="Clear all highlights"
+          aria-label="Clear all highlights"
         >
           <Trash2 size={12} />
           Clear all

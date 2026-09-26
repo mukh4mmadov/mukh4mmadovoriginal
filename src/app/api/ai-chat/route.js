@@ -171,9 +171,9 @@ export async function POST(request) {
       return NextResponse.json(
         {
           error:
-            "AI service not configured. Please set the appropriate API key for the selected provider.",
+            "AI service is not configured on the server. Add the required API key for the selected provider in the environment variables.",
         },
-        { status: 500 },
+        { status: 503 },
       );
     }
 

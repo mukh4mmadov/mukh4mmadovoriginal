@@ -11,6 +11,13 @@ export class AnalyticsService {
   }
 
   async track(event, userId) {
+    if (
+      process.env.NEXT_PUBLIC_ANALYTICS_ENABLED !== "true" ||
+      !supabase
+    ) {
+      return;
+    }
+
     try {
       const browserInfo = this.getBrowserInfo();
       const deviceInfo = this.getDeviceInfo();
@@ -31,10 +38,11 @@ export class AnalyticsService {
         page_url: pageUrl,
       };
 
-      await supabase.from("analytics_events").insert(eventData);
-    } catch (error) {
-      console.debug('Analytics tracking failed (table may not exist):', error.message);
-    }
+      const { error } = await supabase
+        .from("analytics_events")
+        .insert(eventData);
+      if (error) return;
+    } catch (error) {}
   }
 
   getBrowserInfo() {

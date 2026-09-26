@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { readingProgressRepository } from '@/lib/supabase/repositories';
-import { ReadingProgress, ReadingProgressInsert } from '@/lib/supabase/models';
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { readingProgressRepository } from "@/lib/supabase/repositories";
 
 export function useReadingProgress(passageId) {
   const { user } = useAuth();
@@ -11,6 +10,8 @@ export function useReadingProgress(passageId) {
 
   useEffect(() => {
     if (!user) {
+      setProgress(null);
+      setAllProgress([]);
       setIsLoading(false);
       return;
     }
@@ -19,14 +20,17 @@ export function useReadingProgress(passageId) {
       setIsLoading(true);
       try {
         if (passageId) {
-          const data = await readingProgressRepository.getProgress(user.id, passageId);
+          const data = await readingProgressRepository.getProgress(
+            user.id,
+            passageId,
+          );
           setProgress(data);
         } else {
           const data = await readingProgressRepository.getAllProgress(user.id);
           setAllProgress(data);
         }
       } catch (error) {
-        console.error('Error loading reading progress:', error);
+        console.error("Error loading reading progress:", error);
       } finally {
         setIsLoading(false);
       }
@@ -39,10 +43,14 @@ export function useReadingProgress(passageId) {
     if (!user || !passageId) return;
 
     try {
-      const updated = await readingProgressRepository.upsertProgress(user.id, passageId, data);
+      const updated = await readingProgressRepository.upsertProgress(
+        user.id,
+        passageId,
+        data,
+      );
       setProgress(updated);
     } catch (error) {
-      console.error('Error updating reading progress:', error);
+      console.error("Error updating reading progress:", error);
       throw error;
     }
   };
@@ -52,7 +60,7 @@ export function useReadingProgress(passageId) {
       const updated = await readingProgressRepository.updateProgress(id, data);
       setProgress(updated);
     } catch (error) {
-      console.error('Error updating reading progress:', error);
+      console.error("Error updating reading progress:", error);
       throw error;
     }
   };
@@ -62,7 +70,7 @@ export function useReadingProgress(passageId) {
       await readingProgressRepository.deleteProgress(id);
       setProgress(null);
     } catch (error) {
-      console.error('Error deleting reading progress:', error);
+      console.error("Error deleting reading progress:", error);
       throw error;
     }
   };
@@ -75,4 +83,4 @@ export function useReadingProgress(passageId) {
     updateProgress,
     deleteProgress,
   };
-}ha
+}

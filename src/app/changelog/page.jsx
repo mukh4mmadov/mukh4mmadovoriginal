@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { Calendar, Tag, AlertCircle } from 'lucide-react';
-import { supabase } from '@/lib/supabase/client';
+import { useEffect, useState } from "react";
+import { Calendar, Tag, AlertCircle } from "lucide-react";
+import { supabase } from "@/lib/supabase/client";
 
 export default function ChangelogPage() {
   const [entries, setEntries] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [usingDemoData, setUsingDemoData] = useState(false);
 
   useEffect(() => {
     loadChangelog();
@@ -15,15 +16,16 @@ export default function ChangelogPage() {
   async function loadChangelog() {
     try {
       const { data, error } = await supabase
-        .from('changelog')
-        .select('*')
-        .order('published_at', { ascending: false });
+        .from("changelog")
+        .select("*")
+        .order("published_at", { ascending: false });
 
       if (error) throw error;
       setEntries(data || []);
     } catch (error) {
-      console.error('Error loading changelog:', error);
+      console.error("Error loading changelog:", error);
       setEntries(getDemoChangelog());
+      setUsingDemoData(true);
     } finally {
       setIsLoading(false);
     }
@@ -33,62 +35,60 @@ export default function ChangelogPage() {
     return [
       {
         id: 1,
-        version: '1.0.0',
-        title: 'Initial Release',
-        description: 'First stable release of IELTS Reading Practice platform',
-        published_at: '2024-09-15',
+        version: "1.1.0",
+        title: "Production Stability Update",
+        description:
+          "The application has been hardened for real-world usage with clearer configuration states, safer database handling, and more reliable user feedback flows.",
+        published_at: "2026-09-24",
         features: [
-          '33 IELTS reading passages with full test functionality',
-          'Real-time timer with pause/resume/reset controls',
-          'Text highlighting with eraser mode',
-          'Instant band score calculation and analytics',
-          'User authentication and progress tracking',
-          'Responsive design for desktop and mobile',
-          'Daily study missions and streak tracking',
-          'Contact form and issue reporting'
+          "AI Coach now reports the real missing-API-key state instead of misleading development messaging",
+          "Reading progress hook uses validated repository logic instead of broken imports",
+          "Feedback and contact form errors now fail gracefully with actionable messages",
+          "Supabase client remains safe when environment variables are not configured",
         ],
         fixes: [
-          'Fixed React key duplication in paragraph rendering',
-          'Fixed roadmap data loading with demo fallback',
-          'Improved error handling across all pages'
+          "Removed stale demo-level claims and misleading beta wording from public pages",
+          "Fixed invalid infrastructure assumptions in feature fallback states",
+          "Improved handling for missing config before a user submits AI or contact requests",
         ],
-        breaking_changes: []
+        breaking_changes: [],
       },
       {
         id: 2,
-        version: '0.9.0',
-        title: 'Beta Release',
-        description: 'Public beta testing phase',
-        published_at: '2024-08-20',
+        version: "1.0.0",
+        title: "IELTS Reading Platform Launch",
+        description:
+          "Core reading practice experience is live with passages, timed testing, scoring, highlighting, and user tracking.",
+        published_at: "2026-06-01",
         features: [
-          'Core reading test functionality',
-          'Basic highlighting features',
-          'Timer and scoring system',
-          'Passage catalogue with filters'
+          "Full IELTS reading passage library with answer checking and band scoring",
+          "Real-time timer, highlight tools, and review flow for practice sessions",
+          "Auth-aware progress tracking and statistics dashboard",
+          "Admin feedback, roadmap, and changelog management pages",
         ],
         fixes: [
-          'Fixed navigation issues',
-          'Improved mobile responsiveness'
+          "Improved navigation and layout consistency across app pages",
+          "Hardened rendering for reading results and analytics screens",
+          "Polished authentication and profile-related flows",
         ],
-        breaking_changes: [
-          'Changed API endpoint structure',
-          'Updated authentication flow'
-        ]
-      }
+        breaking_changes: [],
+      },
     ];
   }
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500" />
-      </div>
+      <main className="min-h-screen flex flex-col items-center justify-center gap-4" aria-busy="true" aria-live="polite">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500" aria-hidden="true" />
+        <p className="text-sm text-slate-300">Loading changelog…</p>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+    <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
+        {usingDemoData && <p className="mb-6 rounded-lg border border-amber-300/20 bg-amber-300/10 p-3 text-sm text-amber-100" role="status">Database content is unavailable. Showing sample changelog data.</p>}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-white mb-4">Changelog</h1>
           <p className="text-slate-400 text-lg">
@@ -113,14 +113,19 @@ export default function ChangelogPage() {
                         </span>
                         <span className="text-slate-400 text-sm flex items-center gap-1">
                           <Calendar size={14} />
-                          {new Date(entry.published_at).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                          })}
+                          {new Date(entry.published_at).toLocaleDateString(
+                            "en-US",
+                            {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            },
+                          )}
                         </span>
                       </div>
-                      <h3 className="text-2xl font-semibold text-white">{entry.title}</h3>
+                      <h3 className="text-2xl font-semibold text-white">
+                        {entry.title}
+                      </h3>
                     </div>
 
                     {entry.description && (
@@ -135,7 +140,10 @@ export default function ChangelogPage() {
                         </h4>
                         <ul className="space-y-2">
                           {entry.features.map((feature, index) => (
-                            <li key={index} className="text-slate-300 flex items-start gap-2">
+                            <li
+                              key={index}
+                              className="text-slate-300 flex items-start gap-2"
+                            >
                               <span className="text-green-400 mt-1">•</span>
                               <span>{feature}</span>
                             </li>
@@ -152,7 +160,10 @@ export default function ChangelogPage() {
                         </h4>
                         <ul className="space-y-2">
                           {entry.fixes.map((fix, index) => (
-                            <li key={index} className="text-slate-300 flex items-start gap-2">
+                            <li
+                              key={index}
+                              className="text-slate-300 flex items-start gap-2"
+                            >
                               <span className="text-blue-400 mt-1">•</span>
                               <span>{fix}</span>
                             </li>
@@ -169,7 +180,10 @@ export default function ChangelogPage() {
                         </h4>
                         <ul className="space-y-2">
                           {entry.breaking_changes.map((change, index) => (
-                            <li key={index} className="text-slate-300 flex items-start gap-2">
+                            <li
+                              key={index}
+                              className="text-slate-300 flex items-start gap-2"
+                            >
                               <span className="text-red-400 mt-1">•</span>
                               <span>{change}</span>
                             </li>
@@ -190,6 +204,6 @@ export default function ChangelogPage() {
           </div>
         )}
       </div>
-    </div>
+    </main>
   );
 }

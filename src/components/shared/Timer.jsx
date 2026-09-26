@@ -84,7 +84,7 @@ export default function Timer({
             <button
               type="button"
               onClick={handlePause}
-              className="flex items-center justify-center w-8 h-8 rounded-full bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 hover:border-white/20 transition-all"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-300 transition-all hover:border-white/20 hover:bg-white/10"
               aria-label="Pause timer"
               title="Pause timer"
             >
@@ -94,7 +94,7 @@ export default function Timer({
             <button
               type="button"
               onClick={handleResume}
-              className="flex items-center justify-center w-8 h-8 rounded-full bg-brand-500/20 border border-brand-500/30 text-brand-300 hover:bg-brand-500/30 hover:border-brand-500/50 transition-all"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-brand-500/30 bg-brand-500/20 text-brand-300 transition-all hover:border-brand-500/50 hover:bg-brand-500/30"
               aria-label="Resume timer"
               title="Resume timer"
               disabled={remaining === 0}
@@ -105,7 +105,7 @@ export default function Timer({
           <button
             type="button"
             onClick={handleReset}
-            className="flex items-center justify-center w-8 h-8 rounded-full bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 hover:border-white/20 transition-all"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-300 transition-all hover:border-white/20 hover:bg-white/10"
             aria-label="Reset timer"
             title="Reset timer"
           >

@@ -5,6 +5,7 @@ import Footer from "@/components/shared/Footer";
 import { AuthProvider } from "@/contexts/AuthContext";
 import MigrationPrompt from "@/components/auth/MigrationPrompt";
 import ReportIssueButton from "@/components/shared/ReportIssueButton";
+import OfflineNotice from "@/components/shared/OfflineNotice";
 
 export const metadata = {
   title: {
@@ -61,9 +62,10 @@ export default function RootLayout({
             Skip to content
           </a>
           <Navbar />
-          <div id="main-content" className="min-h-screen">
+          <div id="main-content" tabIndex={-1} className="min-h-screen outline-none">
             {children}
           </div>
+          <OfflineNotice />
           <Footer />
           <MigrationPrompt />
           <ReportIssueButton />

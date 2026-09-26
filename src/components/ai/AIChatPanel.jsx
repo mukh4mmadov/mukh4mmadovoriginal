@@ -422,16 +422,30 @@ export default function AIChatPanel({
                 <Sparkles className="text-brand-400 relative" size={28} />
               </div>
               <h3 className="text-white font-semibold text-sm mb-1.5">
-                AI Coach - In Development
+                AI Coach needs an API key
               </h3>
-              <p className="text-slate-400 text-xs max-w-[200px] mx-auto leading-relaxed">
-                AI-powered reading guidance is currently being developed. Check
-                back soon!
+              <p className="text-slate-400 text-xs max-w-[220px] mx-auto leading-relaxed">
+                Create a key in OpenAI and add it to your local environment
+                before restarting the app. Then the coach can generate reading
+                feedback in real time.
               </p>
-              <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/20">
-                <div className="w-2 h-2 rounded-full bg-brand-400 animate-pulse" />
-                <span className="text-xs text-brand-300 font-medium">
-                  In Development
+              <div className="mt-4 space-y-2 text-left text-xs text-slate-300">
+                <p>1. Open: https://platform.openai.com/api-keys</p>
+                <p>2. Create a new secret key</p>
+                <p>3. Add OPENAI_API_KEY in .env.local</p>
+              </div>
+              <a
+                href="https://platform.openai.com/api-keys"
+                target="_blank"
+                rel="noreferrer"
+                className="mt-4 inline-flex items-center justify-center w-full px-3 py-2 rounded-lg bg-brand-500/15 border border-brand-500/30 text-brand-300 text-xs font-medium hover:bg-brand-500/20 transition-colors"
+              >
+                Get API key
+              </a>
+              <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
+                <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                <span className="text-xs text-amber-300 font-medium">
+                  Requires API key
                 </span>
               </div>
             </div>
@@ -672,16 +686,30 @@ export default function AIChatPanel({
                 <Sparkles className="text-brand-400 relative" size={28} />
               </div>
               <h3 className="text-white font-semibold text-sm mb-1.5">
-                AI Coach - In Development
+                AI Coach needs an API key
               </h3>
-              <p className="text-slate-400 text-xs max-w-[200px] mx-auto leading-relaxed">
-                AI-powered reading guidance is currently being developed. Check
-                back soon!
+              <p className="text-slate-400 text-xs max-w-[220px] mx-auto leading-relaxed">
+                Create a key in OpenAI and add it to your local environment
+                before restarting the app. Then the coach can generate reading
+                feedback in real time.
               </p>
-              <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/20">
-                <div className="w-2 h-2 rounded-full bg-brand-400 animate-pulse" />
-                <span className="text-xs text-brand-300 font-medium">
-                  In Development
+              <div className="mt-4 space-y-2 text-left text-xs text-slate-300">
+                <p>1. Open: https://platform.openai.com/api-keys</p>
+                <p>2. Create a new secret key</p>
+                <p>3. Add OPENAI_API_KEY in .env.local</p>
+              </div>
+              <a
+                href="https://platform.openai.com/api-keys"
+                target="_blank"
+                rel="noreferrer"
+                className="mt-4 inline-flex items-center justify-center w-full px-3 py-2 rounded-lg bg-brand-500/15 border border-brand-500/30 text-brand-300 text-xs font-medium hover:bg-brand-500/20 transition-colors"
+              >
+                Get API key
+              </a>
+              <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
+                <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                <span className="text-xs text-amber-300 font-medium">
+                  Requires API key
                 </span>
               </div>
             </div>

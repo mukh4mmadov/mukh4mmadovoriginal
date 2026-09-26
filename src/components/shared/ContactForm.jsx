@@ -18,6 +18,7 @@ export default function ContactForm({ isOpen, onClose }) {
   const [isLoading, setIsLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState("success");
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -68,14 +69,21 @@ export default function ContactForm({ isOpen, onClose }) {
         subject: formData.subject,
         message: formData.message,
         message_type: "general",
-        page_url: typeof window !== 'undefined' ? window.location.href : '',
-        browser_info: typeof window !== 'undefined' ? {
-          userAgent: navigator.userAgent,
-          language: navigator.language,
-        } : { userAgent: '', language: '' },
-        screen_size: typeof window !== 'undefined' ? `${window.innerWidth}x${window.innerHeight}` : 'unknown',
+        page_url: typeof window !== "undefined" ? window.location.href : "",
+        browser_info:
+          typeof window !== "undefined"
+            ? {
+                userAgent: navigator.userAgent,
+                language: navigator.language,
+              }
+            : { userAgent: "", language: "" },
+        screen_size:
+          typeof window !== "undefined"
+            ? `${window.innerWidth}x${window.innerHeight}`
+            : "unknown",
       });
 
+      setToastType("success");
       setToastMessage("Thank you! Your feedback has been received.");
       setShowToast(true);
       setFormData({
@@ -86,9 +94,17 @@ export default function ContactForm({ isOpen, onClose }) {
       });
       onClose();
     } catch (error) {
-      setErrors({
-        submit: error.message || "Failed to send message. Please try again.",
-      });
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to send message. Please try again.";
+
+      setErrors({ submit: message });
+      setToastType("error");
+      setToastMessage(
+        "Your message could not be sent. Please check your connection and try again.",
+      );
+      setShowToast(true);
     } finally {
       setIsLoading(false);
     }
@@ -253,7 +269,7 @@ export default function ContactForm({ isOpen, onClose }) {
       {showToast && (
         <Toast
           message={toastMessage}
-          type="success"
+          type={toastType}
           onClose={() => setShowToast(false)}
         />
       )}

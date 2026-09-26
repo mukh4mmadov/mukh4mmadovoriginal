@@ -52,9 +52,13 @@ export default function ReadingTestPlayer({ passage }) {
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [timerRunning, setTimerRunning] = useState(true);
+  const [timerInitialSeconds, setTimerInitialSeconds] = useState(20 * 60);
   const [activeQ, setActiveQ] = useState(null);
   const [timeSpent, setTimeSpent] = useState(0);
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState("");
+  const [answerErrors, setAnswerErrors] = useState({});
+  const [draftRestored, setDraftRestored] = useState(false);
   const [fontSize, setFontSize] = useState("medium");
   const [panelWidth, setPanelWidth] = useState(65);
   const [isResizing, setIsResizing] = useState(false);
@@ -67,6 +71,7 @@ export default function ReadingTestPlayer({ passage }) {
   const lastPauseStartRef = useRef(null);
   const questionRefs = useRef({});
   const previousAnswersRef = useRef({});
+  const restoredDraftSlugRef = useRef(null);
 
   useEffect(() => {
     analyticsService.trackReadingStarted(user?.id ?? null, passage.slug);
@@ -157,7 +162,61 @@ export default function ReadingTestPlayer({ passage }) {
   }, [isResizing, isDesktop]);
 
   useEffect(() => {
-    if (submitted || typeof window === "undefined") return;
+    setDraftRestored(false);
+    setAnswers({});
+    setTimeSpent(0);
+    setTimerRunning(true);
+    setTimerInitialSeconds(20 * 60);
+    previousAnswersRef.current = {};
+    if (typeof window === "undefined") return;
+
+    try {
+      const savedData = window.localStorage.getItem(
+        `ielts-reading-${passage.slug}`,
+      );
+      let hasValidSavedData = false;
+
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
+          const restoredAnswers =
+            parsed.answers && typeof parsed.answers === "object"
+              ? parsed.answers
+              : {};
+          const parsedTimeSpent = Number(parsed.timeSpent);
+          const restoredTimeSpent = Number.isFinite(parsedTimeSpent)
+            ? Math.max(0, parsedTimeSpent)
+            : 0;
+          setAnswers(restoredAnswers);
+          setTimeSpent(restoredTimeSpent);
+          setTimerInitialSeconds(Math.max(0, 20 * 60 - restoredTimeSpent));
+          setTimerRunning(parsed.timerRunning ?? true);
+          startTimeRef.current = Date.now() - restoredTimeSpent * 1000;
+          previousAnswersRef.current = restoredAnswers;
+          hasValidSavedData = true;
+        }
+      }
+
+      if (!hasValidSavedData) {
+        setEvents([{ type: "opened", timestamp: Date.now() }]);
+      }
+    } catch (e) {
+      setEvents([{ type: "opened", timestamp: Date.now() }]);
+    } finally {
+      restoredDraftSlugRef.current = passage.slug;
+      setDraftRestored(true);
+    }
+  }, [passage.slug]);
+
+  useEffect(() => {
+    if (
+      !draftRestored ||
+      restoredDraftSlugRef.current !== passage.slug ||
+      submitted ||
+      typeof window === "undefined"
+    ) {
+      return;
+    }
 
     try {
       const saveData = {
@@ -172,36 +231,7 @@ export default function ReadingTestPlayer({ passage }) {
         JSON.stringify(saveData),
       );
     } catch (e) {}
-  }, [answers, timeSpent, timerRunning, submitted, passage.slug]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    try {
-      const savedData = window.localStorage.getItem(
-        `ielts-reading-${passage.slug}`,
-      );
-      let hasValidSavedData = false;
-
-      if (savedData) {
-        const parsed = JSON.parse(savedData);
-        if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
-          setAnswers(parsed.answers || {});
-          setTimeSpent(parsed.timeSpent || 0);
-          setTimerRunning(parsed.timerRunning ?? true);
-          startTimeRef.current = Date.now() - parsed.timeSpent * 1000;
-          previousAnswersRef.current = parsed.answers || {};
-          hasValidSavedData = true;
-        }
-      }
-
-      if (!hasValidSavedData) {
-        setEvents([{ type: "opened", timestamp: Date.now() }]);
-      }
-    } catch (e) {
-      setEvents([{ type: "opened", timestamp: Date.now() }]);
-    }
-  }, [passage.slug]);
+  }, [answers, timeSpent, timerRunning, submitted, passage.slug, draftRestored]);
 
   const answeredCount = Object.keys(answers).filter((id) => answers[id]).length;
   const remainingCount = questions.length - answeredCount;
@@ -212,10 +242,10 @@ export default function ReadingTestPlayer({ passage }) {
 
   const scrollToQuestion = (questionId) => {
     const element = questionRefs.current[questionId];
-    const questionNumber = questionNumbers.get(questionId) ?? 1;
 
     if (element) {
       element.scrollIntoView({ behavior: "smooth", block: "center" });
+      element.focus({ preventScroll: true });
       setActiveQ(questionId);
     }
   };
@@ -250,6 +280,7 @@ export default function ReadingTestPlayer({ passage }) {
   const handleTimerReset = () => {
     setTimerRunning(false);
     setTimeSpent(0);
+    setTimerInitialSeconds(20 * 60);
     pausedTimeRef.current = 0;
     lastPauseStartRef.current = null;
     startTimeRef.current = Date.now();
@@ -289,6 +320,8 @@ export default function ReadingTestPlayer({ passage }) {
 
   const setAnswer = (id, value) => {
     if (submitted) return;
+    setAnswerErrors((previous) => ({ ...previous, [id]: "" }));
+    setSubmitMessage("");
     const questionNumber = questionNumbers.get(id) ?? 1;
     const oldAnswer = previousAnswersRef.current[id];
 
@@ -329,7 +362,8 @@ export default function ReadingTestPlayer({ passage }) {
 
   const handleSubmit = () => {
     if (answeredCount === 0) {
-      alert("Please answer at least one question before submitting.");
+      setSubmitMessage("Answer the questions before submitting your test.");
+      scrollToQuestion(questions[0]?.id);
       return;
     }
     if (remainingCount > 0) {
@@ -391,6 +425,7 @@ export default function ReadingTestPlayer({ passage }) {
     setTimerRunning(true);
     setActiveQ(null);
     setTimeSpent(0);
+    setTimerInitialSeconds(20 * 60);
     setShowSubmitDialog(false);
     startTimeRef.current = Date.now();
     pausedTimeRef.current = 0;
@@ -414,6 +449,7 @@ export default function ReadingTestPlayer({ passage }) {
     setTimerRunning(true);
     setActiveQ(null);
     setTimeSpent(0);
+    setTimerInitialSeconds(20 * 60);
     setShowSubmitDialog(false);
     startTimeRef.current = Date.now();
     pausedTimeRef.current = 0;
@@ -435,10 +471,10 @@ export default function ReadingTestPlayer({ passage }) {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-surface text-slate-100">
+    <main className="flex h-screen min-h-[100dvh] flex-col bg-surface text-slate-100">
       <div className="flex-shrink-0 border-b border-white/10 bg-surface/95 px-3 py-2 backdrop-blur-sm md:px-6 md:py-3">
-        <div className="mx-auto flex flex-wrap items-center justify-between gap-2 sm:gap-4">
-          <div className="min-w-0 flex-1">
+        <div className="mx-auto flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <div className="w-full min-w-0 sm:flex-1">
             <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.28em] text-brand-400 sm:text-[11px]">
               {passage.subtitle}
             </p>
@@ -446,7 +482,7 @@ export default function ReadingTestPlayer({ passage }) {
               {passage.title}
             </h1>
           </div>
-          <div className="flex flex-shrink-0 flex-wrap items-center gap-1 sm:gap-2 md:gap-3">
+          <div className="flex w-full flex-wrap items-center justify-between gap-1 sm:w-auto sm:flex-shrink-0 sm:justify-end sm:gap-2 md:gap-3">
             <div className="hidden sm:flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-1">
               <Type size={14} className="text-slate-400" />
               {["small", "medium", "large"].map((size) => (
@@ -466,7 +502,7 @@ export default function ReadingTestPlayer({ passage }) {
             </div>
 
             <Timer
-              initialSeconds={20 * 60}
+              initialSeconds={timerInitialSeconds}
               running={timerRunning}
               onExpire={handleSubmit}
               onPause={handleTimerPause}
@@ -476,7 +512,7 @@ export default function ReadingTestPlayer({ passage }) {
             <button
               type="button"
               onClick={() => setAiChatOpen(true)}
-              className="flex items-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/10 px-3 py-2 text-sm font-medium text-brand-300 hover:bg-brand-500/20 transition-colors"
+                  className="flex min-h-11 items-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/10 px-3 py-2 text-sm font-medium text-brand-300 transition-colors hover:bg-brand-500/20"
               aria-label="Open AI Coach"
               title="Open AI Coach"
             >
@@ -539,6 +575,15 @@ export default function ReadingTestPlayer({ passage }) {
           style={{ width: isDesktop ? `${100 - panelWidth}%` : "100%" }}
         >
           <div className="mx-auto max-w-xl space-y-4 sm:space-y-5">
+            {submitMessage && (
+              <p
+                className="rounded-lg border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-200"
+                role="alert"
+                aria-live="assertive"
+              >
+                {submitMessage}
+              </p>
+            )}
             <div className="rounded-2xl border border-white/10 bg-white/5 p-3 shadow-[0_10px_40px_rgba(0,0,0,0.16)] backdrop-blur-sm sm:p-4">
               <div className="mb-3 flex items-center justify-between sm:mb-4">
                 <div>
@@ -680,6 +725,7 @@ export default function ReadingTestPlayer({ passage }) {
                           ref={(el) => {
                             if (el) questionRefs.current[q.id] = el;
                           }}
+                          tabIndex={-1}
                           onFocus={() => setActiveQ(q.id)}
                           className={`rounded-2xl border p-4 transition-all duration-300 ${
                             activeQ === q.id
@@ -705,19 +751,22 @@ export default function ReadingTestPlayer({ passage }) {
                                   value={given || ""}
                                   onChange={(e) => {
                                     const value = e.target.value;
-                                    if (
-                                      q.maxWords === 1 &&
-                                      value.trim().split(/\s+/).length > 1
-                                    ) {
-                                      const firstWord = value
-                                        .trim()
-                                        .split(/\s+/)[0];
-                                      setAnswer(q.id, firstWord);
-                                    } else {
-                                      setAnswer(q.id, value);
+                                    const wordCount = value.trim()
+                                      ? value.trim().split(/\s+/).length
+                                      : 0;
+                                    if (wordCount > (q.maxWords || 1)) {
+                                      setAnswerErrors((previous) => ({
+                                        ...previous,
+                                        [q.id]: `Use no more than ${q.maxWords || 1} word${(q.maxWords || 1) === 1 ? "" : "s"}.`,
+                                      }));
+                                      return;
                                     }
+                                    setAnswer(q.id, value);
                                   }}
-                                  className="mx-1 w-full max-w-[9rem] rounded-lg border border-white/15 bg-white/10 px-2 py-1 text-sm text-white focus:border-brand-500 focus:outline-none sm:w-36"
+                                  aria-label={`Answer to question ${localQuestionNumber}, maximum ${q.maxWords || 1} word${(q.maxWords || 1) === 1 ? "" : "s"}`}
+                                  aria-invalid={Boolean(answerErrors[q.id])}
+                                  aria-describedby={answerErrors[q.id] ? `${q.id}-answer-error` : undefined}
+                                  className="mx-1 w-full max-w-[9rem] rounded-lg border border-white/15 bg-white/10 px-2 py-1 text-sm text-white placeholder:text-slate-300 focus:border-brand-500 focus:outline-none sm:w-36"
                                   placeholder={`max ${q.maxWords} word${q.maxWords > 1 ? "s" : ""}`}
                                 />{" "}
                                 <HighlightableText
@@ -743,13 +792,23 @@ export default function ReadingTestPlayer({ passage }) {
                             )}
                           </div>
 
+                          {answerErrors[q.id] && (
+                            <p
+                              id={`${q.id}-answer-error`}
+                              className="ml-9 mb-3 text-xs text-amber-200"
+                              role="alert"
+                            >
+                              {answerErrors[q.id]}
+                            </p>
+                          )}
+
                           {q.type === "true-false-not-given" && (
                             <div className="ml-9 flex flex-wrap gap-2">
                               {["TRUE", "FALSE", "NOT GIVEN"].map((opt) => (
                                 <button
                                   key={opt}
                                   onClick={() => setAnswer(q.id, opt)}
-                                  className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-all duration-200 ${
+                                  className={`min-h-11 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-all duration-200 ${
                                     given === opt
                                       ? "border-brand-500 bg-brand-500/20 text-brand-300"
                                       : "border-white/15 text-slate-300 hover:border-white/30 hover:bg-white/10"
@@ -767,7 +826,7 @@ export default function ReadingTestPlayer({ passage }) {
                                 <button
                                   key={opt}
                                   onClick={() => setAnswer(q.id, opt)}
-                                  className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-all duration-200 ${
+                                  className={`min-h-11 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-all duration-200 ${
                                     given === opt
                                       ? "border-brand-500 bg-brand-500/20 text-brand-300"
                                       : "border-white/15 text-slate-300 hover:border-white/30 hover:bg-white/10"
@@ -835,15 +894,13 @@ export default function ReadingTestPlayer({ passage }) {
                   <p className="text-sm font-semibold text-slate-200">
                     AI Coach
                   </p>
-                  <p className="text-xs text-slate-400">
-                    Currently in development
-                  </p>
+                  <p className="text-xs text-amber-300">Requires API key</p>
                 </div>
               </div>
               <p className="text-xs text-slate-400 leading-relaxed">
-                AI-powered reading guidance is currently being developed. Check
-                back soon for personalized hints, explanations, and vocabulary
-                help.
+                The server is missing the API key required to generate reading
+                feedback. Add the provider key in the environment settings to
+                enable this feature.
               </p>
             </div>
 
