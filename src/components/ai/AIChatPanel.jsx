@@ -55,6 +55,30 @@ const SUGGESTED_PROMPTS = [
   },
 ];
 
+function normalizeConversationMessages(value) {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .filter(
+      (message) =>
+        message &&
+        (message.role === "user" || message.role === "assistant") &&
+        typeof message.content === "string" &&
+        message.content.trim().length > 0,
+    )
+    .slice(-49)
+    .map((message) => ({
+      id:
+        typeof message.id === "string"
+          ? message.id
+          : `${Date.now()}-${Math.random()}`,
+      role: message.role,
+      content: message.content.trim().slice(0, 10000),
+      timestamp:
+        typeof message.timestamp === "number" ? message.timestamp : Date.now(),
+    }));
+}
+
 export default function AIChatPanel({
   isOpen,
   onClose,
@@ -94,7 +118,7 @@ export default function AIChatPanel({
         if (saved) {
           const parsed = JSON.parse(saved);
           if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
-            setMessages(parsed.messages);
+            setMessages(normalizeConversationMessages(parsed.messages));
           }
         }
       } catch (e) {}
@@ -199,7 +223,10 @@ export default function AIChatPanel({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          messages: [...messages, userMessage],
+          messages: [
+            ...normalizeConversationMessages(messages),
+            userMessage,
+          ],
           context,
           personality,
           provider: "openai",
