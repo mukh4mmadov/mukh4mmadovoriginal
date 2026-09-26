@@ -100,6 +100,7 @@ export default function AIChatPanel({
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const isLoadingRef = useRef(false);
   const conversationKey = `ai-conversation-${context.passage.title}`;
 
   useEffect(() => {
@@ -191,7 +192,9 @@ export default function AIChatPanel({
   }, [isResizing]);
 
   const handleSend = async (prompt) => {
-    if (!prompt.trim() || isLoading) return;
+    if (!prompt.trim() || isLoadingRef.current) return;
+
+    isLoadingRef.current = true;
 
     const userMessage = {
       id: Date.now().toString(),
@@ -240,6 +243,8 @@ export default function AIChatPanel({
         throw new Error(errorData.error || "Failed to get AI response");
       }
 
+      setIsNotConfigured(false);
+
       const assistantMessage = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
@@ -271,11 +276,13 @@ export default function AIChatPanel({
         if (parsed.error) throw new Error(parsed.error);
 
         if (typeof parsed.chunk === "string") {
+          setIsNotConfigured(false);
           fullContent += parsed.chunk;
           setStreamingContent(fullContent);
         }
 
         if (parsed.done) {
+          setIsNotConfigured(false);
           const content =
             typeof parsed.content === "string" ? parsed.content : fullContent;
           fullContent = content;
@@ -335,6 +342,7 @@ export default function AIChatPanel({
         );
       }
     } finally {
+      isLoadingRef.current = false;
       setIsLoading(false);
       setStreamingContent("");
     }
