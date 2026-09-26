@@ -106,6 +106,8 @@ export default function AdminLayout({ children }) {
             <button
               onClick={() => setIsSidebarOpen(false)}
               className="lg:hidden text-slate-400 hover:text-white"
+              aria-label="Close admin navigation"
+              title="Close admin navigation"
             >
               <X size={20} />
             </button>
@@ -151,6 +153,8 @@ export default function AdminLayout({ children }) {
             <button
               onClick={() => setIsSidebarOpen(true)}
               className="lg:hidden text-slate-400 hover:text-white"
+              aria-label="Open admin navigation"
+              title="Open admin navigation"
             >
               <Menu size={24} />
             </button>
