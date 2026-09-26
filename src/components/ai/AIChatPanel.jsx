@@ -216,6 +216,8 @@ export default function AIChatPanel({
       },
     );
 
+    let assistantMessageId = null;
+
     try {
       const response = await fetch("/api/ai-chat", {
         method: "POST",
@@ -244,48 +246,71 @@ export default function AIChatPanel({
         content: "",
         timestamp: Date.now(),
       };
+      assistantMessageId = assistantMessage.id;
 
       setMessages((prev) => [...prev, assistantMessage]);
 
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let fullContent = "";
+      let pending = "";
+
+      const processLine = (line) => {
+        if (!line.startsWith("data: ")) return;
+
+        const data = line.slice(6).trim();
+        if (!data || data === "[DONE]") return;
+
+        let parsed;
+        try {
+          parsed = JSON.parse(data);
+        } catch {
+          return;
+        }
+
+        if (parsed.error) throw new Error(parsed.error);
+
+        if (typeof parsed.chunk === "string") {
+          fullContent += parsed.chunk;
+          setStreamingContent(fullContent);
+        }
+
+        if (parsed.done) {
+          const content =
+            typeof parsed.content === "string" ? parsed.content : fullContent;
+          fullContent = content;
+          setMessages((prev) =>
+            prev.map((message) =>
+              message.id === assistantMessage.id
+                ? { ...message, content }
+                : message,
+            ),
+          );
+        }
+      };
 
       if (reader) {
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
 
-          const chunk = decoder.decode(value);
-          const lines = chunk
-            .split("\n")
-            .filter((line) => line.trim().startsWith("data: "));
+          pending += decoder.decode(value, { stream: true });
+          const lines = pending.split("\n");
+          pending = lines.pop() || "";
 
           for (const line of lines) {
-            const data = line.replace("data: ", "").trim();
-            if (data === "[DONE]") continue;
-
-            try {
-              const parsed = JSON.parse(data);
-              if (parsed.chunk) {
-                fullContent += parsed.chunk;
-                setStreamingContent(fullContent);
-              }
-              if (parsed.done) {
-                setMessages((prev) =>
-                  prev.map((msg) =>
-                    msg.id === assistantMessage.id
-                      ? { ...msg, content: parsed.content }
-                      : msg,
-                  ),
-                );
-              }
-              if (parsed.error) {
-                throw new Error(parsed.error);
-              }
-            } catch (e) {}
+            processLine(line.trimEnd());
           }
         }
+
+        pending += decoder.decode();
+        if (pending) processLine(pending.trimEnd());
+      } else {
+        throw new Error("The AI response stream was empty. Please try again.");
+      }
+
+      if (!fullContent.trim()) {
+        throw new Error("The AI returned an empty response. Please try again.");
       }
 
       setRetryCount(0);
@@ -304,7 +329,11 @@ export default function AIChatPanel({
         setError(errorMessage);
       }
 
-      setMessages((prev) => prev.slice(0, -1));
+      if (assistantMessageId) {
+        setMessages((prev) =>
+          prev.filter((message) => message.id !== assistantMessageId),
+        );
+      }
     } finally {
       setIsLoading(false);
       setStreamingContent("");

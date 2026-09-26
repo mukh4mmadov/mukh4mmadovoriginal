@@ -52,28 +52,50 @@ export class OpenAIProvider {
 
     const decoder = new TextDecoder();
     let fullContent = '';
+    let pending = '';
+
+    const processLine = (line) => {
+      if (!line.startsWith('data: ')) return;
+
+      const data = line.slice(6).trim();
+      if (!data || data === '[DONE]') return;
+
+      let parsed;
+      try {
+        parsed = JSON.parse(data);
+      } catch {
+        return;
+      }
+
+      if (parsed.error) {
+        throw new Error(parsed.error.message || 'OpenAI stream failed');
+      }
+
+      const content = parsed.choices?.[0]?.delta?.content;
+      if (content) {
+        fullContent += content;
+        onChunk(content);
+      }
+    };
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
-      const chunk = decoder.decode(value);
-      const lines = chunk.split('\n').filter(line => line.trim().startsWith('data: '));
+      pending += decoder.decode(value, { stream: true });
+      const lines = pending.split('\n');
+      pending = lines.pop() || '';
 
       for (const line of lines) {
-        const data = line.replace('data: ', '').trim();
-        if (data === '[DONE]') continue;
-
-        try {
-          const parsed = JSON.parse(data);
-          const content = parsed.choices[0]?.delta?.content;
-          if (content) {
-            fullContent += content;
-            onChunk(content);
-          }
-        } catch (e) {
-        }
+        processLine(line.trimEnd());
       }
+    }
+
+    pending += decoder.decode();
+    if (pending) processLine(pending.trimEnd());
+
+    if (!fullContent.trim()) {
+      throw new Error('OpenAI returned an empty response');
     }
 
     return fullContent;
