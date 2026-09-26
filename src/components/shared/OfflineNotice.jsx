@@ -7,6 +7,10 @@ export default function OfflineNotice() {
   const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
+    if (process.env.NODE_ENV === "production" && "serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/service-worker.js").catch(() => {});
+    }
+
     const updateStatus = () => setIsOffline(!navigator.onLine);
     const keepCurrentPageOffline = (event) => {
       const link = event.target.closest("a[href]");
