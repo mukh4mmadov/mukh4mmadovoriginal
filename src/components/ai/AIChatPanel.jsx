@@ -413,7 +413,7 @@ export default function AIChatPanel({
         aria-label="Resize AI panel"
       />
       <div
-        className="hidden sm:block fixed right-0 inset-y-0 min-h-0 overflow-hidden overscroll-y-contain bg-surface/95 backdrop-blur-xl border-l border-white/10 shadow-2xl z-50 flex flex-col"
+        className="hidden sm:flex fixed right-0 inset-y-0 min-h-0 overflow-hidden overscroll-y-contain bg-surface/95 backdrop-blur-xl border-l border-white/10 shadow-2xl z-50 flex-col"
         style={{ width: `${panelWidth}px` }}
       >
         <div className="flex items-center justify-between p-4 border-b border-white/10 bg-gradient-to-r from-brand-500/5 via-transparent to-transparent">
