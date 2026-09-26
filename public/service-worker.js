@@ -1,4 +1,4 @@
-const CACHE_NAME = "muhammadov-ielts-offline-v1";
+const CACHE_NAME = "muhammadov-ielts-offline-v2";
 const OFFLINE_PAGE = "/offline.html";
 
 self.addEventListener("install", (event) => {
@@ -32,7 +32,11 @@ self.addEventListener("fetch", (event) => {
   if (requestUrl.origin !== self.location.origin) return;
 
   event.respondWith(
-    fetch(event.request).catch(async () => {
+    fetch(event.request).then(async (response) => {
+      if (response.ok) return response;
+      const offlinePage = await caches.match(OFFLINE_PAGE);
+      return offlinePage || response;
+    }).catch(async () => {
       const offlinePage = await caches.match(OFFLINE_PAGE);
       return offlinePage || Response.error();
     }),
