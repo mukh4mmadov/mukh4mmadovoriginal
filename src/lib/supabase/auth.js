@@ -100,9 +100,17 @@ export class AuthService {
   }
 
   async updateProfile(userId, updates) {
+    const profileUpdates = { ...updates };
+    if (
+      typeof profileUpdates.date_of_birth === 'string' &&
+      profileUpdates.date_of_birth.trim() === ''
+    ) {
+      profileUpdates.date_of_birth = null;
+    }
+
     const { data, error } = await supabase
       .from('profiles')
-      .update(updates)
+      .update(profileUpdates)
       .eq('id', userId)
       .select()
       .single();
