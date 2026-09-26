@@ -187,6 +187,10 @@ export async function POST(request) {
     const aiProvider = AIProviderFactory.create(validatedProvider, {
       apiKey,
       model: providerModels[validatedProvider],
+      fallbackModels:
+        validatedProvider === "gemini"
+          ? [process.env.GOOGLE_FALLBACK_MODEL || "gemini-3.5-flash-lite"]
+          : [],
     });
 
     const encoder = new TextEncoder();
