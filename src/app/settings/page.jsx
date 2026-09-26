@@ -4,7 +4,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Settings, ArrowLeft, Bell, Moon, Sun, Globe } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import Navbar from '@/components/shared/Navbar';
+
+function decodeApplicationServerKey(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = `${base64String}${padding}`.replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  return Uint8Array.from(rawData, (character) => character.charCodeAt(0));
+}
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -12,12 +18,13 @@ export default function SettingsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushSupported, setPushSupported] = useState(null);
+  const [pushBusy, setPushBusy] = useState(false);
 
   const [formData, setFormData] = useState({
     theme: 'dark',
     language: 'en',
-    notifications_enabled: true,
-    daily_reminder_time: '09:00',
     auto_save_enabled: true,
     reading_font_size: 16,
   });
@@ -31,6 +38,18 @@ export default function SettingsPage() {
   useEffect(() => {
     const savedTheme = window.localStorage.getItem('themePreference');
     if (savedTheme) setFormData((current) => ({ ...current, theme: savedTheme }));
+  }, []);
+
+  useEffect(() => {
+    const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+    setPushSupported(supported);
+    if (!supported) return;
+
+    navigator.serviceWorker.getRegistration().then(async (registration) => {
+      if (!registration) return;
+      const subscription = await registration.pushManager.getSubscription();
+      setPushEnabled(Boolean(subscription));
+    }).catch(() => setPushEnabled(false));
   }, []);
 
   useEffect(() => {
@@ -67,17 +86,81 @@ export default function SettingsPage() {
     }
   };
 
+  const handlePushToggle = async () => {
+    if (pushBusy || !pushSupported) return;
+    setError('');
+    setSuccess('');
+    setPushBusy(true);
+
+    try {
+      if (pushEnabled) {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (!registration) {
+          setPushEnabled(false);
+          return;
+        }
+        const subscription = await registration.pushManager.getSubscription();
+        if (subscription) {
+          const response = await fetch('/api/push/subscribe', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ endpoint: subscription.endpoint }),
+          });
+          if (!response.ok) throw new Error('Could not turn off study reminders. Please try again.');
+          await subscription.unsubscribe();
+        }
+        setPushEnabled(false);
+        setSuccess('Study reminders turned off.');
+        return;
+      }
+
+      const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (!publicKey) throw new Error('Study reminders are not configured yet.');
+      if (Notification.permission === 'denied') {
+        throw new Error('Notifications are blocked in your browser settings. Allow them for this site, then try again.');
+      }
+
+      const permission = Notification.permission === 'granted'
+        ? 'granted'
+        : await Notification.requestPermission();
+      if (permission !== 'granted') throw new Error('Notification permission was not granted.');
+
+      const registration = await navigator.serviceWorker.register('/service-worker.js');
+      const existingSubscription = await registration.pushManager.getSubscription();
+      const subscription = existingSubscription || await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: decodeApplicationServerKey(publicKey),
+      });
+
+      const response = await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(subscription),
+      });
+      if (!response.ok) throw new Error('Could not save your reminder preference. Please try again.');
+
+      setPushEnabled(true);
+      setSuccess('Study reminders enabled. You can turn them off here anytime.');
+    } catch (err) {
+      setError(err.message || 'Could not update notification settings.');
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950">
-        <div className="animate-spin rounded-full h-12 w-12 border-2 border-white/30 border-t-white" />
-      </div>
+      <main className="min-h-screen flex items-center justify-center bg-slate-950" aria-busy="true">
+        <div role="status" aria-label="Loading settings">
+          <span className="sr-only">Loading settings</span>
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-white/30 border-t-white" aria-hidden="true" />
+        </div>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950">
-      <Navbar />
+    <main className="min-h-screen bg-slate-950">
       <div className="max-w-3xl mx-auto px-4 py-8">
         <button
           onClick={() => router.back()}
@@ -119,12 +202,14 @@ export default function SettingsPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
                   <div>
-                    <p className="text-white font-medium">Theme</p>
-                    <p className="text-sm text-slate-400">Choose your preferred theme</p>
+                    <label htmlFor="theme" className="text-white font-medium">Theme</label>
+                    <p id="theme-description" className="text-sm text-slate-400">Choose your preferred theme</p>
                   </div>
                   <select
+                    id="theme"
                     value={formData.theme}
                     onChange={(e) => setFormData({ ...formData, theme: e.target.value })}
+                    aria-describedby="theme-description"
                     className="px-4 py-2 bg-white/10 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     disabled={isSubmitting}
                   >
@@ -144,12 +229,14 @@ export default function SettingsPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
                   <div>
-                    <p className="text-white font-medium">Language</p>
-                    <p className="text-sm text-slate-400">Select your language</p>
+                    <label htmlFor="language" className="text-white font-medium">Language</label>
+                    <p id="language-description" className="text-sm text-slate-400">Select your language</p>
                   </div>
                   <select
+                    id="language"
                     value={formData.language}
                     onChange={(e) => setFormData({ ...formData, language: e.target.value })}
+                    aria-describedby="language-description"
                     className="px-4 py-2 bg-white/10 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     disabled={isSubmitting}
                   >
@@ -172,34 +259,31 @@ export default function SettingsPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
                   <div>
-                    <p className="text-white font-medium">Enable Notifications</p>
-                    <p className="text-sm text-slate-400">Receive study reminders</p>
+                    <p className="text-white font-medium">Study reminders</p>
+                    <p id="notifications-description" className="max-w-xl text-sm text-slate-400">
+                      Get one browser notification after at least 24 hours away. Reminders are checked once a day, and you can turn them off anytime.
+                    </p>
                   </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.notifications_enabled}
-                      onChange={(e) => setFormData({ ...formData, notifications_enabled: e.target.checked })}
-                      className="sr-only peer"
-                      disabled={isSubmitting}
-                    />
-                    <div className="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500" />
-                  </label>
+                  <button
+                    type="button"
+                    onClick={handlePushToggle}
+                    disabled={pushBusy || !pushSupported}
+                    aria-describedby="notifications-description"
+                    className="shrink-0 rounded-xl border border-blue-400/40 bg-blue-500/15 px-4 py-2 text-sm font-semibold text-blue-200 transition hover:bg-blue-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-300 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {pushBusy ? 'Please wait…' : pushEnabled ? 'Turn off' : 'Turn on'}
+                  </button>
                 </div>
-
-                <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
-                  <div>
-                    <p className="text-white font-medium">Daily Reminder Time</p>
-                    <p className="text-sm text-slate-400">When to receive daily reminders</p>
-                  </div>
-                  <input
-                    type="time"
-                    value={formData.daily_reminder_time}
-                    onChange={(e) => setFormData({ ...formData, daily_reminder_time: e.target.value })}
-                    className="px-4 py-2 bg-white/10 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    disabled={isSubmitting}
-                  />
-                </div>
+                {pushSupported === false && (
+                  <p className="text-sm text-amber-300" role="status">
+                    This browser does not support push notifications. Try a supported browser or install the site as an app on your device.
+                  </p>
+                )}
+                {pushSupported && Notification.permission === 'denied' && (
+                  <p className="text-sm text-amber-300" role="status">
+                    Notifications are blocked for this site in your browser settings.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -208,29 +292,33 @@ export default function SettingsPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
                   <div>
-                    <p className="text-white font-medium">Auto Save Progress</p>
-                    <p className="text-sm text-slate-400">Automatically save your reading progress</p>
+                    <label htmlFor="auto-save-enabled" className="text-white font-medium">Auto Save Progress</label>
+                    <p id="auto-save-description" className="text-sm text-slate-400">Automatically save your reading progress</p>
                   </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
+                  <div className="relative inline-flex items-center cursor-pointer">
                     <input
+                      id="auto-save-enabled"
                       type="checkbox"
                       checked={formData.auto_save_enabled}
                       onChange={(e) => setFormData({ ...formData, auto_save_enabled: e.target.checked })}
                       className="sr-only peer"
+                      aria-describedby="auto-save-description"
                       disabled={isSubmitting}
                     />
                     <div className="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500" />
-                  </label>
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
                   <div>
-                    <p className="text-white font-medium">Reading Font Size</p>
-                    <p className="text-sm text-slate-400">Adjust text size for reading passages</p>
+                    <label htmlFor="reading-font-size" className="text-white font-medium">Reading Font Size</label>
+                    <p id="reading-font-size-description" className="text-sm text-slate-400">Adjust text size for reading passages</p>
                   </div>
                   <select
+                    id="reading-font-size"
                     value={formData.reading_font_size}
                     onChange={(e) => setFormData({ ...formData, reading_font_size: parseInt(e.target.value) })}
+                    aria-describedby="reading-font-size-description"
                     className="px-4 py-2 bg-white/10 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     disabled={isSubmitting}
                   >
@@ -263,6 +351,6 @@ export default function SettingsPage() {
           </form>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

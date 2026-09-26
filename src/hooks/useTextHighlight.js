@@ -6,28 +6,41 @@ export function useTextHighlight(
   onHighlight,
   onHighlightRemove,
 ) {
-  const [highlights, setHighlights] = useState(() => {
-    if (typeof window === "undefined") return {};
+  const [highlights, setHighlights] = useState({});
+  const [loadedStorageKey, setLoadedStorageKey] = useState(null);
+  const currentHighlights = loadedStorageKey === storageKey ? highlights : {};
+
+  useEffect(() => {
+    let restoredHighlights = {};
     try {
       const stored = window.localStorage.getItem(
         `highlights_${storageKey}`,
       );
-      return stored ? JSON.parse(stored) : {};
+      const parsed = stored ? JSON.parse(stored) : {};
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        restoredHighlights = Object.fromEntries(
+          Object.entries(parsed).filter(
+            ([, container]) =>
+              container && typeof container === "object" && !Array.isArray(container),
+          ),
+        );
+      }
     } catch {
-      return {};
     }
-  });
+    setHighlights(restoredHighlights);
+    setLoadedStorageKey(storageKey);
+  }, [storageKey]);
 
   const [eraseMode, setEraseMode] = useState(false);
   const [selectedColor, setSelectedColor] = useState("yellow");
 
-  const totalHighlights = Object.values(highlights).reduce(
+  const totalHighlights = Object.values(currentHighlights).reduce(
     (sum, container) => sum + Object.keys(container).length,
     0,
   );
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (loadedStorageKey !== storageKey) return;
     try {
       window.localStorage.setItem(
         `highlights_${storageKey}`,
@@ -35,7 +48,7 @@ export function useTextHighlight(
       );
     } catch {
     }
-  }, [highlights, storageKey]);
+  }, [highlights, loadedStorageKey, storageKey]);
 
   const clearAll = useCallback(() => {
     setHighlights({});
@@ -176,7 +189,7 @@ export function useTextHighlight(
   );
 
   return {
-    highlights,
+    highlights: currentHighlights,
     eraseMode,
     toggleEraseMode,
     clearAll,

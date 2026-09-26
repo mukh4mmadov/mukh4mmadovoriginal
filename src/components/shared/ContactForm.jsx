@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Mail, Send, X } from "lucide-react";
 import { feedbackRepository } from "@/lib/supabase/repositories/feedback.repository";
 import { useAuth } from "@/contexts/AuthContext";
 import Toast from "./Toast";
+import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 
 export default function ContactForm({ isOpen, onClose }) {
+  const nameInputRef = useRef(null);
+  const modalRef = useModalAccessibility(isOpen, onClose, nameInputRef);
   const { user, profile } = useAuth();
   const [formData, setFormData] = useState({
     name: profile?.full_name || "",
@@ -123,7 +126,15 @@ export default function ContactForm({ isOpen, onClose }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-surface border border-white/10 rounded-2xl w-full max-w-md p-6 relative">
+        <div
+          ref={modalRef}
+          className="bg-surface border border-white/10 rounded-2xl w-full max-w-md p-6 relative"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="contact-developer-title"
+          data-modal-focus-scope="contact-developer"
+          tabIndex={-1}
+        >
           <button
             onClick={onClose}
             className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 transition-colors"
@@ -133,7 +144,7 @@ export default function ContactForm({ isOpen, onClose }) {
           </button>
 
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-slate-200 mb-2 flex items-center gap-2">
+            <h2 id="contact-developer-title" className="text-2xl font-bold text-slate-200 mb-2 flex items-center gap-2">
               <Mail className="text-brand-400" size={24} />
               Contact Developer
             </h2>
@@ -158,6 +169,7 @@ export default function ContactForm({ isOpen, onClose }) {
               </label>
               <input
                 type="text"
+                ref={nameInputRef}
                 id="name"
                 name="name"
                 value={formData.name}

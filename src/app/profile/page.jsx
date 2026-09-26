@@ -68,14 +68,17 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950">
-        <div className="animate-spin rounded-full h-12 w-12 border-2 border-white/30 border-t-white" />
-      </div>
+      <main className="min-h-screen flex items-center justify-center bg-slate-950" aria-busy="true">
+        <div role="status" aria-label="Loading profile">
+          <span className="sr-only">Loading profile</span>
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-white/30 border-t-white" aria-hidden="true" />
+        </div>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <main className="min-h-screen bg-slate-950">
       <div className="max-w-3xl mx-auto px-4 py-8">
         <button
           onClick={() => router.back()}
@@ -207,6 +210,6 @@ export default function ProfilePage() {
           </form>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

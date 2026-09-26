@@ -21,6 +21,7 @@ export default function ReadingListPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDifficulty, setSelectedDifficulty] = useState("all");
   const [progressData, setProgressData] = useState({});
+  const [progressLoaded, setProgressLoaded] = useState(false);
 
   useEffect(() => {
     const syncProgress = async () => {
@@ -34,10 +35,65 @@ export default function ReadingListPage() {
         }
       }
       setProgressData(data);
+      setProgressLoaded(true);
     };
 
+    setProgressLoaded(false);
     syncProgress();
   }, [user]);
+
+  const recommendation = useMemo(() => {
+    if (!progressLoaded || !readingTests.length) return null;
+
+    const completedTests = readingTests.filter(
+      (test) => progressData[test.slug]?.completed,
+    );
+    const completedScores = completedTests
+      .map((test) => Number(progressData[test.slug]?.bestScore))
+      .filter((score) => Number.isFinite(score))
+      .map((score) => Math.min(100, Math.max(0, score)));
+    const averageScore = completedScores.length
+      ? completedScores.reduce((total, score) => total + score, 0) / completedScores.length
+      : null;
+
+    if (completedTests.length === readingTests.length) {
+      const lowestScoringTest = completedTests.reduce((lowest, test) => {
+        const score = Number(progressData[test.slug]?.bestScore) || 0;
+        return !lowest || score < (Number(progressData[lowest.slug]?.bestScore) || 0)
+          ? test
+          : lowest;
+      }, null);
+
+      return lowestScoringTest
+        ? {
+            test: lowestScoringTest,
+            reason: `You have completed every passage. Review this one to improve your previous ${Math.round(Number(progressData[lowestScoringTest.slug]?.bestScore) || 0)}% best score.`,
+            action: "Review passage",
+          }
+        : null;
+    }
+
+    const targetDifficulty = averageScore === null || averageScore < 60
+      ? "easy"
+      : averageScore < 80
+        ? "medium"
+        : "hard";
+    const nextTest = readingTests.find(
+      (test) => !progressData[test.slug]?.completed && test.difficulty === targetDifficulty,
+    ) || readingTests.find((test) => !progressData[test.slug]?.completed);
+
+    if (!nextTest) return null;
+
+    const reason = averageScore === null
+      ? "Start here to build your reading practice history."
+      : averageScore < 60
+        ? `Your average best score is ${Math.round(averageScore)}%. This easier passage is a good next step for building accuracy.`
+        : averageScore < 80
+          ? `Your average best score is ${Math.round(averageScore)}%. Continue with a medium-level passage.`
+          : `Your average best score is ${Math.round(averageScore)}%. Try a harder passage for more challenge.`;
+
+    return { test: nextTest, reason, action: "Start recommended passage" };
+  }, [progressData, progressLoaded, readingTests]);
 
   const filteredTests = useMemo(() => {
     if (!readingTests || readingTests.length === 0) return [];
@@ -130,6 +186,30 @@ export default function ReadingListPage() {
       <div className="mb-8">
         <DailyInspiration />
       </div>
+
+      {recommendation && !searchQuery && selectedDifficulty === "all" && (
+        <section
+          aria-labelledby="recommended-practice-title"
+          className="mb-8 rounded-2xl border border-brand-400/30 bg-brand-500/10 p-5 sm:p-6"
+        >
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-300">
+            Recommended next step
+          </p>
+          <h2 id="recommended-practice-title" className="mb-2 text-xl font-bold text-white">
+            {recommendation.test.title}
+          </h2>
+          <p className="mb-4 max-w-2xl text-sm leading-6 text-slate-300">
+            {recommendation.reason} The recommendation uses saved passage completion and best scores; it does not analyze individual question types.
+          </p>
+          <Link
+            href={`/reading/${recommendation.test.slug}`}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-300"
+          >
+            {recommendation.action}
+            <ArrowRight size={16} aria-hidden="true" />
+          </Link>
+        </section>
+      )}
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         {filteredTests.length === 0 ? (

@@ -17,6 +17,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { isAdmin } from '@/lib/supabase/auth-admin';
 import AdminNotifications from './AdminNotifications';
+import { AdminPageError } from './AdminPageStatus';
 
 export default function AdminLayout({ children }) {
   const { user, signOut, isLoading: authLoading } = useAuth();
@@ -24,6 +25,8 @@ export default function AdminLayout({ children }) {
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAdminUser, setIsAdminUser] = useState(null);
+  const [adminCheckError, setAdminCheckError] = useState('');
+  const [adminCheckAttempt, setAdminCheckAttempt] = useState(0);
 
   useEffect(() => {
     let isActive = true;
@@ -38,6 +41,7 @@ export default function AdminLayout({ children }) {
       }
 
       setIsAdminUser(null);
+      setAdminCheckError('');
       try {
         const admin = await isAdmin(user.id);
         if (!isActive) return;
@@ -48,8 +52,11 @@ export default function AdminLayout({ children }) {
       } catch (error) {
         console.error('Error checking admin status:', error);
         if (!isActive) return;
-        setIsAdminUser(false);
-        router.replace('/');
+        setAdminCheckError(
+          typeof navigator !== 'undefined' && !navigator.onLine
+            ? 'You are offline. Reconnect and retry to verify admin access.'
+            : 'Admin access could not be verified. Please retry.',
+        );
       }
     }
 
@@ -58,7 +65,20 @@ export default function AdminLayout({ children }) {
     return () => {
       isActive = false;
     };
-  }, [authLoading, user, router]);
+  }, [authLoading, user, router, adminCheckAttempt]);
+
+  if (adminCheckError) {
+    return (
+      <div className="min-h-screen bg-surface p-4 pt-16">
+        <div className="mx-auto max-w-xl">
+          <AdminPageError
+            message={adminCheckError}
+            onRetry={() => setAdminCheckAttempt((attempt) => attempt + 1)}
+          />
+        </div>
+      </div>
+    );
+  }
 
   if (authLoading || isAdminUser === null) {
     return (
@@ -96,6 +116,7 @@ export default function AdminLayout({ children }) {
       )}
 
       <aside
+        id="admin-navigation"
         className={`fixed top-0 left-0 z-50 h-full w-64 bg-surface border-r border-white/10 transition-transform duration-300 lg:translate-x-0 lg:static lg:z-0 ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
@@ -113,7 +134,7 @@ export default function AdminLayout({ children }) {
             </button>
           </div>
 
-          <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          <nav aria-label="Admin navigation" className="flex-1 p-4 space-y-1 overflow-y-auto">
             {navigation.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
@@ -155,6 +176,8 @@ export default function AdminLayout({ children }) {
               className="lg:hidden text-slate-400 hover:text-white"
               aria-label="Open admin navigation"
               title="Open admin navigation"
+              aria-expanded={isSidebarOpen}
+              aria-controls="admin-navigation"
             >
               <Menu size={24} />
             </button>

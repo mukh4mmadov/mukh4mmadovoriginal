@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import {
   AlertTriangle,
@@ -13,8 +13,11 @@ import {
 import { feedbackRepository } from "@/lib/supabase/repositories/feedback.repository";
 import { useAuth } from "@/contexts/AuthContext";
 import Toast from "./Toast";
+import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 
 export default function ReportIssueButton() {
+  const triggerRef = useRef(null);
+  const nameInputRef = useRef(null);
   const pathname = usePathname();
   const { user, profile } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
@@ -29,6 +32,7 @@ export default function ReportIssueButton() {
   const [isLoading, setIsLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const modalRef = useModalAccessibility(isOpen, () => setIsOpen(false), nameInputRef);
 
   const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password';
 
@@ -152,10 +156,13 @@ export default function ReportIssueButton() {
     <>
       {!isAuthPage && (
         <button
+          ref={triggerRef}
           onClick={() => setIsOpen(true)}
           className="fixed bottom-6 right-6 z-40 bg-brand-500 hover:bg-brand-600 text-white p-3 rounded-full shadow-lg transition-all hover:scale-110"
           aria-label="Report an issue"
           title="Report an issue"
+          aria-expanded={isOpen}
+          aria-controls={isOpen ? "report-issue-dialog" : undefined}
         >
           <AlertTriangle size={24} />
         </button>
@@ -163,7 +170,16 @@ export default function ReportIssueButton() {
 
       {isOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-surface border border-white/10 rounded-2xl w-full max-w-lg p-6 relative max-h-[90vh] overflow-y-auto">
+          <div
+            ref={modalRef}
+            id="report-issue-dialog"
+            className="bg-surface border border-white/10 rounded-2xl w-full max-w-lg p-6 relative max-h-[90vh] overflow-y-auto"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="report-issue-title"
+            data-modal-focus-scope="report-issue"
+            tabIndex={-1}
+          >
             <button
               onClick={() => setIsOpen(false)}
               className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 transition-colors"
@@ -173,7 +189,7 @@ export default function ReportIssueButton() {
             </button>
 
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-slate-200 mb-2 flex items-center gap-2">
+              <h2 id="report-issue-title" className="text-2xl font-bold text-slate-200 mb-2 flex items-center gap-2">
                 <AlertTriangle className="text-brand-400" size={24} />
                 Report an Issue
               </h2>
@@ -235,6 +251,7 @@ export default function ReportIssueButton() {
                 </label>
                 <input
                   type="text"
+                  ref={nameInputRef}
                   id="name"
                   name="name"
                   value={formData.name}

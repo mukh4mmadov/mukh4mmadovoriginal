@@ -2,6 +2,8 @@ import { supabase } from './client';
 import { getSafeRedirectPath } from '@/lib/auth/redirect';
 
 export class AuthService {
+  profileRequests = new Map();
+
   async signUp(data) {
     console.log('[SIGNUP] Attempting signup with email:', data.email);
     
@@ -91,25 +93,67 @@ export class AuthService {
   }
 
   async getCurrentUser() {
-    const { data: { user }, error } = await supabase.auth.getUser();
+    const { data: { session }, error } = await supabase.auth.getSession();
     if (error) {
       if (error.name === 'AuthSessionMissingError') {
         return null;
       }
       throw error;
     }
-    return user;
+    return session?.user || null;
   }
 
   async getUserProfile(userId) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    const existingRequest = this.profileRequests.get(userId);
+    if (existingRequest) return existingRequest;
+
+    const request = this.#fetchUserProfile(userId);
+    this.profileRequests.set(userId, request);
+    try {
+      return await request;
+    } finally {
+      if (this.profileRequests.get(userId) === request) {
+        this.profileRequests.delete(userId);
+      }
+    }
+  }
+
+  async #fetchUserProfile(userId) {
+    const fetchProfile = () =>
+      supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+    let { data, error } = await fetchProfile();
+
+    if (error?.status === 401) {
+      let refreshedSession = null;
+      let refreshFailed = false;
+      try {
+        const { data: refreshed, error: refreshError } =
+          await supabase.auth.refreshSession();
+        refreshedSession = refreshed?.session || null;
+        refreshFailed = Boolean(refreshError);
+      } catch {
+        refreshFailed = true;
+      }
+
+      if (!refreshFailed && refreshedSession?.user?.id === userId) {
+        ({ data, error } = await fetchProfile());
+      }
+
+      if (refreshFailed || refreshedSession?.user?.id !== userId || error?.status === 401) {
+        await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+        const sessionError = new Error('Your session expired. Please sign in again.');
+        sessionError.code = 'SESSION_EXPIRED';
+        throw sessionError;
+      }
+    }
 
     if (error) {
-      if (error.code === 'PGRST116') return null; // No rows returned
+      if (error.code === 'PGRST116') return null;
       throw error;
     }
 

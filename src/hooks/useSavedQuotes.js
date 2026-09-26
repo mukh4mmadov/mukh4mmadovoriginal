@@ -29,7 +29,7 @@ export function useSavedQuotes() {
     };
 
     loadQuotes();
-  }, [user]);
+  }, [user?.id]);
 
   const isQuoteSaved = async (quoteId) => {
     if (!user) return false;

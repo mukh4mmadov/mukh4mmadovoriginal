@@ -1,8 +1,16 @@
 "use client";
 
+import { useEffect, useState } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 
 export function AdminPageLoading({ label = 'Loading admin data' }) {
+  const [hasTimedOut, setHasTimedOut] = useState(false);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setHasTimedOut(true), 12000);
+    return () => window.clearTimeout(timeout);
+  }, []);
+
   return (
     <div
       className="min-h-[16rem] flex flex-col items-center justify-center gap-4 rounded-xl border border-white/10 bg-white/[0.02] p-8"
@@ -15,9 +23,19 @@ export function AdminPageLoading({ label = 'Loading admin data' }) {
         ))}
       </div>
       <div className="flex items-center gap-2 text-sm text-slate-300">
-        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-brand-400" />
-        {label}…
+        {!hasTimedOut && <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-brand-400" />}
+        {hasTimedOut ? `${label} is taking longer than expected.` : `${label}…`}
       </div>
+      {hasTimedOut && (
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 text-sm font-medium text-white transition-colors hover:bg-white/10"
+        >
+          <RefreshCw size={14} />
+          Retry
+        </button>
+      )}
     </div>
   );
 }

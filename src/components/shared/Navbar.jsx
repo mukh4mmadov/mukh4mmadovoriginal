@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { BookOpenText, Moon, Sun, LogOut, User, ChevronDown, Settings, BarChart3, Menu, X } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function Navbar() {
@@ -11,6 +11,7 @@ export default function Navbar() {
   const [mounted, setMounted] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const mobileMenuButtonRef = useRef(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -52,8 +53,29 @@ export default function Navbar() {
   };
 
   const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
+    const nextState = !isMobileMenuOpen;
+    setIsMobileMenuOpen(nextState);
+    if (!nextState) {
+      window.requestAnimationFrame(() => mobileMenuButtonRef.current?.focus());
+    }
   };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+    window.requestAnimationFrame(() => mobileMenuButtonRef.current?.focus());
+  };
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setIsMobileMenuOpen(false);
+        window.requestAnimationFrame(() => mobileMenuButtonRef.current?.focus());
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isMobileMenuOpen]);
 
   const toggleTheme = () => {
     const nextDarkMode = !darkMode;
@@ -103,10 +125,13 @@ export default function Navbar() {
         </Link>
 
         <button
+          ref={mobileMenuButtonRef}
           type="button"
           onClick={toggleMobileMenu}
           className="lg:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
-          aria-label="Toggle menu"
+          aria-label={isMobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-expanded={isMobileMenuOpen}
+          aria-controls="mobile-navigation"
         >
           {isMobileMenuOpen ? <X size={24} className="text-white" /> : <Menu size={24} className="text-white" />}
         </button>
@@ -217,27 +242,30 @@ export default function Navbar() {
         </nav>
       </div>
 
-      {isMobileMenuOpen && (
-        <div className="lg:hidden border-t border-white/10 bg-surface/95 backdrop-blur-xl">
-          <nav className="px-4 py-4 space-y-3">
+      <div
+        id="mobile-navigation"
+        hidden={!isMobileMenuOpen}
+        className="lg:hidden border-t border-white/10 bg-surface/95 backdrop-blur-xl"
+      >
+          <nav aria-label="Mobile navigation" className="px-4 py-4 space-y-3">
             <Link
               href="/reading"
               className="block rounded-lg px-4 py-3 text-white hover:bg-white/10 transition-colors"
-              onClick={() => setIsMobileMenuOpen(false)}
+              onClick={closeMobileMenu}
             >
               All passages
             </Link>
             <Link
               href="/changelog"
               className="block rounded-lg px-4 py-3 text-white hover:bg-white/10 transition-colors"
-              onClick={() => setIsMobileMenuOpen(false)}
+              onClick={closeMobileMenu}
             >
               Changelog
             </Link>
             <Link
               href="/roadmap"
               className="block rounded-lg px-4 py-3 text-white hover:bg-white/10 transition-colors"
-              onClick={() => setIsMobileMenuOpen(false)}
+              onClick={closeMobileMenu}
             >
               Roadmap
             </Link>
@@ -254,7 +282,7 @@ export default function Navbar() {
                   <Link
                     href="/profile"
                     className="flex items-center gap-3 px-4 py-3 text-white hover:bg-white/10 transition-colors"
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    onClick={closeMobileMenu}
                   >
                     <User size={18} />
                     My Profile
@@ -262,7 +290,7 @@ export default function Navbar() {
                   <Link
                     href="/settings"
                     className="flex items-center gap-3 px-4 py-3 text-white hover:bg-white/10 transition-colors"
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    onClick={closeMobileMenu}
                   >
                     <Settings size={18} />
                     Settings
@@ -270,7 +298,7 @@ export default function Navbar() {
                   <Link
                     href="/statistics"
                     className="flex items-center gap-3 px-4 py-3 text-white hover:bg-white/10 transition-colors"
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    onClick={closeMobileMenu}
                   >
                     <BarChart3 size={18} />
                     Statistics
@@ -288,7 +316,7 @@ export default function Navbar() {
               <Link
                 href="/login"
                 className="block rounded-lg bg-brand-500 px-4 py-3 text-center text-sm font-medium text-white transition-all hover:bg-brand-600"
-                onClick={() => setIsMobileMenuOpen(false)}
+                onClick={closeMobileMenu}
               >
                 Sign in
               </Link>
@@ -307,8 +335,7 @@ export default function Navbar() {
               </button>
             </div>
           </nav>
-        </div>
-      )}
+      </div>
     </header>
   );
 }

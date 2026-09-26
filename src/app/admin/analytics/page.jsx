@@ -30,7 +30,7 @@ export default function AdminAnalytics() {
       const [dailyUsers, readingFinished, aiUsage, registrationTrend, questionAnswered, allEvents] = await Promise.all([
         supabase
           .from('analytics_events')
-          .select('created_at')
+          .select('created_at, user_id')
           .gte('created_at', thirtyDaysAgo),
         supabase
           .from('analytics_events')
@@ -61,7 +61,7 @@ export default function AdminAnalytics() {
         .find((result) => result.error)?.error;
       if (requestError) throw requestError;
 
-      const dailyUsersData = processDailyData(dailyUsers.data || []);
+      const dailyUsersData = processDailyData(dailyUsers.data || [], 'created_at', 'user_id');
       const weeklyReadingTimeData = processWeeklyReadingTime(readingFinished.data || []);
       const aiUsageData = processDailyData(aiUsage.data || []);
       const registrationData = processDailyData(registrationTrend.data || []);
@@ -85,14 +85,24 @@ export default function AdminAnalytics() {
     }
   }
 
-  function processDailyData(events, dateField = 'created_at') {
+  function processDailyData(events, dateField = 'created_at', uniqueField = null) {
     const dailyMap = new Map();
+    const uniqueValuesByDate = new Map();
     
     events.forEach((event) => {
       const timestamp = new Date(event[dateField]);
       if (Number.isNaN(timestamp.getTime())) return;
 
       const date = timestamp.toISOString().split('T')[0];
+      if (uniqueField) {
+        const uniqueValue = event[uniqueField];
+        if (!uniqueValue) return;
+        const uniqueValues = uniqueValuesByDate.get(date) || new Set();
+        uniqueValues.add(uniqueValue);
+        uniqueValuesByDate.set(date, uniqueValues);
+        dailyMap.set(date, uniqueValues.size);
+        return;
+      }
       dailyMap.set(date, (dailyMap.get(date) || 0) + 1);
     });
 

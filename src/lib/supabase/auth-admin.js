@@ -1,18 +1,8 @@
-import { supabase } from './client';
+import { authService } from './auth';
 
 export async function isAdmin(userId) {
-  try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', userId)
-      .single();
-
-    if (error) return false;
-    return data?.is_admin || false;
-  } catch {
-    return false;
-  }
+  const profile = await authService.getUserProfile(userId);
+  return Boolean(profile?.is_admin);
 }
 
 export async function requireAdmin(userId) {

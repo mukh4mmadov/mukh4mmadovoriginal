@@ -21,22 +21,25 @@ import { useAuth } from "@/contexts/AuthContext";
 import ContactForm from "@/components/shared/ContactForm";
 import readingTestsModule from "@/data/readingTests_new";
 
+const readingTests = readingTestsModule?.readingTests || [];
+
 export default function Home() {
   const { user } = useAuth();
+  const userId = user?.id;
   const [progressData, setProgressData] = useState([]);
   const [todayStats, setTodayStats] = useState({
     readingTime: 0,
     testsCompleted: 0,
-    highlightsCreated: 0,
-    accuracy: 0,
+    highlightsCreated: "Not tracked",
+    accuracy: null,
   });
   const [isContactFormOpen, setIsContactFormOpen] = useState(false);
 
-  const readingTests = readingTestsModule?.readingTests || [];
-
   useEffect(() => {
+    let isActive = true;
     const loadProgress = async () => {
-      const progress = await getAllProgress(user?.id);
+      const progress = await getAllProgress(userId);
+      if (!isActive) return;
       setProgressData(progress || []);
 
       const todayProgress = (progress || []).filter(p => {
@@ -46,21 +49,34 @@ export default function Home() {
       });
 
       const totalTime = todayProgress.reduce((sum, p) => sum + (p.totalTime || 0), 0);
-      const completedToday = todayProgress.filter(p => p.completed).length;
-      const avgAccuracy = todayProgress.length > 0
-        ? todayProgress.reduce((sum, p) => sum + p.bestScore, 0) / todayProgress.length
-        : 0;
+      const completedPassages = todayProgress.filter((p) => p.completed);
+      const completedTotals = completedPassages.reduce((totals, item) => {
+        const test = readingTests.find((candidate) => candidate.slug === item.slug);
+        const questionCount = (test?.passages?.[0]?.questionGroups || []).reduce(
+          (groupTotal, group) => groupTotal + (group.questions?.length || 0),
+          0,
+        );
+        totals.questions += questionCount;
+        const scorePercent = Math.min(100, Math.max(0, Number(item.bestScore) || 0));
+        totals.correct += (questionCount * scorePercent) / 100;
+        return totals;
+      }, { questions: 0, correct: 0 });
 
       setTodayStats({
         readingTime: Math.round(totalTime / 60),
-        testsCompleted: completedToday,
-        highlightsCreated: 0,
-        accuracy: Math.round(avgAccuracy),
+        testsCompleted: completedPassages.length,
+        highlightsCreated: "Not tracked",
+        accuracy: completedTotals.questions
+          ? Math.round((completedTotals.correct / completedTotals.questions) * 100)
+          : null,
       });
     };
 
     loadProgress();
-  }, [user]);
+    return () => {
+      isActive = false;
+    };
+  }, [userId]);
 
   const lastTest = progressData && progressData.length > 0 ? progressData[0] : null;
   const lastTestPassage = lastTest && readingTests ? readingTests.find(t => t.slug === lastTest.slug) : null;
@@ -99,6 +115,9 @@ export default function Home() {
             <TrendingUp size={20} className="text-brand-400" aria-hidden="true" />
             <h2 className="text-lg font-semibold text-white">Today's Study</h2>
           </div>
+          <div className="mb-3 text-sm text-slate-400">
+            Counts use passages last updated today. Accuracy includes completed passages; reading time is the total saved time for those passages.
+          </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-xl border border-white/10 bg-white/5 p-4 transition-all duration-200 hover:border-brand-500/30 hover:bg-white/10 hover:shadow-lg hover:shadow-brand-500/10">
               <div className="flex items-center gap-2 text-slate-400 mb-2">
@@ -126,7 +145,7 @@ export default function Home() {
                 <Target size={16} aria-hidden="true" />
                 <p className="text-xs font-medium uppercase tracking-wider">Accuracy</p>
               </div>
-              <p className="text-2xl font-bold text-white">{todayStats.accuracy}%</p>
+              <p className="text-2xl font-bold text-white">{todayStats.accuracy === null ? "—" : `${todayStats.accuracy}%`}</p>
             </div>
           </div>
         </div>

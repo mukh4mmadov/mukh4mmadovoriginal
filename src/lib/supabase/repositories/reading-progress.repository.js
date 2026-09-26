@@ -5,6 +5,8 @@ import {
   ReadingProgressUpdate,
 } from '../models';
 
+const pendingAllProgress = new Map();
+
 export class ReadingProgressRepository {
   async getProgress(userId, passageId) {
     const { data, error } = await supabase
@@ -23,16 +25,29 @@ export class ReadingProgressRepository {
   }
 
   async getAllProgress(userId) {
-    const { data, error } = await supabase
-      .from('reading_progress')
-      .select('*')
-      .eq('user_id', userId);
+    if (pendingAllProgress.has(userId)) return pendingAllProgress.get(userId);
 
-    if (error) {
-      console.error('Error in getAllProgress:', error);
-      return [];
+    const request = (async () => {
+      const { data, error } = await supabase
+        .from('reading_progress')
+        .select('*')
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Error in getAllProgress:', error);
+        return [];
+      }
+      return data || [];
+    })();
+
+    pendingAllProgress.set(userId, request);
+    try {
+      return await request;
+    } finally {
+      if (pendingAllProgress.get(userId) === request) {
+        pendingAllProgress.delete(userId);
+      }
     }
-    return data || [];
   }
 
   async upsertProgress(

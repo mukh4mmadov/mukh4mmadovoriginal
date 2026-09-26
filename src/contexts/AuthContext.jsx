@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { User } from '@supabase/supabase-js';
 import { authService, AuthUser } from '@/lib/supabase/auth';
 import { migrationService } from '@/lib/supabase/services/migration.service';
@@ -13,48 +13,87 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasLocalStorageData, setHasLocalStorageData] = useState(false);
+  const profileLoadSequence = useRef(0);
 
   useEffect(() => {
+    let active = true;
     setHasLocalStorageData(migrationService.hasLocalStorageData());
 
-    const initAuth = async () => {
+    const loadProfile = async (userId, sequence) => {
       try {
-        const currentUser = await authService.getCurrentUser();
-        setUser(currentUser);
-
-        if (currentUser) {
-          const userProfile = await authService.getUserProfile(currentUser.id);
+        const userProfile = await authService.getUserProfile(userId);
+        if (active && profileLoadSequence.current === sequence) {
           setProfile(userProfile);
         }
       } catch (error) {
+        console.error('Error fetching user profile:', error);
+        if (active && profileLoadSequence.current === sequence) {
+          setProfile(null);
+          if (error.code === 'SESSION_EXPIRED') setUser(null);
+        }
+      }
+    };
+
+    const initAuth = async () => {
+      const initialSequence = profileLoadSequence.current;
+      try {
+        const currentUser = await authService.getCurrentUser();
+        if (!active || profileLoadSequence.current !== initialSequence) return;
+        setUser(currentUser);
+
+        if (currentUser) {
+          setProfile(null);
+          const sequence = ++profileLoadSequence.current;
+          await loadProfile(currentUser.id, sequence);
+        } else {
+          setProfile(null);
+        }
+      } catch (error) {
         console.error('Auth initialization error:', error);
+        if (active) {
+          setUser(null);
+          setProfile(null);
+        }
       } finally {
-        setIsLoading(false);
+        if (active) setIsLoading(false);
       }
     };
 
     initAuth();
 
-    const { data: { subscription } } = authService.onAuthStateChange(
-      async (event, session) => {
-        setUser(session?.user || null);
+    const { data: { subscription } } = authService.onAuthStateChange((event, session) => {
+      const nextUser = session?.user || null;
 
-        if (session?.user) {
-          try {
-            const userProfile = await authService.getUserProfile(session.user.id);
-            setProfile(userProfile);
-          } catch (error) {
-            console.error('Error fetching user profile:', error);
-            setProfile(null);
-          }
-        } else {
+      if (event === 'INITIAL_SESSION') {
+        setUser(nextUser);
+        if (!nextUser) setProfile(null);
+        setIsLoading(false);
+        return;
+      }
+
+      if (event === 'TOKEN_REFRESHED') {
+        setUser(nextUser);
+        if (!nextUser) {
+          profileLoadSequence.current += 1;
           setProfile(null);
         }
         setIsLoading(false);
+        return;
       }
-    );
+
+      const sequence = ++profileLoadSequence.current;
+      setUser(nextUser);
+      setProfile(null);
+      setIsLoading(false);
+
+      if (nextUser) {
+        window.setTimeout(() => loadProfile(nextUser.id, sequence), 0);
+      }
+    });
 
     return () => {
+      active = false;
+      profileLoadSequence.current += 1;
       subscription.unsubscribe();
     };
   }, []);

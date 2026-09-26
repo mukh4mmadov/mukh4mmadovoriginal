@@ -4,16 +4,31 @@ import {
   SavedQuoteInsert,
 } from '../models';
 
+const pendingSavedQuotes = new Map();
+
 export class SavedQuotesRepository {
   async getSavedQuotes(userId) {
-    const { data, error } = await supabase
-      .from('saved_quotes')
-      .select('*')
-      .eq('user_id', userId)
-      .order('saved_at', { ascending: false });
+    if (pendingSavedQuotes.has(userId)) return pendingSavedQuotes.get(userId);
 
-    if (error) throw error;
-    return data || [];
+    const request = (async () => {
+      const { data, error } = await supabase
+        .from('saved_quotes')
+        .select('*')
+        .eq('user_id', userId)
+        .order('saved_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    })();
+
+    pendingSavedQuotes.set(userId, request);
+    try {
+      return await request;
+    } finally {
+      if (pendingSavedQuotes.get(userId) === request) {
+        pendingSavedQuotes.delete(userId);
+      }
+    }
   }
 
   async isQuoteSaved(userId, quoteId) {

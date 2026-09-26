@@ -6,6 +6,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import MigrationPrompt from "@/components/auth/MigrationPrompt";
 import ReportIssueButton from "@/components/shared/ReportIssueButton";
 import OfflineNotice from "@/components/shared/OfflineNotice";
+import PushActivityTracker from "@/components/shared/PushActivityTracker";
 
 export const metadata = {
   title: {
@@ -55,6 +56,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body>
         <AuthProvider>
+          <PushActivityTracker />
           <a
             href="#main-content"
             className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-full focus:bg-brand-500 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"

@@ -14,7 +14,6 @@ export default function HighlightableText({
     highlights,
     handleSelection,
     handleDoubleClick,
-    toggleToken,
   } = highlightState;
 
   return (
@@ -42,16 +41,9 @@ export default function HighlightableText({
             <span
               key={tokenKey}
               data-token-key={tokenKey}
-              tabIndex={0}
               onDoubleClick={() =>
                 handleDoubleClick(tokenKey, containerKey, tok.trim())
               }
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  toggleToken(tokenKey, containerKey, tok.trim());
-                }
-              }}
               style={
                 isHighlighted
                   ? {

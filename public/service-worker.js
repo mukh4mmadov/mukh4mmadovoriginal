@@ -1,4 +1,4 @@
-const CACHE_NAME = "muhammadov-ielts-offline-v2";
+const CACHE_NAME = "muhammadov-ielts-offline-v3";
 const OFFLINE_PAGE = "/offline.html";
 
 self.addEventListener("install", (event) => {
@@ -32,13 +32,42 @@ self.addEventListener("fetch", (event) => {
   if (requestUrl.origin !== self.location.origin) return;
 
   event.respondWith(
-    fetch(event.request).then(async (response) => {
-      if (response.ok) return response;
-      const offlinePage = await caches.match(OFFLINE_PAGE);
-      return offlinePage || response;
-    }).catch(async () => {
+    fetch(event.request).catch(async () => {
       const offlinePage = await caches.match(OFFLINE_PAGE);
       return offlinePage || Response.error();
+    }),
+  );
+});
+
+self.addEventListener("push", (event) => {
+  let payload = {};
+  try {
+    payload = event.data?.json() || {};
+  } catch {
+    payload = { body: event.data?.text() || "Your reading practice is ready when you are." };
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title || "IELTS Reading practice", {
+      body: payload.body || "It's been a while since your last practice. Continue whenever you're ready.",
+      data: { url: payload.url || "/reading" },
+      tag: "study-reminder",
+      renotify: false,
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const targetUrl = new URL(event.notification.data?.url || "/reading", self.location.origin).href;
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      const existingClient = clients.find((client) => client.url.startsWith(self.location.origin));
+      if (existingClient) {
+        return existingClient.navigate(targetUrl).then(() => existingClient.focus());
+      }
+      return self.clients.openWindow(targetUrl);
     }),
   );
 });

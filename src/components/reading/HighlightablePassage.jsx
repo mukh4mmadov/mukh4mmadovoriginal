@@ -109,6 +109,8 @@ export default function HighlightablePassage({
         {paragraphs.map((p, paragraphIndex) => {
           const paragraphKey = p.label ? `${p.label}-${paragraphIndex}` : `paragraph-${paragraphIndex}`;
           const paragraphHighlights = highlights[paragraphKey] || {};
+          const tokens = tokenize(p.text);
+          const firstWordIndex = tokens.findIndex((token) => !/^\s+$/.test(token));
 
           return (
             <p
@@ -124,7 +126,7 @@ export default function HighlightablePassage({
               <span className="mr-3 inline-block font-semibold uppercase tracking-[0.2em] text-brand-400/90">
                 {p.label}
               </span>
-              {tokenize(p.text).map((tok, i) => {
+              {tokens.map((tok, i) => {
                 if (/^\s+$/.test(tok)) {
                   return <span key={`${paragraphKey}-${i}`}>{tok}</span>;
                 }
@@ -136,7 +138,10 @@ export default function HighlightablePassage({
                   <span
                     key={tokenKey}
                     data-token-key={tokenKey}
-                    tabIndex={0}
+                    role="button"
+                    aria-pressed={Boolean(highlightColor)}
+                    aria-label={`Passage word ${tok.trim()}; press Enter or Space to toggle highlight`}
+                    tabIndex={i === firstWordIndex ? 0 : -1}
                     onDoubleClick={() =>
                       handleDoubleClick(tokenKey, paragraphKey, tok.trim())
                     }
@@ -144,6 +149,23 @@ export default function HighlightablePassage({
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
                         toggleToken(tokenKey, paragraphKey, tok.trim());
+                        return;
+                      }
+
+                      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+                        e.preventDefault();
+                        const tokensInParagraph = Array.from(
+                          e.currentTarget.parentElement.querySelectorAll("[data-token-key]"),
+                        );
+                        const currentIndex = tokensInParagraph.indexOf(e.currentTarget);
+                        const nextIndex = Math.max(
+                          0,
+                          Math.min(
+                            tokensInParagraph.length - 1,
+                            currentIndex + (e.key === "ArrowRight" ? 1 : -1),
+                          ),
+                        );
+                        tokensInParagraph[nextIndex]?.focus();
                       }
                     }}
                     style={

@@ -115,7 +115,7 @@ export default function AdminDashboard() {
       borderColor: 'border-blue-500/20',
     },
     {
-      name: 'Active Users Today',
+      name: 'Activity Events (24h)',
       value: stats.activeUsersToday,
       icon: Activity,
       color: 'text-green-400',
@@ -182,7 +182,8 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-white mb-8">Dashboard Overview</h1>
+      <h1 className="text-3xl font-bold text-white mb-2">Dashboard Overview</h1>
+      <p className="mb-8 text-sm text-slate-400">Platform-wide totals across all users and recorded activity.</p>
       
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-8">
         {statCards.map((stat) => {

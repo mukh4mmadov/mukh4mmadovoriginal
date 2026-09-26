@@ -17,7 +17,7 @@ export default function Footer() {
               <span className="text-sm">Telegram</span>
             </a>
           </div>
-          <p className="text-xs text-slate-500 text-center">
+          <p className="text-xs text-slate-400 text-center">
             © {new Date().getFullYear()} Muhammadov IELTS Reading. All rights reserved.
           </p>
         </div>

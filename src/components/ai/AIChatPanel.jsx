@@ -14,6 +14,7 @@ import {
 import { parseAIResponse, formatParsedResponse } from "@/lib/ai/parseResponse";
 import { useAuth } from "@/contexts/AuthContext";
 import { analyticsService } from "@/lib/analytics/analytics.service";
+import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 
 const SUGGESTED_PROMPTS = [
   { icon: "💡", label: "Hint", prompt: "Give me a hint for this question." },
@@ -99,6 +100,7 @@ export default function AIChatPanel({
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const modalRef = useModalAccessibility(isOpen, onClose, inputRef);
   const isLoadingRef = useRef(false);
   const conversationKey = `ai-conversation-${context.passage.title}`;
 
@@ -400,8 +402,14 @@ export default function AIChatPanel({
         aria-label="Resize AI panel"
       />
       <div
+        ref={modalRef}
         className="hidden sm:flex fixed right-0 inset-y-0 min-h-0 overflow-hidden overscroll-y-contain bg-surface/95 backdrop-blur-xl border-l border-white/10 shadow-2xl z-50 flex-col"
         style={{ width: `${panelWidth}px` }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ai-reading-coach-title"
+        data-modal-focus-scope="ai-reading-coach"
+        tabIndex={-1}
       >
         <div className="flex items-center justify-between p-4 border-b border-white/10 bg-gradient-to-r from-brand-500/5 via-transparent to-transparent">
           <div className="flex items-center gap-2">
@@ -410,7 +418,7 @@ export default function AIChatPanel({
               <Bot className="text-brand-400 relative" size={18} />
             </div>
             <div>
-              <h2 className="font-semibold text-white text-sm">
+              <h2 id="ai-reading-coach-title" className="font-semibold text-white text-sm">
                 AI Reading Coach
               </h2>
               <p className="text-[10px] text-slate-400">
@@ -623,6 +631,7 @@ export default function AIChatPanel({
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Ask anything... (Shift+Enter for new line)"
+              aria-label="Ask the AI Reading Coach about this passage"
               disabled={isLoading}
               rows={1}
               className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500/50 resize-none disabled:opacity-50"
@@ -640,11 +649,19 @@ export default function AIChatPanel({
         </div>
       </div>
 
-      <div className="sm:hidden fixed inset-0 z-50 flex min-h-0 flex-col overflow-hidden overscroll-y-contain bg-surface">
+      <div
+        ref={modalRef}
+        className="sm:hidden fixed inset-0 z-50 flex min-h-0 flex-col overflow-hidden overscroll-y-contain bg-surface"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ai-reading-coach-title-mobile"
+        data-modal-focus-scope="ai-reading-coach"
+        tabIndex={-1}
+      >
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <div className="flex items-center gap-2">
             <Bot className="text-brand-400" size={20} />
-            <h2 className="font-semibold text-white">AI Reading Coach</h2>
+            <h2 id="ai-reading-coach-title-mobile" className="font-semibold text-white">AI Reading Coach</h2>
           </div>
           <button
             onClick={onClose}
@@ -851,6 +868,7 @@ export default function AIChatPanel({
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Ask anything... (Shift+Enter for new line)"
+              aria-label="Ask the AI Reading Coach about this passage"
               disabled={isLoading}
               rows={1}
               className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500/50 resize-none disabled:opacity-50"

@@ -62,6 +62,8 @@
 
   :focus-visible {
     @apply ring-2 ring-brand-500/60 ring-offset-2 ring-offset-surface;
+    outline: 3px solid #38bdf8;
+    outline-offset: 3px;
   }
 
   .dark body {
