@@ -30,6 +30,25 @@ export class FeedbackRepository {
       });
     }
 
+    try {
+      await fetch("/api/feedback-notification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: result.id,
+          name: result.name,
+          email: result.email,
+          subject: result.subject,
+          message: result.message,
+          message_type: result.message_type,
+          page_url: result.page_url,
+          created_at: result.created_at,
+        }),
+        signal: AbortSignal.timeout(5000),
+      });
+    } catch {
+    }
+
     return result;
   }
 
