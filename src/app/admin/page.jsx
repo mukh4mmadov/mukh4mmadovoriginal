@@ -7,11 +7,6 @@ import ActivityFeed from '@/components/admin/ActivityFeed';
 import SystemHealth from '@/components/admin/SystemHealth';
 import { AdminPageError, AdminPageLoading } from '@/components/admin/AdminPageStatus';
 
-export const metadata = {
-  title: 'Admin Dashboard',
-  description: 'Admin dashboard for Muhammadov IELTS Reading',
-};
-
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
     totalUsers: 0,

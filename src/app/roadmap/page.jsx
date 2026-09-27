@@ -4,11 +4,6 @@ import { useEffect, useState } from "react";
 import { CheckCircle, Clock, Circle, Calendar, TrendingUp } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 
-export const metadata = {
-  title: 'Roadmap',
-  description: 'View planned features and development progress for Muhammadov IELTS Reading',
-};
-
 export default function RoadmapPage() {
   const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);

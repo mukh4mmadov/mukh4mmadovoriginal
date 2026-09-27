@@ -9,11 +9,6 @@ import readingTestsModule from '@/data/readingTests_new';
 import { supabase } from '@/lib/supabase/client';
 import { getReviewedQuestionCount } from '@/lib/reading/answer-review';
 
-export const metadata = {
-  title: 'Statistics',
-  description: 'View your IELTS Reading progress and performance statistics',
-};
-
 export default function StatisticsPage() {
   const router = useRouter();
   const { user, isLoading } = useAuth();
