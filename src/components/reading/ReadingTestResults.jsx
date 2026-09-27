@@ -19,23 +19,11 @@ import {
 } from "lucide-react";
 import AIChatPanel from "@/components/ai/AIChatPanel";
 import DailyInspiration from "@/components/shared/DailyInspiration";
+import Link from "next/link";
+import { addMissedQuestionsToReviewQueue, getReviewQueue, isAnswerCorrect } from "@/lib/reading/answer-review";
 
 function allQuestions(passage) {
   return passage.questionGroups.flatMap((g) => g.questions);
-}
-
-function normalise(s) {
-  return s.trim().toLowerCase().replace(/\s+/g, " ");
-}
-
-function isCorrect(q, given) {
-  if (!given) return false;
-  if (q.type === "true-false-not-given") return given === q.answer;
-  if (q.type === "matching-headings") return given === q.answer;
-  if (q.type === "multiple-choice") return given === q.answer;
-  if (q.type === "sentence-completion")
-    return q.answer.some((a) => normalise(a) === normalise(given));
-  return false;
 }
 
 export default function ReadingTestResults({
@@ -46,6 +34,7 @@ export default function ReadingTestResults({
   onRestartAll,
   timeSpent = 0,
   events = [],
+  userId,
 }) {
   const questions = allQuestions(passage);
   const questionNumbers = useMemo(() => {
@@ -67,16 +56,24 @@ export default function ReadingTestResults({
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [aiPersonality, setAiPersonality] = useState('friendly');
   const [selectedQuestionId, setSelectedQuestionId] = useState(null);
+  const [reviewQueueCount, setReviewQueueCount] = useState(0);
+  const [reviewQueueMessage, setReviewQueueMessage] = useState("");
+  const [missedQuestionsSaved, setMissedQuestionsSaved] = useState(false);
 
   const correctCount = questions.filter((q) =>
-    isCorrect(q, answers[q.id]),
+    isAnswerCorrect(q, answers[q.id]),
   ).length;
   const incorrectCount = questions.filter(
-    (q) => answers[q.id] && !isCorrect(q, answers[q.id]),
+    (q) => answers[q.id] && !isAnswerCorrect(q, answers[q.id]),
   ).length;
   const skippedCount = questions.filter((q) => !answers[q.id]).length;
+  const missedCount = incorrectCount + skippedCount;
   const band = scoreToBand(correctCount, questions.length);
   const percentage = (correctCount / questions.length) * 100;
+
+  useEffect(() => {
+    setReviewQueueCount(getReviewQueue(userId).length);
+  }, [userId]);
 
   const analyticsByType = useMemo(() => {
     const typeStats = {};
@@ -87,7 +84,7 @@ export default function ReadingTestResults({
         typeStats[type] = { correct: 0, total: 0, time: 0 };
       }
       typeStats[type].total++;
-      if (isCorrect(q, answers[q.id])) {
+      if (isAnswerCorrect(q, answers[q.id])) {
         typeStats[type].correct++;
       }
     });
@@ -122,6 +119,7 @@ export default function ReadingTestResults({
         after: currentQuestion.type === 'sentence-completion' ? currentQuestion.after : undefined,
         userAnswer: answers[currentQuestion.id],
         correctAnswer: currentQuestion.answer,
+        isCorrect: isAnswerCorrect(currentQuestion, answers[currentQuestion.id]),
         explanation: currentQuestion.explanation,
         evidence: currentQuestion.evidence,
         paragraphLabel: currentQuestion.type === 'matching-headings' ? currentQuestion.paragraphLabel : undefined,
@@ -226,6 +224,18 @@ export default function ReadingTestResults({
     setExpandedExplanation(
       expandedExplanation === questionId ? null : questionId,
     );
+  };
+
+  const saveMissedQuestions = () => {
+    const queue = addMissedQuestionsToReviewQueue(passage, answers, userId);
+    if (!queue) {
+      setReviewQueueMessage("Your review queue could not be saved in this browser. Check available storage and try again.");
+      return;
+    }
+
+    setReviewQueueCount(queue.length);
+    setMissedQuestionsSaved(true);
+    setReviewQueueMessage(`${missedCount} missed or skipped question${missedCount === 1 ? "" : "s"} saved to your review queue.`);
   };
 
   return (
@@ -467,7 +477,7 @@ export default function ReadingTestResults({
             className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-2 text-sm font-semibold text-amber-200 transition hover:bg-amber-500/20"
           >
             <RotateCcw size={15} className="mr-2 inline" />
-            Restart incorrect questions
+            Retry incorrect answers
           </button>
         )}
         <button
@@ -479,8 +489,25 @@ export default function ReadingTestResults({
           <Eye size={15} className="mr-2 inline" />
           {reviewMode === "incorrect"
             ? "Review all answers"
-            : "Review only incorrect answers"}
+            : "Review incorrect and skipped answers"}
         </button>
+        {missedCount > 0 && (
+          <button
+            type="button"
+            onClick={saveMissedQuestions}
+            disabled={missedQuestionsSaved}
+            className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-2 text-sm font-semibold text-amber-200 transition hover:bg-amber-500/20"
+          >
+            <RefreshCcw size={15} className="mr-2 inline" />
+            {missedQuestionsSaved ? "Saved to review queue" : `Save ${missedCount} for later review`}
+          </button>
+        )}
+        {reviewQueueCount > 0 && (
+          <Link href="/review" className="rounded-2xl border border-brand-500/20 bg-brand-500/10 px-4 py-2 text-sm font-semibold text-brand-200 transition hover:bg-brand-500/20">
+            Open review queue ({reviewQueueCount})
+          </Link>
+        )}
+        {reviewQueueMessage && <p className="w-full text-sm text-slate-300" role="status">{reviewQueueMessage}</p>}
       </div>
 
       {events.length > 0 && (
@@ -543,13 +570,13 @@ export default function ReadingTestResults({
                 .filter((q) => {
                   const given = answers[q.id];
                   if (reviewMode === "incorrect") {
-                    return Boolean(given && !isCorrect(q, given));
+                    return !given || !isAnswerCorrect(q, given);
                   }
                   return true;
                 })
                 .map((q) => {
                   const given = answers[q.id];
-                  const correct = isCorrect(q, given);
+                  const correct = isAnswerCorrect(q, given);
                   const wrong = given && !correct;
                   const unanswered = !given;
                   const globalIndex = questions.findIndex(
@@ -658,7 +685,7 @@ export default function ReadingTestResults({
                         </div>
                       )}
 
-                      {(wrong || unanswered) && q.explanation && (
+                      {(q.explanation || q.evidence) && (
                         <div className="ml-9">
                           <div className="flex flex-wrap gap-2">
                             <button
@@ -681,7 +708,9 @@ export default function ReadingTestResults({
                               />
                               {expandedExplanation === q.id
                                 ? "Hide explanation"
-                                : wrong
+                                : correct
+                                  ? "Why is this correct?"
+                                  : wrong
                                   ? "Why was this wrong?"
                                   : "Show explanation"}
                             </button>
@@ -702,7 +731,7 @@ export default function ReadingTestResults({
                               <div className="absolute top-0 right-0 w-20 h-20 bg-brand-500/10 rounded-full blur-2xl" />
                               <div className="relative z-10">
                                 <p className="mb-2 text-xs font-semibold text-brand-300 uppercase tracking-wider">
-                                  Explanation
+                                  {q.type.replace(/-/g, " ")} · Explanation
                                 </p>
                                 <p className="text-sm text-slate-200 leading-relaxed mb-3">
                                   {q.explanation}

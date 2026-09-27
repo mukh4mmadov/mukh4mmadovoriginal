@@ -27,6 +27,10 @@ export default function ReportIssueButton() {
     message_type: "bug",
     subject: "",
     message: "",
+    severity: "medium",
+    reproduction_steps: "",
+    expected_behavior: "",
+    actual_behavior: "",
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -116,6 +120,10 @@ export default function ReportIssueButton() {
         subject: formData.subject,
         message: formData.message,
         message_type: formData.message_type,
+        severity: formData.severity,
+        reproduction_steps: formData.reproduction_steps,
+        expected_behavior: formData.expected_behavior,
+        actual_behavior: formData.actual_behavior,
         page_url: typeof window !== 'undefined' ? window.location.href : '',
         browser_info: typeof window !== 'undefined' ? {
           userAgent: navigator.userAgent,
@@ -133,6 +141,10 @@ export default function ReportIssueButton() {
         message_type: "bug",
         subject: "",
         message: "",
+        severity: "medium",
+        reproduction_steps: "",
+        expected_behavior: "",
+        actual_behavior: "",
       });
       setIsOpen(false);
     } catch (error) {
@@ -338,6 +350,70 @@ export default function ReportIssueButton() {
                   <p className="mt-1 text-xs text-red-400">{errors.message}</p>
                 )}
               </div>
+
+              {formData.message_type === "bug" && (
+                <>
+                  <div>
+                    <label htmlFor="severity" className="block text-sm font-medium text-slate-300 mb-2">
+                      How serious is the issue?
+                    </label>
+                    <select
+                      id="severity"
+                      name="severity"
+                      value={formData.severity}
+                      onChange={handleChange}
+                      className="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    >
+                      <option value="low">Low — minor inconvenience</option>
+                      <option value="medium">Medium — a feature is affected</option>
+                      <option value="high">High — an important flow is blocked</option>
+                      <option value="critical">Critical — the site or account is unusable</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="reproduction_steps" className="block text-sm font-medium text-slate-300 mb-2">
+                      Steps to reproduce (optional)
+                    </label>
+                    <textarea
+                      id="reproduction_steps"
+                      name="reproduction_steps"
+                      value={formData.reproduction_steps}
+                      onChange={handleChange}
+                      rows={3}
+                      className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y"
+                      placeholder="1. Open… 2. Select… 3. The issue appears…"
+                    />
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <div>
+                      <label htmlFor="expected_behavior" className="block text-sm font-medium text-slate-300 mb-2">
+                        What did you expect? (optional)
+                      </label>
+                      <textarea
+                        id="expected_behavior"
+                        name="expected_behavior"
+                        value={formData.expected_behavior}
+                        onChange={handleChange}
+                        rows={2}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="actual_behavior" className="block text-sm font-medium text-slate-300 mb-2">
+                        What happened instead? (optional)
+                      </label>
+                      <textarea
+                        id="actual_behavior"
+                        name="actual_behavior"
+                        value={formData.actual_behavior}
+                        onChange={handleChange}
+                        rows={2}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div className="text-xs text-slate-500">
                 <p>System info will be automatically included:</p>

@@ -14,9 +14,11 @@ function readStoredProgress(key) {
       slug: parsed.slug ?? key.replace(LOCAL_STORAGE_PREFIX, ""),
       completed: Boolean(parsed.completed),
       bestScore: Number(parsed.bestScore) || 0,
+      lastScore: Number.isFinite(Number(parsed.lastScore)) ? Number(parsed.lastScore) : Number(parsed.bestScore) || 0,
       attempts: Number(parsed.attempts) || 0,
       lastAttempt: Number(parsed.lastAttempt) || 0,
       totalTime: Number(parsed.totalTime) || 0,
+      attemptHistory: Array.isArray(parsed.attemptHistory) ? parsed.attemptHistory : [],
     };
   } catch {
     window.localStorage.removeItem(key);
@@ -31,14 +33,19 @@ async function getSupabaseProgress(userId, slug) {
 
     const bestScoreEntry = data.answers?.find((a) => a?.type === '_best_score');
     const bestScore = bestScoreEntry?.value ?? (data.answers?.filter((a) => a?.isCorrect === true).length || 0);
+    const lastScoreEntry = data.answers?.find((entry) => entry?.type === '_last_score');
+    const attemptHistoryEntry = data.answers?.find((entry) => entry?.type === '_attempt_history');
+    const attemptCountEntry = data.answers?.find((entry) => entry?.type === '_attempt_count');
 
     return {
       slug: data.passage_id,
       completed: data.is_completed,
       bestScore,
-      attempts: 1,
+      lastScore: lastScoreEntry ? Number(lastScoreEntry.value) || 0 : bestScore,
+      attempts: Number(attemptCountEntry?.value) || (data.is_completed ? 1 : 0),
       lastAttempt: new Date(data.updated_at).getTime(),
       totalTime: data.time_spent_seconds,
+      attemptHistory: Array.isArray(attemptHistoryEntry?.value) ? attemptHistoryEntry.value : [],
     };
   } catch (error) {
     console.error('Error fetching Supabase progress:', error);
@@ -50,8 +57,19 @@ async function saveSupabaseProgress(userId, slug, progress) {
   try {
     const existing = await readingProgressRepository.getProgress(userId, slug);
     const existingAnswers = existing?.answers ?? [];
-    const filtered = existingAnswers.filter((a) => a?.type !== '_best_score');
-    const mergedAnswers = [...filtered, { type: '_best_score', value: progress.bestScore }];
+    const storedHistory = existingAnswers.find((entry) => entry?.type === '_attempt_history')?.value;
+    const mergedHistory = new Map();
+    [...(Array.isArray(storedHistory) ? storedHistory : []), ...(progress.attemptHistory || [])].forEach((attempt) => {
+      if (attempt?.id) mergedHistory.set(attempt.id, attempt);
+    });
+    const filtered = existingAnswers.filter((a) => a?.type !== '_best_score' && a?.type !== '_last_score' && a?.type !== '_attempt_history' && a?.type !== '_attempt_count');
+    const mergedAnswers = [
+      ...filtered,
+      { type: '_best_score', value: progress.bestScore },
+      { type: '_last_score', value: progress.lastScore },
+      { type: '_attempt_count', value: progress.attempts || 0 },
+      { type: '_attempt_history', value: [...mergedHistory.values()].slice(-100) },
+    ];
 
     await readingProgressRepository.upsertProgress(userId, slug, {
       current_question_index: 0,
@@ -71,10 +89,19 @@ export async function getProgress(slug, userId) {
   if (userId) {
     const supabaseProgress = await getSupabaseProgress(userId, slug);
     if (supabaseProgress) {
-      if (localProgress && localProgress.bestScore > supabaseProgress.bestScore) {
-        return { ...supabaseProgress, bestScore: localProgress.bestScore };
-      }
-      return supabaseProgress;
+      const attempts = new Map();
+      [...(supabaseProgress.attemptHistory || []), ...(localProgress?.attemptHistory || [])].forEach((attempt) => {
+        if (attempt?.id) attempts.set(attempt.id, attempt);
+      });
+      return {
+        ...supabaseProgress,
+        bestScore: Math.max(supabaseProgress.bestScore, localProgress?.bestScore || 0),
+        lastScore: localProgress?.lastAttempt > supabaseProgress.lastAttempt
+          ? localProgress.lastScore
+          : supabaseProgress.lastScore,
+        attempts: Math.max(supabaseProgress.attempts || 0, localProgress?.attempts || 0),
+        attemptHistory: [...attempts.values()].sort((first, second) => first.timestamp - second.timestamp).slice(-100),
+      };
     }
   }
 
@@ -95,9 +122,17 @@ export async function saveProgress(
     totalTime: 0,
   };
 
+  const { questionAttempt, ...progressFields } = progress;
+  const attemptHistory = [...(existing.attemptHistory || [])];
+  if (questionAttempt?.id) attemptHistory.push(questionAttempt);
+
   const updated = {
     ...existing,
-    ...progress,
+    ...progressFields,
+    bestScore: Math.max(existing.bestScore || 0, Number(progressFields.bestScore) || 0),
+    lastScore: Number(progressFields.bestScore) || 0,
+    attempts: questionAttempt ? (existing.attempts || 0) + 1 : progress.attempts ?? existing.attempts ?? 0,
+    attemptHistory: attemptHistory.slice(-100),
     lastAttempt: Date.now(),
   };
 
@@ -128,6 +163,8 @@ export async function getAllProgress(userId) {
           const bestScoreEntry = data.answers?.find((a) => a?.type === '_best_score');
           const supabaseBestScore =
             bestScoreEntry?.value ?? (data.answers?.filter((a) => a?.isCorrect === true).length || 0);
+          const lastScoreEntry = data.answers?.find((entry) => entry?.type === '_last_score');
+          const supabaseLastScore = lastScoreEntry ? Number(lastScoreEntry.value) || 0 : supabaseBestScore;
 
           return {
             slug,
@@ -136,9 +173,23 @@ export async function getAllProgress(userId) {
               localProgress && localProgress.bestScore > supabaseBestScore
                 ? localProgress.bestScore
                 : supabaseBestScore,
-            attempts: 1,
+            lastScore: localProgress?.lastAttempt > new Date(data.updated_at).getTime()
+              ? localProgress.lastScore
+              : supabaseLastScore,
             lastAttempt: new Date(data.updated_at).getTime(),
             totalTime: data.time_spent_seconds,
+            attempts: Math.max(
+              Number(data.answers?.find((entry) => entry?.type === '_attempt_count')?.value) || 0,
+              localProgress?.attempts || 0,
+            ),
+            attemptHistory: (() => {
+              const remoteHistory = data.answers?.find((entry) => entry?.type === '_attempt_history')?.value;
+              const mergedHistory = new Map();
+              [...(Array.isArray(remoteHistory) ? remoteHistory : []), ...(localProgress?.attemptHistory || [])].forEach((attempt) => {
+                if (attempt?.id) mergedHistory.set(attempt.id, attempt);
+              });
+              return [...mergedHistory.values()].sort((first, second) => first.timestamp - second.timestamp).slice(-100);
+            })(),
           };
         });
       }

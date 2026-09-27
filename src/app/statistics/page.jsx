@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getAllProgress } from '@/lib/progressTracker';
 import readingTestsModule from '@/data/readingTests_new';
 import { supabase } from '@/lib/supabase/client';
+import { getReviewedQuestionCount } from '@/lib/reading/answer-review';
 
 export default function StatisticsPage() {
   const router = useRouter();
@@ -45,6 +46,23 @@ export default function StatisticsPage() {
 
         const completedProgress = (progress || []).filter((item) => item.completed);
         const tests = readingTestsModule?.readingTests || [];
+        const questionAttempts = completedProgress.flatMap((item) =>
+          (item.attemptHistory || []).map((attempt) => ({ slug: item.slug, ...attempt })),
+        );
+        const masteryCounts = new Map();
+        let answeredQuestions = 0;
+        let correctResponses = 0;
+        questionAttempts.forEach((attempt) => {
+          (attempt.questionResults || []).forEach((result) => {
+            if (!result.answered) return;
+            answeredQuestions += 1;
+            if (result.correct) {
+              correctResponses += 1;
+              const key = `${attempt.slug}:${result.id}`;
+              masteryCounts.set(key, (masteryCounts.get(key) || 0) + 1);
+            }
+          });
+        });
         const completedTotals = completedProgress.reduce((totals, item) => {
           const test = tests.find((candidate) => candidate.slug === item.slug);
           const passage = test?.passages?.[0];
@@ -69,6 +87,11 @@ export default function StatisticsPage() {
           accuracy_rate: completedTotals.questions
             ? Math.round((completedTotals.correct / completedTotals.questions) * 100)
             : 0,
+          question_attempts: answeredQuestions,
+          correct_responses: correctResponses,
+          reviewed_questions: getReviewedQuestionCount(userId),
+          mastered_questions: [...masteryCounts.values()].filter((correctAttempts) => correctAttempts >= 3).length,
+          has_detailed_question_history: questionAttempts.length > 0,
         });
         setLoading(false);
       }).catch(() => {
@@ -152,6 +175,9 @@ export default function StatisticsPage() {
       `Completed passages: ${stats?.total_passages_completed || 0}`,
       `Questions in completed passages: ${stats?.total_questions_answered || 0}`,
       `Accuracy: ${stats?.total_questions_answered ? `${stats.accuracy_rate}%` : 'Not enough completed results yet'}`,
+      `Answers submitted: ${stats?.question_attempts || 0}`,
+      `Correct responses across attempts: ${stats?.correct_responses || 0}`,
+      `Mastered questions: ${stats?.mastered_questions || 0}`,
       `Reading time: ${formatTime(stats?.total_time_spent_seconds || 0)}`,
       `Target IELTS band: ${Number(goal.target_band).toFixed(1)}`,
       `Exam date: ${goal.exam_date || 'Not set'}`,
@@ -259,6 +285,35 @@ export default function StatisticsPage() {
             <p className="text-3xl font-bold text-white">{stats?.total_questions_answered ? `${stats.accuracy_rate}%` : '—'}</p>
           </div>
         </div>
+
+        <section aria-labelledby="question-progress-title" className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+          <div className="mb-5">
+            <h2 id="question-progress-title" className="text-xl font-bold text-white">Question learning progress</h2>
+            <p className="mt-1 text-sm text-slate-400">Detailed question tracking starts with submissions made after this update. Older results did not save individual answers.</p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+              <p className="text-sm text-slate-400">Answers submitted</p>
+              <p className="mt-2 text-2xl font-bold text-white">{stats?.question_attempts || 0}</p>
+              <p className="mt-1 text-xs text-slate-500">Answered questions across saved test attempts</p>
+            </div>
+            <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/5 p-4">
+              <p className="text-sm text-slate-400">Correct responses</p>
+              <p className="mt-2 text-2xl font-bold text-emerald-200">{stats?.correct_responses || 0}</p>
+              <p className="mt-1 text-xs text-slate-500">Correct answers across those attempts</p>
+            </div>
+            <div className="rounded-xl border border-brand-400/20 bg-brand-400/5 p-4">
+              <p className="text-sm text-slate-400">Mistakes reviewed</p>
+              <p className="mt-2 text-2xl font-bold text-brand-200">{stats?.reviewed_questions || 0}</p>
+              <p className="mt-1 text-xs text-slate-500">Distinct questions marked reviewed in this browser</p>
+            </div>
+            <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4">
+              <p className="text-sm text-slate-400">Mastered questions</p>
+              <p className="mt-2 text-2xl font-bold text-amber-200">{stats?.mastered_questions || 0}</p>
+              <p className="mt-1 text-xs text-slate-500">Answered correctly on at least 3 submitted attempts</p>
+            </div>
+          </div>
+        </section>
 
         <section aria-labelledby="study-plan-title" className="mb-8 rounded-2xl border border-brand-400/25 bg-brand-500/10 p-6">
           <div className="mb-5 flex items-center gap-3">
@@ -375,7 +430,7 @@ export default function StatisticsPage() {
               How your statistics are counted
             </h3>
             <p className="text-sm leading-6 text-slate-400">
-              These figures come from the reading progress saved to your account. Accuracy uses each completed passage&apos;s saved score, weighted by its question count. The question total includes every question in completed passages. Time uses the saved totals for all passages. Category strengths are not shown because answer-by-category history is not currently saved.
+              Passage accuracy is estimated from each completed passage&apos;s saved score, weighted by its question count. “Questions in completed passages” counts all questions in completed passages, including skipped questions; it is not the number of answers you submitted. Detailed answer counts include individual responses recorded from this update onward. A question is counted as mastered after at least three correct submitted attempts. Mistake-review counts are stored in this browser and do not sync across devices. Older results are not backfilled, and detailed question-type trends are not shown yet.
             </p>
           </div>
         </div>

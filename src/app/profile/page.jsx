@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Camera, Save, ArrowLeft } from 'lucide-react';
+import { User, Save, ArrowLeft, MessageSquare } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { authService } from '@/lib/supabase/auth';
 
@@ -97,6 +97,17 @@ export default function ProfilePage() {
               <h1 className="text-2xl font-bold text-white">My Profile</h1>
               <p className="break-all text-slate-400">{user?.email}</p>
             </div>
+          </div>
+
+          <div className="mb-6">
+            <button
+              type="button"
+              onClick={() => router.push('/my-feedback')}
+              className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200 transition hover:bg-white/10"
+            >
+              <MessageSquare size={18} />
+              View my feedback reports
+            </button>
           </div>
 
           {error && (

@@ -19,24 +19,10 @@ import AIChatPanel from "@/components/ai/AIChatPanel";
 import { saveProgress } from "@/lib/progressTracker";
 import { useAuth } from "@/contexts/AuthContext";
 import { analyticsService } from "@/lib/analytics/analytics.service";
+import { isAnswerCorrect } from "@/lib/reading/answer-review";
 
 function allQuestions(passage) {
   return passage.questionGroups.flatMap((g) => g.questions);
-}
-
-function normalise(s) {
-  return s.trim().toLowerCase().replace(/\s+/g, " ");
-}
-
-function isCorrect(q, given) {
-  if (!given) return false;
-  if (q.type === "true-false-not-given") return given === q.answer;
-  if (q.type === "yes-no-not-given") return given === q.answer;
-  if (q.type === "matching-headings") return given === q.answer;
-  if (q.type === "multiple-choice") return given === q.answer;
-  if (q.type === "sentence-completion")
-    return q.answer.some((a) => normalise(a) === normalise(given));
-  return false;
 }
 
 export default function ReadingTestPlayer({ passage }) {
@@ -329,7 +315,7 @@ export default function ReadingTestPlayer({ passage }) {
 
     const question = questions.find((q) => q.id === id);
     if (question) {
-      const correct = isCorrect(question, value);
+      const correct = isAnswerCorrect(question, value);
       analyticsService.trackQuestionAnswered(
         user?.id ?? null,
         passage.slug,
@@ -381,9 +367,13 @@ export default function ReadingTestPlayer({ passage }) {
     setShowSubmitDialog(false);
 
     const correctCount = questions.filter((q) =>
-      isCorrect(q, answers[q.id]),
+      isAnswerCorrect(q, answers[q.id]),
     ).length;
     const score = (correctCount / questions.length) * 100;
+    const attemptTimestamp = Date.now();
+    const attemptId = typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${attemptTimestamp}-${Math.random().toString(36).slice(2)}`;
 
     addEvent({ type: "submitted", timestamp: Date.now() });
 
@@ -404,8 +394,17 @@ export default function ReadingTestPlayer({ passage }) {
         {
           completed: true,
           bestScore: score,
-          attempts: 1,
           totalTime: finalTime,
+          questionAttempt: {
+            id: attemptId,
+            timestamp: attemptTimestamp,
+            questionResults: questions.map((question) => ({
+              id: question.id,
+              type: question.type,
+              answered: Boolean(answers[question.id]),
+              correct: isAnswerCorrect(question, answers[question.id]),
+            })),
+          },
         },
         user?.id,
       );
@@ -440,7 +439,7 @@ export default function ReadingTestPlayer({ passage }) {
     const nextAnswers = { ...answers };
     questions.forEach((question) => {
       const given = nextAnswers[question.id];
-      if (given && !isCorrect(question, given)) {
+      if (given && !isAnswerCorrect(question, given)) {
         delete nextAnswers[question.id];
       }
     });
@@ -466,6 +465,7 @@ export default function ReadingTestPlayer({ passage }) {
         onRestartAll={handleRetry}
         timeSpent={timeSpent}
         events={events}
+        userId={user?.id}
       />
     );
   }

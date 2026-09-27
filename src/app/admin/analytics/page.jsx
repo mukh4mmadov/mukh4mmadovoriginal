@@ -148,10 +148,9 @@ export default function AdminAnalytics() {
     
     events.forEach((event) => {
       const deviceInfo = event.device_info;
-      let device = 'desktop';
-      if (deviceInfo?.touchSupport) {
-        device = deviceInfo?.screenWidth < 768 ? 'mobile' : 'tablet';
-      }
+      const device = ['mobile', 'tablet', 'desktop'].includes(deviceInfo?.category)
+        ? deviceInfo.category
+        : 'desktop';
       deviceMap.set(device, (deviceMap.get(device) || 0) + 1);
     });
 

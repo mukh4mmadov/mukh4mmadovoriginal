@@ -9,11 +9,13 @@ import {
   Search,
   Filter,
   CheckCircle2,
+  ClipboardList,
 } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { getProgress } from "@/lib/progressTracker";
 import DailyInspiration from "@/components/shared/DailyInspiration";
 import { useAuth } from "@/contexts/AuthContext";
+import { getReviewQueue } from "@/lib/reading/answer-review";
 
 export default function ReadingListPage() {
   const { user } = useAuth();
@@ -22,19 +24,39 @@ export default function ReadingListPage() {
   const [selectedDifficulty, setSelectedDifficulty] = useState("all");
   const [progressData, setProgressData] = useState({});
   const [progressLoaded, setProgressLoaded] = useState(false);
+  const [reviewQueueCount, setReviewQueueCount] = useState(0);
+  const [draftData, setDraftData] = useState({});
+
+  useEffect(() => {
+    setReviewQueueCount(getReviewQueue(user?.id).length);
+  }, [user?.id]);
 
   useEffect(() => {
     const syncProgress = async () => {
       const data = {};
+      const drafts = {};
       if (readingTests && readingTests.length > 0) {
         for (const test of readingTests) {
           const progress = await getProgress(test.slug, user?.id);
           if (progress) {
             data[test.slug] = progress;
           }
+
+          try {
+            const savedDraft = window.localStorage.getItem(`ielts-reading-${test.slug}`);
+            if (savedDraft) {
+              const parsedDraft = JSON.parse(savedDraft);
+              const hasRecentTimestamp = Date.now() - Number(parsedDraft.timestamp) < 24 * 60 * 60 * 1000;
+              const answered = Object.values(parsedDraft.answers || {}).filter(Boolean).length;
+              if (hasRecentTimestamp && answered > 0) drafts[test.slug] = { answered };
+            }
+          } catch {
+            drafts[test.slug] = null;
+          }
         }
       }
       setProgressData(data);
+      setDraftData(drafts);
       setProgressLoaded(true);
     };
 
@@ -130,6 +152,14 @@ export default function ReadingListPage() {
         Each passage is timed at 20 minutes and mixes question types the way the
         real Academic Reading test does.
       </p>
+
+      {reviewQueueCount > 0 && (
+        <Link href="/review" className="mb-8 inline-flex min-h-11 items-center gap-2 rounded-xl border border-amber-400/20 bg-amber-400/10 px-4 py-2 text-sm font-semibold text-amber-200 transition hover:bg-amber-400/20">
+          <ClipboardList size={17} aria-hidden="true" />
+          Review {reviewQueueCount} saved mistake{reviewQueueCount === 1 ? "" : "s"}
+          <ArrowRight size={15} aria-hidden="true" />
+        </Link>
+      )}
 
       <div className="mb-8 flex flex-col gap-4 rounded-[1.5rem] border border-white/10 bg-white/5 p-4 shadow-[0_12px_40px_rgba(2,8,23,0.12)] sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1 max-w-md">
@@ -275,9 +305,18 @@ export default function ReadingListPage() {
                         Best: {progressData[t.slug].bestScore.toFixed(0)}%
                       </span>
                     )}
+                    {progressData[t.slug]?.lastScore !== undefined && (
+                      <span className="group-hover:text-brand-300 transition-colors">
+                        Last: {progressData[t.slug].lastScore.toFixed(0)}%
+                      </span>
+                    )}
                   </div>
                   <span className="inline-flex items-center gap-1 text-sm font-semibold text-brand-400 group-hover:gap-2 group-hover:text-brand-300 transition-all">
-                    Start test{" "}
+                    {draftData[t.slug]
+                      ? `Continue saved test (${draftData[t.slug].answered} answered)`
+                      : progressData[t.slug]?.completed
+                        ? "Practice again"
+                        : "Start test"}{" "}
                     <ArrowRight
                       size={16}
                       className="group-hover:translate-x-1 transition-transform"

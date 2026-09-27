@@ -19,19 +19,35 @@ export class AnalyticsService {
     }
 
     try {
+      if (
+        typeof window === "undefined" ||
+        window.localStorage.getItem("analyticsConsent") !== "granted"
+      ) {
+        return;
+      }
+
       const browserInfo = this.getBrowserInfo();
       const deviceInfo = this.getDeviceInfo();
-      const pageUrl =
-        typeof window !== "undefined" ? window.location.href : null;
+      const pageUrl = typeof window !== "undefined"
+        ? window.location.pathname.slice(0, 256)
+        : null;
+      const metadata = Object.fromEntries(
+        Object.entries(event.metadata || {})
+          .filter(([key, value]) =>
+            !/(prompt|answer|content|message|email|name|text|token|url|bio)/i.test(key) &&
+            (typeof value === "string" || typeof value === "number" || typeof value === "boolean")
+          )
+          .map(([key, value]) => [
+            key.slice(0, 64),
+            typeof value === "string" ? value.slice(0, 128) : value,
+          ])
+      );
 
       const eventData = {
         user_id: userId || null,
         event_type: event.event_type,
         event_data: {
-          ...(event.metadata || {}),
-          browser_info: browserInfo,
-          device_info: deviceInfo,
-          page_url: pageUrl,
+          ...metadata,
         },
         browser_info: browserInfo,
         device_info: deviceInfo,
@@ -49,11 +65,7 @@ export class AnalyticsService {
     if (typeof window === "undefined") return {};
 
     return {
-      userAgent: navigator.userAgent,
       language: navigator.language,
-      platform: navigator.platform,
-      cookieEnabled: navigator.cookieEnabled,
-      onLine: navigator.onLine,
     };
   }
 
@@ -61,12 +73,7 @@ export class AnalyticsService {
     if (typeof window === "undefined") return {};
 
     return {
-      screenWidth: window.screen.width,
-      screenHeight: window.screen.height,
-      windowWidth: window.innerWidth,
-      windowHeight: window.innerHeight,
-      pixelRatio: window.devicePixelRatio,
-      touchSupport: "ontouchstart" in window,
+      category: window.innerWidth < 768 ? "mobile" : window.innerWidth < 1024 ? "tablet" : "desktop",
     };
   }
 

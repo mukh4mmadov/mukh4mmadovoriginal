@@ -41,6 +41,7 @@ export class FeedbackRepository {
           subject: result.subject,
           message: result.message,
           message_type: result.message_type,
+          severity: result.severity,
           page_url: result.page_url,
           created_at: result.created_at,
         }),
@@ -53,6 +54,9 @@ export class FeedbackRepository {
   }
 
   async getUserFeedback(userId) {
+    if (!supabase || !userId) {
+      throw new Error("Sign in to view your feedback reports.");
+    }
     const { data, error } = await supabase
       .from("feedback_messages")
       .select("*")
@@ -71,6 +75,16 @@ export class FeedbackRepository {
       subject: this.#escapeHtml(data.subject),
       message: this.#escapeHtml(data.message),
       page_url: data.page_url ? this.#escapeHtml(data.page_url) : null,
+      severity: data.severity || "medium",
+      reproduction_steps: data.reproduction_steps
+        ? this.#escapeHtml(data.reproduction_steps)
+        : null,
+      expected_behavior: data.expected_behavior
+        ? this.#escapeHtml(data.expected_behavior)
+        : null,
+      actual_behavior: data.actual_behavior
+        ? this.#escapeHtml(data.actual_behavior)
+        : null,
     };
   }
 

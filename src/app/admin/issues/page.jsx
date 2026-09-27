@@ -12,6 +12,9 @@ export default function IssueTracker() {
   const [loadError, setLoadError] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [workflowDrafts, setWorkflowDrafts] = useState({});
+  const [saveError, setSaveError] = useState('');
+  const [savingId, setSavingId] = useState(null);
 
   useEffect(() => {
     loadIssues();
@@ -68,6 +71,51 @@ export default function IssueTracker() {
       await loadIssues();
     } catch (error) {
       console.error('Error updating status:', error);
+    }
+  }
+
+  function updateDraft(issue, field, value) {
+    setWorkflowDrafts((current) => ({
+      ...current,
+      [issue.id]: {
+        severity: issue.severity || 'medium',
+        assigned_to: issue.assigned_to || '',
+        public_response: issue.public_response || '',
+        ...current[issue.id],
+        [field]: value,
+      },
+    }));
+  }
+
+  async function saveWorkflow(issue) {
+    const draft = workflowDrafts[issue.id] || {
+      severity: issue.severity || 'medium',
+      assigned_to: issue.assigned_to || '',
+      public_response: issue.public_response || '',
+    };
+    setSavingId(issue.id);
+    setSaveError('');
+    try {
+      const { error } = await supabase
+        .from('feedback_messages')
+        .update({
+          severity: draft.severity,
+          assigned_to: draft.assigned_to.trim() || null,
+          public_response: draft.public_response.trim() || null,
+          status: draft.public_response.trim() ? 'replied' : issue.status,
+        })
+        .eq('id', issue.id);
+      if (error) throw error;
+      setWorkflowDrafts((current) => {
+        const next = { ...current };
+        delete next[issue.id];
+        return next;
+      });
+      await loadIssues();
+    } catch (error) {
+      setSaveError(error.message || 'Could not save the feedback updates.');
+    } finally {
+      setSavingId(null);
     }
   }
 
@@ -141,9 +189,15 @@ export default function IssueTracker() {
       </div>
 
       <div className="space-y-4">
+        {saveError && <p role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">{saveError}</p>}
         {filteredIssues.map((issue) => {
           const status = statusConfig[issue.status] || statusConfig.new;
           const StatusIcon = status.icon;
+          const draft = workflowDrafts[issue.id] || {
+            severity: issue.severity || 'medium',
+            assigned_to: issue.assigned_to || '',
+            public_response: issue.public_response || '',
+          };
           return (
             <div
               key={issue.id}
@@ -164,6 +218,13 @@ export default function IssueTracker() {
                   </div>
                   <h3 className="text-lg font-semibold text-white mb-2">{issue.subject}</h3>
                   <p className="text-slate-400 text-sm mb-3">{issue.message}</p>
+                  {issue.reproduction_steps && <p className="text-sm text-slate-300 mb-2"><span className="text-slate-500">Reproduction:</span> {issue.reproduction_steps}</p>}
+                  {(issue.expected_behavior || issue.actual_behavior) && (
+                    <div className="grid sm:grid-cols-2 gap-3 my-3 text-sm">
+                      {issue.expected_behavior && <p className="text-slate-300"><span className="text-slate-500">Expected:</span> {issue.expected_behavior}</p>}
+                      {issue.actual_behavior && <p className="text-slate-300"><span className="text-slate-500">Actual:</span> {issue.actual_behavior}</p>}
+                    </div>
+                  )}
                   <div className="flex items-center gap-4 text-xs text-slate-500">
                     <span>{issue.name}</span>
                     <span>•</span>
@@ -185,6 +246,25 @@ export default function IssueTracker() {
                     </button>
                   ))}
                 </div>
+              </div>
+              <div className="mt-5 border-t border-white/10 pt-4 grid gap-4 md:grid-cols-2">
+                <label className="text-sm text-slate-300">
+                  Severity
+                  <select value={draft.severity} onChange={(event) => updateDraft(issue, 'severity', event.target.value)} className="mt-1 w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-slate-200">
+                    <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option>
+                  </select>
+                </label>
+                <label className="text-sm text-slate-300">
+                  Assigned to
+                  <input value={draft.assigned_to} onChange={(event) => updateDraft(issue, 'assigned_to', event.target.value)} className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-slate-200" placeholder="Owner name or email" />
+                </label>
+                <label className="text-sm text-slate-300 md:col-span-2">
+                  Reply visible to the submitter
+                  <textarea value={draft.public_response} onChange={(event) => updateDraft(issue, 'public_response', event.target.value)} rows={3} className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-slate-200" placeholder="Write a short update or response…" />
+                </label>
+                <button type="button" onClick={() => saveWorkflow(issue)} disabled={savingId === issue.id} className="justify-self-start rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
+                  {savingId === issue.id ? 'Saving…' : 'Save feedback updates'}
+                </button>
               </div>
             </div>
           );

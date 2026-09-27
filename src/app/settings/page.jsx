@@ -21,6 +21,9 @@ export default function SettingsPage() {
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushSupported, setPushSupported] = useState(null);
   const [pushBusy, setPushBusy] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState('default');
+  const [localReminderTime, setLocalReminderTime] = useState('');
+  const [analyticsConsent, setAnalyticsConsent] = useState(false);
 
   const [formData, setFormData] = useState({
     theme: 'dark',
@@ -38,12 +41,23 @@ export default function SettingsPage() {
   useEffect(() => {
     const savedTheme = window.localStorage.getItem('themePreference');
     if (savedTheme) setFormData((current) => ({ ...current, theme: savedTheme }));
+    setAnalyticsConsent(window.localStorage.getItem('analyticsConsent') === 'granted');
   }, []);
 
   useEffect(() => {
     const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
     setPushSupported(supported);
     if (!supported) return;
+    setNotificationPermission(Notification.permission);
+
+    const nextCheck = new Date();
+    nextCheck.setUTCHours(13, 0, 0, 0);
+    if (nextCheck.getTime() <= Date.now()) nextCheck.setUTCDate(nextCheck.getUTCDate() + 1);
+    setLocalReminderTime(new Intl.DateTimeFormat(undefined, {
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZoneName: 'short',
+    }).format(nextCheck));
 
     navigator.serviceWorker.getRegistration().then(async (registration) => {
       if (!registration) return;
@@ -70,6 +84,7 @@ export default function SettingsPage() {
 
     try {
       window.localStorage.setItem('themePreference', formData.theme);
+      window.localStorage.setItem('analyticsConsent', analyticsConsent ? 'granted' : 'denied');
       const darkMode = formData.theme === 'system'
         ? window.matchMedia('(prefers-color-scheme: dark)').matches
         : formData.theme === 'dark';
@@ -123,6 +138,7 @@ export default function SettingsPage() {
       const permission = Notification.permission === 'granted'
         ? 'granted'
         : await Notification.requestPermission();
+      setNotificationPermission(permission);
       if (permission !== 'granted') throw new Error('Notification permission was not granted.');
 
       const registration = await navigator.serviceWorker.register('/service-worker.js');
@@ -143,6 +159,36 @@ export default function SettingsPage() {
       setSuccess('Study reminders enabled. You can turn them off here anytime.');
     } catch (err) {
       setError(err.message || 'Could not update notification settings.');
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
+  const handleTestNotification = async () => {
+    setError('');
+    setSuccess('');
+    setPushBusy(true);
+
+    try {
+      if (Notification.permission !== 'granted') {
+        setNotificationPermission(Notification.permission);
+        throw new Error('Allow notifications for this site in your browser settings, then try the test again.');
+      }
+      const registration = await navigator.serviceWorker.getRegistration();
+      const subscription = await registration?.pushManager.getSubscription();
+      if (!registration || !subscription) {
+        setPushEnabled(false);
+        throw new Error('No active reminder subscription was found. Turn reminders on, then try again.');
+      }
+
+      await registration.showNotification('Test reminder', {
+        body: 'Notifications are enabled on this device. You can turn study reminders off in Settings.',
+        tag: 'study-reminder-test',
+        data: { url: '/settings' },
+      });
+      setSuccess('A test notification was shown on this device. This checks browser display, not the remote delivery schedule.');
+    } catch (err) {
+      setError(err.message || 'Could not show a test notification.');
     } finally {
       setPushBusy(false);
     }
@@ -194,6 +240,31 @@ export default function SettingsPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-8">
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-4">Privacy</h3>
+              <div className="flex items-center justify-between gap-4 rounded-lg bg-white/5 p-4">
+                <div>
+                  <label htmlFor="analytics-consent" className="font-medium text-white">Share usage analytics</label>
+                  <p id="analytics-consent-description" className="mt-1 max-w-xl text-sm text-slate-400">
+                    Optional. Helps improve the site through basic feature usage counts. Prompts, answers, and full page URLs are not included.
+                  </p>
+                </div>
+                <input
+                  id="analytics-consent"
+                  type="checkbox"
+                  checked={analyticsConsent}
+                  onChange={(event) => {
+                    const enabled = event.target.checked;
+                    setAnalyticsConsent(enabled);
+                    window.localStorage.setItem('analyticsConsent', enabled ? 'granted' : 'denied');
+                  }}
+                  aria-describedby="analytics-consent-description"
+                  disabled={isSubmitting}
+                  className="h-5 w-5 shrink-0 accent-blue-500"
+                />
+              </div>
+            </div>
+
             <div>
               <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                 <Moon size={18} />
@@ -261,7 +332,7 @@ export default function SettingsPage() {
                   <div>
                     <p className="text-white font-medium">Study reminders</p>
                     <p id="notifications-description" className="max-w-xl text-sm text-slate-400">
-                      Get one browser notification after at least 24 hours away. Reminders are checked once a day, and you can turn them off anytime.
+                      If you opt in, the site checks once daily whether you have been away for at least 24 hours and may send one browser reminder. You can turn reminders off here anytime.
                     </p>
                   </div>
                   <button
@@ -280,9 +351,24 @@ export default function SettingsPage() {
                   </p>
                 )}
                 {pushSupported && Notification.permission === 'denied' && (
-                  <p className="text-sm text-amber-300" role="status">
-                    Notifications are blocked for this site in your browser settings.
+                  <p className="rounded-lg border border-amber-400/20 bg-amber-400/5 p-3 text-sm text-amber-200" role="status">
+                    Notifications are blocked for this site. To enable reminders, open this site&apos;s browser permissions, allow notifications, reload this page, and press Turn on again.
                   </p>
+                )}
+                {pushSupported && notificationPermission !== 'denied' && (
+                  <p className="text-sm text-slate-400">
+                    Daily check: around 13:00 UTC{localReminderTime ? ` (about ${localReminderTime} on this device)` : ''}. Delivery depends on the 24-hour inactivity check and the browser&apos;s push service, so the time can vary.
+                  </p>
+                )}
+                {pushEnabled && notificationPermission === 'granted' && (
+                  <button
+                    type="button"
+                    onClick={handleTestNotification}
+                    disabled={pushBusy}
+                    className="min-h-11 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {pushBusy ? 'Please wait…' : 'Show test notification'}
+                  </button>
                 )}
               </div>
             </div>
