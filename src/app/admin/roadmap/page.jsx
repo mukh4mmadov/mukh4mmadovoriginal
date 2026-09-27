@@ -245,9 +245,9 @@ export default function AdminRoadmap() {
 
       {isFormOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-surface border border-white/10 rounded-2xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
+          <div className="bg-surface border border-white/10 rounded-2xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="roadmap-form-title">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-white">
+              <h2 id="roadmap-form-title" className="text-xl font-bold text-white">
                 {editingItem ? 'Edit Item' : 'New Roadmap Item'}
               </h2>
               <button
@@ -262,10 +262,11 @@ export default function AdminRoadmap() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label htmlFor="roadmap-title" className="block text-sm font-medium text-slate-300 mb-2">
                   Title
                 </label>
                 <input
+                  id="roadmap-title"
                   type="text"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -276,10 +277,11 @@ export default function AdminRoadmap() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label htmlFor="roadmap-description" className="block text-sm font-medium text-slate-300 mb-2">
                   Description
                 </label>
                 <textarea
+                  id="roadmap-description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
@@ -290,10 +292,11 @@ export default function AdminRoadmap() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label htmlFor="roadmap-status" className="block text-sm font-medium text-slate-300 mb-2">
                     Status
                   </label>
                   <select
+                    id="roadmap-status"
                     value={formData.status}
                     onChange={(e) => {
                       const value = e.target.value;
@@ -308,10 +311,11 @@ export default function AdminRoadmap() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label htmlFor="roadmap-category" className="block text-sm font-medium text-slate-300 mb-2">
                     Category
                   </label>
                   <select
+                    id="roadmap-category"
                     value={formData.category}
                     onChange={(e) => {
                       const value = e.target.value;
@@ -328,10 +332,11 @@ export default function AdminRoadmap() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label htmlFor="roadmap-priority" className="block text-sm font-medium text-slate-300 mb-2">
                     Priority
                   </label>
                   <select
+                    id="roadmap-priority"
                     value={formData.priority}
                     onChange={(e) => {
                       const value = e.target.value;
@@ -346,10 +351,11 @@ export default function AdminRoadmap() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label htmlFor="roadmap-target-date" className="block text-sm font-medium text-slate-300 mb-2">
                     Target Date
                   </label>
                   <input
+                    id="roadmap-target-date"
                     type="date"
                     value={formData.target_date}
                     onChange={(e) => setFormData({ ...formData, target_date: e.target.value })}
@@ -359,16 +365,21 @@ export default function AdminRoadmap() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label htmlFor="roadmap-progress" className="block text-sm font-medium text-slate-300 mb-2">
                   Progress: {formData.progress}%
                 </label>
                 <input
+                  id="roadmap-progress"
                   type="range"
                   min="0"
                   max="100"
                   value={formData.progress}
                   onChange={(e) => setFormData({ ...formData, progress: parseInt(e.target.value) })}
                   className="w-full"
+                  aria-valuenow={formData.progress}
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                  aria-valuetext={`${formData.progress} percent`}
                 />
               </div>
 

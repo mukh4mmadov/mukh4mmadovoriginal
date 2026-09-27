@@ -6,6 +6,11 @@ import { User, Save, ArrowLeft, MessageSquare } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { authService } from '@/lib/supabase/auth';
 
+export const metadata = {
+  title: 'Profile',
+  description: 'Manage your IELTS Reading profile and settings',
+};
+
 export default function ProfilePage() {
   const router = useRouter();
   const { user, profile, isLoading } = useAuth();

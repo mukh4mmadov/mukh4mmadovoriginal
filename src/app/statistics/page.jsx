@@ -9,6 +9,11 @@ import readingTestsModule from '@/data/readingTests_new';
 import { supabase } from '@/lib/supabase/client';
 import { getReviewedQuestionCount } from '@/lib/reading/answer-review';
 
+export const metadata = {
+  title: 'Statistics',
+  description: 'View your IELTS Reading progress and performance statistics',
+};
+
 export default function StatisticsPage() {
   const router = useRouter();
   const { user, isLoading } = useAuth();
@@ -127,7 +132,7 @@ export default function StatisticsPage() {
           setGoalMessage('Could not load your saved study goal.');
         } else if (data) {
           setGoal({
-            target_band: String(data.target_band || 6.5),
+            target_band: Number(data.target_band || 6.5).toFixed(1),
             exam_date: data.exam_date || '',
             study_days_per_week: data.study_days_per_week || 4,
           });

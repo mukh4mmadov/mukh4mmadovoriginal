@@ -669,7 +669,7 @@ export default function ReadingTestPlayer({ passage }) {
                       type="button"
                       key={q.id}
                       onClick={() => scrollToQuestion(q.id)}
-                      className={`flex h-8 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5 sm:h-9 sm:w-9 sm:text-sm ${stateClass}`}
+                      className={`flex h-11 w-11 items-center justify-center rounded-full border text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5 sm:h-9 sm:w-9 sm:text-sm ${stateClass}`}
                       title={`Question ${number}`}
                     >
                       {isAnswered ? <Check size={14} /> : number}
@@ -846,7 +846,7 @@ export default function ReadingTestPlayer({ passage }) {
                                     type="button"
                                     key={h.id}
                                     onClick={() => setAnswer(q.id, h.id)}
-                                    className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-all duration-200 ${
+                                    className={`rounded-full border px-3 py-2 text-[11px] font-semibold transition-all duration-200 min-h-[44px] ${
                                       given === h.id
                                         ? "border-brand-500 bg-brand-500/20 text-brand-300"
                                         : "border-white/15 text-slate-300 hover:border-white/30 hover:bg-white/10"

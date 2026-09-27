@@ -30,6 +30,16 @@ export default function AdminLayout({ children }) {
   const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && isSidebarOpen) {
+        setIsSidebarOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isSidebarOpen]);
+
+  useEffect(() => {
     const updateConnectionStatus = () => setIsOffline(!navigator.onLine);
     updateConnectionStatus();
     window.addEventListener('online', updateConnectionStatus);

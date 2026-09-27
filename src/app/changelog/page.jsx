@@ -5,6 +5,11 @@ import Link from "next/link";
 import { Calendar, Tag, AlertCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 
+export const metadata = {
+  title: 'Changelog',
+  description: 'View recent updates and changes to Muhammadov IELTS Reading',
+};
+
 export default function ChangelogPage() {
   const [entries, setEntries] = useState([]);
   const [isLoading, setIsLoading] = useState(true);

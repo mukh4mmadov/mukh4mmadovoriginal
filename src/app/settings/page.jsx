@@ -5,6 +5,11 @@ import { useRouter } from 'next/navigation';
 import { Settings, ArrowLeft, Bell, Moon, Sun, Globe } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
+export const metadata = {
+  title: 'Settings',
+  description: 'Configure your IELTS Reading app preferences',
+};
+
 function decodeApplicationServerKey(base64String) {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
   const base64 = `${base64String}${padding}`.replace(/-/g, '+').replace(/_/g, '/');
