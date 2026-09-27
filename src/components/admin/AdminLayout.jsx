@@ -41,6 +41,18 @@ export default function AdminLayout({ children }) {
   }, []);
 
   useEffect(() => {
+    const handleEscape = (event) => {
+      if (event.key === 'Escape' && isSidebarOpen) {
+        setIsSidebarOpen(false);
+      }
+    };
+    if (isSidebarOpen) {
+      window.addEventListener('keydown', handleEscape);
+      return () => window.removeEventListener('keydown', handleEscape);
+    }
+  }, [isSidebarOpen]);
+
+  useEffect(() => {
     let isActive = true;
 
     async function checkAdmin() {

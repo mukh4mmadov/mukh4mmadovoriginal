@@ -17,6 +17,7 @@ export default function StatisticsPage() {
   const [loading, setLoading] = useState(true);
   const [goal, setGoal] = useState({ target_band: '6.5', exam_date: '', study_days_per_week: 4 });
   const [goalLoading, setGoalLoading] = useState(true);
+  const [initialGoalLoaded, setInitialGoalLoaded] = useState(false);
   const [goalSaving, setGoalSaving] = useState(false);
   const [goalMessage, setGoalMessage] = useState('');
   const [shareMessage, setShareMessage] = useState('');
@@ -130,6 +131,7 @@ export default function StatisticsPage() {
             exam_date: data.exam_date || '',
             study_days_per_week: data.study_days_per_week || 4,
           });
+          setInitialGoalLoaded(true);
         }
         setGoalLoading(false);
       })
@@ -148,6 +150,10 @@ export default function StatisticsPage() {
     event.preventDefault();
     if (!userId || !supabase) {
       setGoalMessage('Study goals are unavailable because the database is not configured.');
+      return;
+    }
+    if (!initialGoalLoaded) {
+      setGoalMessage('Please wait for your saved goal to load before saving.');
       return;
     }
     setGoalSaving(true);

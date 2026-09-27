@@ -271,13 +271,22 @@ export default function FeedbackManagement() {
       </div>
 
       {selectedFeedback && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="feedback-details-title"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSelectedFeedback(null);
+          }}
+        >
           <div className="bg-surface border border-white/10 rounded-2xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-white">Feedback Details</h2>
+              <h2 id="feedback-details-title" className="text-xl font-bold text-white">Feedback Details</h2>
               <button
                 onClick={() => setSelectedFeedback(null)}
                 className="text-slate-400 hover:text-white"
+                aria-label="Close feedback details"
               >
                 <X size={20} />
               </button>

@@ -29,10 +29,10 @@ export async function generateMetadata({ params }) {
   );
 
   return {
-    title: `${test.title} | Muhammadov IELTS Reading`,
+    title: test.title,
     description: `Practice the IELTS Academic Reading passage "${test.title}" with ${questionCount} questions. Timed at 20 minutes, exam-format questions with instant band estimate.`,
     openGraph: {
-      title: `${test.title} | Muhammadov IELTS Reading`,
+      title: test.title,
       description: `Practice IELTS Academic Reading: ${test.title}. ${questionCount} exam-format questions, 20-minute timer, built-in highlighter.`,
       type: "article",
     },

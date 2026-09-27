@@ -97,6 +97,7 @@ export default function AIChatPanel({
   const [lastFailedPrompt, setLastFailedPrompt] = useState(null);
   const [panelWidth, setPanelWidth] = useState(370);
   const [isResizing, setIsResizing] = useState(false);
+  const [copiedMessageId, setCopiedMessageId] = useState(null);
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -365,9 +366,11 @@ export default function AIChatPanel({
       .replace(/\n/g, "<br />");
   };
 
-  const handleCopy = (content) => {
+  const handleCopy = (content, messageId) => {
     if (typeof window !== "undefined" && navigator.clipboard) {
       navigator.clipboard.writeText(content);
+      setCopiedMessageId(messageId);
+      setTimeout(() => setCopiedMessageId(null), 2000);
     }
   };
 
@@ -541,12 +544,12 @@ export default function AIChatPanel({
                 {message.role === "assistant" && (
                   <div className="flex gap-2 mt-2 pt-2 border-t border-white/10">
                     <button
-                      onClick={() => handleCopy(message.content)}
+                      onClick={() => handleCopy(message.content, message.id)}
                       className="flex items-center gap-1 text-xs text-slate-400 hover:text-white transition-colors"
                       title="Copy message"
                     >
                       <Copy size={12} />
-                      Copy
+                      {copiedMessageId === message.id ? "Copied!" : "Copy"}
                     </button>
                     {!isLoading && (
                       <button
@@ -778,12 +781,12 @@ export default function AIChatPanel({
                 {message.role === "assistant" && (
                   <div className="flex gap-2 mt-2 pt-2 border-t border-white/10">
                     <button
-                      onClick={() => handleCopy(message.content)}
+                      onClick={() => handleCopy(message.content, message.id)}
                       className="flex items-center gap-1 text-xs text-slate-400 hover:text-white transition-colors"
                       title="Copy message"
                     >
                       <Copy size={12} />
-                      Copy
+                      {copiedMessageId === message.id ? "Copied!" : "Copy"}
                     </button>
                     {!isLoading && (
                       <button
