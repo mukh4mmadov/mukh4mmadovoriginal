@@ -172,12 +172,12 @@ export default function IssueTracker() {
         })}
       </div>
 
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
         {(['all', 'new', 'read', 'replied']).map((status) => (
           <button
             key={status}
             onClick={() => setStatusFilter(status)}
-            className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+            className={`px-3 py-1.5 rounded-lg text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
               statusFilter === status
                 ? 'bg-brand-500 text-white'
                 : 'bg-white/5 text-slate-400 hover:text-white'
@@ -201,11 +201,11 @@ export default function IssueTracker() {
           return (
             <div
               key={issue.id}
-              className="border border-white/10 rounded-xl p-6 hover:border-white/20 transition-colors"
+              className="border border-white/10 rounded-xl p-4 sm:p-6 hover:border-white/20 transition-colors"
             >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium border ${status.bg} ${status.color} ${status.border}`}>
                       <div className="flex items-center gap-1">
                         <StatusIcon size={12} />
@@ -216,27 +216,27 @@ export default function IssueTracker() {
                       {new Date(issue.created_at).toLocaleDateString()}
                     </span>
                   </div>
-                  <h3 className="text-lg font-semibold text-white mb-2">{issue.subject}</h3>
-                  <p className="text-slate-400 text-sm mb-3">{issue.message}</p>
-                  {issue.reproduction_steps && <p className="text-sm text-slate-300 mb-2"><span className="text-slate-500">Reproduction:</span> {issue.reproduction_steps}</p>}
+                  <h3 className="text-base sm:text-lg font-semibold text-white mb-2 break-words">{issue.subject}</h3>
+                  <p className="text-slate-400 text-sm mb-3 break-words">{issue.message}</p>
+                  {issue.reproduction_steps && <p className="text-sm text-slate-300 mb-2 break-words"><span className="text-slate-500">Reproduction:</span> {issue.reproduction_steps}</p>}
                   {(issue.expected_behavior || issue.actual_behavior) && (
-                    <div className="grid sm:grid-cols-2 gap-3 my-3 text-sm">
-                      {issue.expected_behavior && <p className="text-slate-300"><span className="text-slate-500">Expected:</span> {issue.expected_behavior}</p>}
-                      {issue.actual_behavior && <p className="text-slate-300"><span className="text-slate-500">Actual:</span> {issue.actual_behavior}</p>}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 my-3 text-sm">
+                      {issue.expected_behavior && <p className="text-slate-300 break-words"><span className="text-slate-500">Expected:</span> {issue.expected_behavior}</p>}
+                      {issue.actual_behavior && <p className="text-slate-300 break-words"><span className="text-slate-500">Actual:</span> {issue.actual_behavior}</p>}
                     </div>
                   )}
-                  <div className="flex items-center gap-4 text-xs text-slate-500">
-                    <span>{issue.name}</span>
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-slate-500">
+                    <span className="break-all">{issue.name}</span>
                     <span>•</span>
-                    <span>{issue.email}</span>
+                    <span className="break-all">{issue.email}</span>
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {(['new', 'read', 'replied']).map((s) => (
                     <button
                       key={s}
                       onClick={() => updateStatus(issue.id, s)}
-                      className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${
+                      className={`px-3 py-1.5 rounded-lg text-xs transition-colors whitespace-nowrap ${
                         issue.status === s
                           ? 'bg-brand-500 text-white'
                           : 'bg-white/5 text-slate-400 hover:text-white'
