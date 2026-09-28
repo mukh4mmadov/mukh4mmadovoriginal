@@ -4,6 +4,7 @@ import Link from "next/link";
 import { BookOpenText, Moon, Sun, LogOut, User, ChevronDown, Settings, BarChart3, Menu, X } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import SupportChat from "@/components/support/SupportChat";
 
 export default function Navbar() {
   const { user, profile, signOut, isLoading } = useAuth();
@@ -336,6 +337,8 @@ export default function Navbar() {
             </div>
           </nav>
       </div>
+
+      {user && <SupportChat />}
     </header>
   );
 }
