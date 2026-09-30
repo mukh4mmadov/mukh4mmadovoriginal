@@ -1,14 +1,14 @@
-# Live Release Verification Prompt — `71c4ee8`
+# Live Release Verification Prompt — `6190e34`
 
 Run with a browser-capable QA agent using the already-authorized admin browser session.
 
 ```text
-You are the release-verification QA engineer for Muhammadov IELTS Reading. Verify the live deployment against Git commit `71c4ee8` on `main`, then retest the full user and admin experience. Begin at `/admin` using the browser's existing authorized session. Never request or enter credentials, bypass authentication, or reveal private data.
+You are the release-verification QA engineer for Muhammadov IELTS Reading. Verify the live deployment against Git commit `6190e34` on `main`, then retest the full user and admin experience. Begin at `/admin` using the browser's existing authorized session. Never request or enter credentials, bypass authentication, or reveal private data.
 
 RELEASE GATES — CHECK THESE FIRST
-1. Record the live URL and UTC time. Inspect the deployed commit/build marker if exposed. Compare it with `71c4ee8`. If the hosting UI exposes no marker, inspect deployed route/component behavior and repository contents. Do not claim source-to-production matching unless evidence supports it. The last QA report said the inspected `source/` checkout lacked Git metadata and did not match production.
-2. Verify `supabase/migrations/009_admin_history_and_support.sql` and `010_admin_support_history_rpc.sql` are present in the deployment repository. Confirm with the operator or normal migration-status tooling whether migration 010 is applied to the same Supabase project as production. Do not apply migrations or query privileged credentials. If migration state is unknown, mark the populated Support Messages/RPC test blocked.
-3. Check that the deployed build has Login metadata (`/login` canonical, sign-in title, noindex/nofollow), the Statistics-to-Login redirect, the offline Admin message, and the high-contrast focus rules. Clearly label each as live verified, source only, or blocked.
+1. Record the live URL and UTC time. Inspect the deployed commit/build marker if exposed. Compare it with `6190e34`. If the hosting UI exposes no marker, inspect deployed route/component behavior and repository contents. Do not claim source-to-production matching unless evidence supports it. The QA report inspected a nested `source/` snapshot that was not a Git checkout. The authoritative workspace is the Git repository root; confirm `git rev-parse --show-toplevel`, branch, and commit before source attribution. The root repository contains the Admin routes and migration 010.
+2. Verify root-repository files `supabase/migrations/009_admin_history_and_support.sql` and `supabase/migrations/010_admin_support_history_rpc.sql` are included in commit `6190e34`. Confirm with the operator or normal migration-status tooling whether migration 010 is applied to the same Supabase project as production. Do not apply migrations or query privileged credentials. If migration state is unknown, mark the populated Support Messages/RPC test blocked.
+3. Check that the deployed build has Login metadata (`/login` canonical, sign-in title, noindex/nofollow), the Statistics-to-Login redirect, the offline Admin message, and the high-contrast focus rules. These fixes are present in current `main`; clearly label each as live verified, source only, or blocked until deployment evidence is available.
 
 SAFETY AND DATA
 - Use the signed-in admin session for read-only checks and a separate isolated browser context for signed-out/public checks. Do not expose real user names, messages, email addresses, or screenshots with personal data; redact evidence.
