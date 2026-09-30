@@ -36,6 +36,7 @@ export async function generateMetadata({ params }) {
       title: test.title,
       description: `Practice IELTS Academic Reading: ${test.title}. ${questionCount} exam-format questions, 20-minute timer, built-in highlighter.`,
       type: "article",
+      images: [{ url: "/og-reading.svg", width: 1200, height: 630, alt: `IELTS Reading practice: ${test.title}` }],
     },
   };
 }

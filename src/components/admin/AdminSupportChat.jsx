@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supportRepository } from '@/lib/supabase/repositories/support.repository';
 import { notificationsRepository } from '@/lib/supabase/repositories/notifications.repository';
 import { supabase } from '@/lib/supabase/client';
+import { useModalAccessibility } from '@/hooks/useModalAccessibility';
 
 export default function AdminSupportChat() {
   const { user } = useAuth();
@@ -17,8 +18,10 @@ export default function AdminSupportChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [sendError, setSendError] = useState("");
   const [searchQuery, setSearchQuery] = useState('');
+  const searchRef = useRef(null);
   const messagesEndRef = useRef(null);
   const subscriptionRef = useRef(null);
+  const modalRef = useModalAccessibility(isOpen, () => setIsOpen(false), searchRef);
 
   useEffect(() => {
     if (user?.id) {
@@ -164,10 +167,10 @@ export default function AdminSupportChat() {
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex h-[100dvh] w-full flex-col overflow-hidden bg-surface shadow-2xl md:inset-x-auto md:bottom-24 md:right-6 md:h-[min(600px,calc(100dvh-8rem))] md:w-[min(600px,calc(100vw-3rem))] md:rounded-2xl md:border md:border-white/10">
+        <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="admin-support-title" tabIndex={-1} className="fixed inset-0 z-50 flex h-[100dvh] w-full flex-col overflow-hidden bg-surface shadow-2xl md:inset-x-auto md:bottom-24 md:right-6 md:h-[min(600px,calc(100dvh-8rem))] md:w-[min(600px,calc(100vw-3rem))] md:rounded-2xl md:border md:border-white/10">
           <div className="flex shrink-0 items-center justify-between p-4 border-b border-white/10">
             <div>
-              <h3 className="font-semibold text-white flex items-center gap-2">
+              <h3 id="admin-support-title" className="font-semibold text-white flex items-center gap-2">
                 <Users size={20} />
                 Support Messages
               </h3>
@@ -188,6 +191,7 @@ export default function AdminSupportChat() {
                 <div className="relative">
                   <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
+                    ref={searchRef}
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}

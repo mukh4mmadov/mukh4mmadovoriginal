@@ -15,6 +15,7 @@ import { parseAIResponse, formatParsedResponse } from "@/lib/ai/parseResponse";
 import { useAuth } from "@/contexts/AuthContext";
 import { analyticsService } from "@/lib/analytics/analytics.service";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
+import { aiConversationsRepository } from "@/lib/supabase/repositories/ai-conversations.repository";
 
 const SUGGESTED_PROMPTS = [
   { icon: "💡", label: "Hint", prompt: "Give me a hint for this question." },
@@ -316,6 +317,23 @@ export default function AIChatPanel({
 
       if (!fullContent.trim()) {
         throw new Error("The AI returned an empty response. Please try again.");
+      }
+
+      if (user?.id) {
+        const savedMessages = [
+          ...normalizeConversationMessages(messages),
+          userMessage,
+          { ...assistantMessage, content: fullContent },
+        ];
+        try {
+          await aiConversationsRepository.saveConversation({
+            userId: user.id,
+            title: context.passage.title,
+            messages: savedMessages,
+          });
+        } catch (saveError) {
+          console.error("AI reply completed, but conversation history could not be saved:", saveError);
+        }
       }
 
       setRetryCount(0);

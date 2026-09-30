@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supportRepository } from '@/lib/supabase/repositories/support.repository';
 import { notificationsRepository } from '@/lib/supabase/repositories/notifications.repository';
 import { supabase } from '@/lib/supabase/client';
+import { useModalAccessibility } from '@/hooks/useModalAccessibility';
 
 export default function SupportChat() {
   const { user } = useAuth();
@@ -16,8 +17,10 @@ export default function SupportChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [sendError, setSendError] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
+  const inputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const subscriptionRef = useRef(null);
+  const modalRef = useModalAccessibility(isOpen && !isMinimized, () => setIsOpen(false), inputRef);
 
   useEffect(() => {
     if (user?.id) {
@@ -138,7 +141,7 @@ export default function SupportChat() {
       </button>
 
       {isOpen && (
-        <section aria-labelledby="user-support-title" className={`fixed inset-x-3 bottom-4 z-50 mx-auto flex w-auto max-w-sm flex-col overflow-hidden bg-surface border border-white/10 rounded-2xl shadow-2xl transition-all sm:inset-x-auto sm:right-6 sm:bottom-24 sm:w-96 ${
+        <section ref={modalRef} role={isMinimized ? undefined : 'dialog'} aria-modal={isMinimized ? undefined : 'true'} aria-labelledby="user-support-title" tabIndex={isMinimized ? undefined : -1} className={`fixed inset-x-3 bottom-4 z-50 mx-auto flex w-auto max-w-sm flex-col overflow-hidden bg-surface border border-white/10 rounded-2xl shadow-2xl transition-all sm:inset-x-auto sm:right-6 sm:bottom-24 sm:w-96 ${
           isMinimized ? 'h-14' : 'h-[min(500px,calc(100dvh_-_6rem))] sm:h-[500px]'
         }`}>
           <div className="flex shrink-0 items-center justify-between p-4 border-b border-white/10">
@@ -208,6 +211,7 @@ export default function SupportChat() {
                 {sendError && <p role="alert" className="mb-2 text-xs text-red-300">{sendError}</p>}
                 <div className="flex gap-2">
                   <input
+                    ref={inputRef}
                     type="text"
                     value={inputValue}
                     onChange={(e) => { setInputValue(e.target.value); setSendError(""); }}

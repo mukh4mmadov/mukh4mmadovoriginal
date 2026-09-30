@@ -85,7 +85,7 @@ async function navigate(path, width, height, theme) {
   if (result.path === path && !result.noindex && result.canonicalPath !== result.path) {
     throw new Error(`${path} has canonical URL ${result.canonicalPath || '(missing)'}`);
   }
-  if (result.path === path && ['/', '/reading'].includes(path) && !result.hasShareImage) {
+  if (result.path === path && ['/', '/reading', '/reading/the-science-of-sleep'].includes(path) && !result.hasShareImage) {
     throw new Error(`${path} has no Open Graph image`);
   }
   if (result.documentWidth > result.width || result.bodyWidth > result.width) {

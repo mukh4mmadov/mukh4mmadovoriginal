@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Search, Filter, Check, X, Download, Eye, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { AdminPageError, AdminPageLoading } from '@/components/admin/AdminPageStatus';
+import { useModalAccessibility } from '@/hooks/useModalAccessibility';
 
 export default function FeedbackManagement() {
   const [feedback, setFeedback] = useState([]);
@@ -14,6 +15,8 @@ export default function FeedbackManagement() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [selectedFeedback, setSelectedFeedback] = useState(null);
+  const closeDetailsRef = useRef(null);
+  const detailsModalRef = useModalAccessibility(Boolean(selectedFeedback), () => setSelectedFeedback(null), closeDetailsRef);
 
   useEffect(() => {
     loadFeedback();
@@ -272,9 +275,11 @@ export default function FeedbackManagement() {
 
       {selectedFeedback && (
         <div
+          ref={detailsModalRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby="feedback-details-title"
+          tabIndex={-1}
           className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) setSelectedFeedback(null);
@@ -284,6 +289,7 @@ export default function FeedbackManagement() {
             <div className="flex items-center justify-between mb-4">
               <h2 id="feedback-details-title" className="text-xl font-bold text-white">Feedback Details</h2>
               <button
+                ref={closeDetailsRef}
                 onClick={() => setSelectedFeedback(null)}
                 className="text-slate-400 hover:text-white"
                 aria-label="Close feedback details"

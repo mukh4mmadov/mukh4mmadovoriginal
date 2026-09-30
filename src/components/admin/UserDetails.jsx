@@ -3,12 +3,14 @@
 import { useState, useEffect } from 'react';
 import { X, User, BookOpen, MessageSquare, Bot, Activity, Calendar, Clock, Target, TrendingUp } from 'lucide-react';
 import { usersRepository } from '@/lib/supabase/repositories/users.repository';
+import { useModalAccessibility } from '@/hooks/useModalAccessibility';
 
 export default function UserDetails({ userId, onClose }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [userData, setUserData] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const modalRef = useModalAccessibility(true, onClose);
 
   useEffect(() => {
     loadUserData();
@@ -29,7 +31,8 @@ export default function UserDetails({ userId, onClose }) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="user-details-title" tabIndex={-1} className="flex min-h-48 w-full max-w-4xl items-center justify-center rounded-2xl border border-white/10 bg-surface p-8">
+        <h2 id="user-details-title" className="sr-only">User Details</h2>
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500" />
       </div>
     );
@@ -37,11 +40,14 @@ export default function UserDetails({ userId, onClose }) {
 
   if (error) {
     return (
-      <div className="p-8 text-center" role="alert">
-        <p className="text-red-300">Could not load this user’s details. Please try again.</p>
-        <div className="mt-4 flex justify-center gap-3">
-          <button onClick={loadUserData} className="rounded-lg bg-brand-500 px-4 py-2 text-sm text-white">Try again</button>
-          <button onClick={onClose} className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300">Close</button>
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="user-details-title" tabIndex={-1} className="w-full max-w-4xl rounded-2xl border border-white/10 bg-surface p-8 text-center">
+        <h2 id="user-details-title" className="sr-only">User Details</h2>
+        <div role="alert">
+          <p className="text-red-300">Could not load this user’s details. Please try again.</p>
+          <div className="mt-4 flex justify-center gap-3">
+            <button onClick={loadUserData} className="rounded-lg bg-brand-500 px-4 py-2 text-sm text-white">Try again</button>
+            <button onClick={onClose} className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300">Close</button>
+          </div>
         </div>
       </div>
     );
@@ -49,8 +55,10 @@ export default function UserDetails({ userId, onClose }) {
 
   if (!userData) {
     return (
-      <div className="p-8 text-center text-slate-400">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="user-details-title" tabIndex={-1} className="w-full max-w-4xl rounded-2xl border border-white/10 bg-surface p-8 text-center text-slate-400">
+        <h2 id="user-details-title" className="sr-only">User Details</h2>
         <p>User not found</p>
+        <button onClick={onClose} className="mt-4 rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300">Close</button>
       </div>
     );
   }
@@ -66,9 +74,9 @@ export default function UserDetails({ userId, onClose }) {
   ];
 
   return (
-    <div className="flex max-h-[calc(100dvh-2rem)] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-surface">
+    <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="user-details-title" tabIndex={-1} className="flex max-h-[calc(100dvh-2rem)] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-surface">
       <div className="flex shrink-0 items-center justify-between border-b border-white/10 p-4 sm:p-6">
-        <h2 className="text-xl font-bold text-white">User Details</h2>
+        <h2 id="user-details-title" className="text-xl font-bold text-white">User Details</h2>
         <button
           onClick={onClose}
           className="text-slate-400 hover:text-white transition-colors"

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Calendar, Plus, Edit, Trash2, Tag, AlertCircle, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { AdminPageError, AdminPageLoading } from '@/components/admin/AdminPageStatus';
+import { useModalAccessibility } from '@/hooks/useModalAccessibility';
 
 export default function AdminChangelog() {
   const [entries, setEntries] = useState([]);
@@ -11,6 +12,8 @@ export default function AdminChangelog() {
   const [loadError, setLoadError] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
+  const versionInputRef = useRef(null);
+  const modalRef = useModalAccessibility(isFormOpen, () => setIsFormOpen(false), versionInputRef);
   const [formData, setFormData] = useState({
     version: '',
     title: '',
@@ -23,15 +26,6 @@ export default function AdminChangelog() {
   useEffect(() => {
     loadChangelog();
   }, []);
-
-  useEffect(() => {
-    if (!isFormOpen) return;
-    const closeOnEscape = (event) => {
-      if (event.key === 'Escape') setIsFormOpen(false);
-    };
-    window.addEventListener('keydown', closeOnEscape);
-    return () => window.removeEventListener('keydown', closeOnEscape);
-  }, [isFormOpen]);
 
   async function loadChangelog() {
     try {
@@ -251,7 +245,7 @@ export default function AdminChangelog() {
 
       {isFormOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div role="dialog" aria-modal="true" aria-labelledby="changelog-entry-title" className="bg-surface border border-white/10 rounded-2xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
+          <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="changelog-entry-title" tabIndex={-1} className="bg-surface border border-white/10 rounded-2xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h2 id="changelog-entry-title" className="text-xl font-bold text-white">
                 {editingEntry ? 'Edit Entry' : 'New Changelog Entry'}
@@ -271,6 +265,7 @@ export default function AdminChangelog() {
                   Version (e.g., 1.0.0)
                 </label>
                 <input
+                  ref={versionInputRef}
                   id="changelog-version"
                   type="text"
                   value={formData.version}

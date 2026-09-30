@@ -76,6 +76,11 @@ export default function AdminLayout({ children }) {
         return;
       }
 
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        setAdminCheckError('You are offline. Reconnect to verify admin access and load admin data.');
+        return;
+      }
+
       setIsAdminUser(null);
       setAdminCheckError('');
       try {
