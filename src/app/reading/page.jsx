@@ -10,12 +10,15 @@ import {
   Filter,
   CheckCircle2,
   ClipboardList,
+  CalendarDays,
+  Flame,
 } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { getProgress } from "@/lib/progressTracker";
 import DailyInspiration from "@/components/shared/DailyInspiration";
 import { useAuth } from "@/contexts/AuthContext";
 import { getReviewQueue } from "@/lib/reading/answer-review";
+import { getPracticeSummary, getQuestionTypeAccuracy } from "@/lib/reading/practice-summary";
 
 export default function ReadingListPage() {
   const { user } = useAuth();
@@ -117,6 +120,32 @@ export default function ReadingListPage() {
     return { test: nextTest, reason, action: "Start recommended passage" };
   }, [progressData, progressLoaded, readingTests]);
 
+  const practiceSummary = useMemo(
+    () => getPracticeSummary(progressData),
+    [progressData],
+  );
+  const weakestQuestionType = useMemo(
+    () => getQuestionTypeAccuracy(progressData)[0] || null,
+    [progressData],
+  );
+  const dailyPassage = useMemo(() => {
+    if (!readingTests.length) return null;
+    const now = new Date();
+    const utcDay = Math.floor(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) / (24 * 60 * 60 * 1000));
+    return readingTests[utcDay % readingTests.length];
+  }, [readingTests]);
+  const questionTypeRecommendation = useMemo(() => {
+    if (!weakestQuestionType) return null;
+    const passageWithType = readingTests.find((test) =>
+      test.passages?.some((passage) =>
+        passage.questionGroups?.some((group) =>
+          group.questions?.some((question) => question.type === weakestQuestionType.type),
+        ),
+      ),
+    );
+    return passageWithType ? { test: passageWithType, skill: weakestQuestionType } : null;
+  }, [readingTests, weakestQuestionType]);
+
   const filteredTests = useMemo(() => {
     if (!readingTests || readingTests.length === 0) return [];
     return readingTests.filter((t) => {
@@ -159,6 +188,55 @@ export default function ReadingListPage() {
           Review {reviewQueueCount} saved mistake{reviewQueueCount === 1 ? "" : "s"}
           <ArrowRight size={15} aria-hidden="true" />
         </Link>
+      )}
+
+      {progressLoaded && dailyPassage && (
+        <section className="mb-6 rounded-2xl border border-brand-500/20 bg-gradient-to-r from-brand-500/10 to-white/[0.02] p-5 sm:p-6" aria-labelledby="daily-practice-title">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="max-w-2xl">
+              <div className="mb-2 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wider text-brand-300">
+                <CalendarDays size={15} aria-hidden="true" /> Daily practice
+                <span className="rounded-full bg-white/5 px-2 py-1 text-slate-300">20 minutes</span>
+              </div>
+              <h2 id="daily-practice-title" className="text-xl font-semibold text-white">{practiceSummary.todayCompleted ? "Today’s session is complete" : `Today’s passage: ${dailyPassage.title}`}</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-300">
+                {practiceSummary.todayCompleted
+                  ? "You have completed a passage today. Take a break or review the answers you missed."
+                  : "A simple daily session keeps your practice moving. Your weekly total and streak use saved passage attempts."}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-4 text-sm text-slate-300">
+                <span>{practiceSummary.weeklySessions} of 7 days practiced this week</span>
+                <span className="inline-flex items-center gap-1"><Flame size={15} className="text-amber-300" aria-hidden="true" /> {practiceSummary.currentStreak > 0 ? `${practiceSummary.currentStreak}-day streak` : "Start your practice streak"}</span>
+              </div>
+              <p className="mt-2 text-xs text-slate-500">One missed day is allowed before your streak resets. Counts use saved attempt history.</p>
+              {questionTypeRecommendation && !practiceSummary.todayCompleted && (
+                <p className="mt-3 text-sm text-slate-400">
+                  Recent results show {Math.round(questionTypeRecommendation.skill.accuracy * 100)}% accuracy in {questionTypeRecommendation.skill.type.replace(/-/g, " ")} questions ({questionTypeRecommendation.skill.total} answers).
+                </p>
+              )}
+            </div>
+            <Link href={practiceSummary.todayCompleted ? "/statistics" : `/reading/${dailyPassage.slug}`} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-400">
+              {practiceSummary.todayCompleted ? "View weekly progress" : "Start today’s passage"}
+              <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+          </div>
+        </section>
+      )}
+
+      {progressLoaded && questionTypeRecommendation && (
+        <section className="mb-8 rounded-2xl border border-amber-400/20 bg-amber-400/[0.04] p-5" aria-labelledby="skill-focus-title">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 id="skill-focus-title" className="font-semibold text-white">Practice your least accurate question type</h2>
+              <p className="mt-1 text-sm text-slate-300">
+                {questionTypeRecommendation.skill.type.replace(/-/g, " ")}: {Math.round(questionTypeRecommendation.skill.accuracy * 100)}% across {questionTypeRecommendation.skill.total} saved answers.
+              </p>
+            </div>
+            <Link href={`/reading/${questionTypeRecommendation.test.slug}`} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-sm font-semibold text-amber-100 hover:bg-amber-300/15">
+              Practice {questionTypeRecommendation.test.title} <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+          </div>
+        </section>
       )}
 
       <div className="mb-8 flex flex-col gap-4 rounded-[1.5rem] border border-white/10 bg-white/5 p-4 shadow-[0_12px_40px_rgba(2,8,23,0.12)] sm:flex-row sm:items-center sm:justify-between">
@@ -286,6 +364,10 @@ export default function ReadingListPage() {
                   <h3 className="mb-2 font-display text-xl font-bold group-hover:text-brand-200 transition-colors">
                     {t.title}
                   </h3>
+                  <p className="mb-3 text-xs leading-5 text-slate-400">
+                    {passage.provenanceLabel}. Difficulty is a rough estimate based on passage length and question-format mix, not an official IELTS level.
+                  </p>
+                  <p className="mb-3 text-xs leading-5 text-slate-500">{t.difficultyRationale}</p>
                   <div className="mb-4 flex items-center gap-4 text-xs text-slate-400">
                     <span className="flex items-center gap-1 group-hover:text-brand-300 transition-colors">
                       <Clock size={14} aria-hidden="true" /> 20 min

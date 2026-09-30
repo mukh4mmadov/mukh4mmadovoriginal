@@ -1,4 +1,3 @@
-import { Metadata, Viewport } from "next";
 import "./globals.css";
 import Navbar from "@/components/shared/Navbar";
 import Footer from "@/components/shared/Footer";
@@ -9,8 +8,10 @@ import OfflineNotice from "@/components/shared/OfflineNotice";
 import PushActivityTracker from "@/components/shared/PushActivityTracker";
 
 export const metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://mukh4mmadovoriginal.vercel.app"),
+  alternates: { canonical: "/" },
   title: {
-    default: "Muhammadov IELTS Reading",
+    default: "IELTS Reading Practice",
     template: "%s | Muhammadov IELTS Reading",
   },
   description:
@@ -31,15 +32,17 @@ export const metadata = {
     type: "website",
     locale: "en_US",
     siteName: "Muhammadov IELTS Reading",
-    title: "Muhammadov IELTS Reading",
+    title: "IELTS Reading Practice",
     description:
       "Practice IELTS Reading with exam-format passages, a built-in highlighter, and instant band estimates.",
+    images: [{ url: "/og-reading.svg", width: 1200, height: 630, alt: "IELTS Reading Practice" }],
   },
   twitter: {
-    card: "summary",
-    title: "Muhammadov IELTS Reading",
+    card: "summary_large_image",
+    title: "IELTS Reading Practice",
     description:
       "Practice IELTS Reading with exam-format passages, a built-in highlighter, and instant band estimates.",
+    images: ["/og-reading.svg"],
   },
 };
 

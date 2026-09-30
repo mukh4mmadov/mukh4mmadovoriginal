@@ -234,6 +234,8 @@ export class MigrationService {
     }
 
     if (data.savedQuotes && data.savedQuotes.length > 0) {
+      failedDatasets.push('savedQuotes');
+      errors.push(new Error('Saved quote IDs cannot be imported without the quote text and author data.'));
     }
 
     if (data.dailyMissions) {
@@ -306,22 +308,23 @@ export class MigrationService {
     };
   }
 
-  clearLocalStorage() {
+  clearLocalStorage(failedDatasets = []) {
     if (typeof window === 'undefined') return;
 
-    const keys = [
-      'reading-progress',
-      'reading-history',
-      'highlights',
-      'ai-conversation',
-      'saved-quote-ids',
-      'daily-missions-completed',
-      'user-xp',
-      'user-streak',
-      'user-settings',
-    ];
+    const keyDatasets = {
+      'reading-progress': 'readingProgress',
+      'reading-history': 'readingHistory',
+      highlights: 'highlights',
+      'ai-conversation': 'aiConversations',
+      'saved-quote-ids': 'savedQuotes',
+      'daily-missions-completed': 'dailyMissions',
+      'user-xp': 'xp',
+      'user-streak': 'streak',
+      'user-settings': 'settings',
+    };
 
-    keys.forEach(key => {
+    Object.entries(keyDatasets).forEach(([key, dataset]) => {
+      if (failedDatasets.includes(dataset)) return;
       try {
         localStorage.removeItem(key);
       } catch {
@@ -345,7 +348,7 @@ export class MigrationService {
       items.push(`${data.aiConversations.length} AI conversations`);
     }
     if (data.savedQuotes && data.savedQuotes.length > 0) {
-      items.push(`${data.savedQuotes.length} saved quotes`);
+      items.push(`${data.savedQuotes.length} saved quote IDs (quote content is not present for import)`);
     }
     if (data.dailyMissions) {
       items.push('daily missions');

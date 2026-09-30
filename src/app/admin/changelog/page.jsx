@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { Calendar, Plus, Edit, Trash2, Tag, AlertCircle } from 'lucide-react';
+import { Calendar, Plus, Edit, Trash2, Tag, AlertCircle, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { AdminPageError, AdminPageLoading } from '@/components/admin/AdminPageStatus';
 
@@ -23,6 +23,15 @@ export default function AdminChangelog() {
   useEffect(() => {
     loadChangelog();
   }, []);
+
+  useEffect(() => {
+    if (!isFormOpen) return;
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setIsFormOpen(false);
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [isFormOpen]);
 
   async function loadChangelog() {
     try {
@@ -242,25 +251,27 @@ export default function AdminChangelog() {
 
       {isFormOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-surface border border-white/10 rounded-2xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
+          <div role="dialog" aria-modal="true" aria-labelledby="changelog-entry-title" className="bg-surface border border-white/10 rounded-2xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-white">
+              <h2 id="changelog-entry-title" className="text-xl font-bold text-white">
                 {editingEntry ? 'Edit Entry' : 'New Changelog Entry'}
               </h2>
               <button
                 onClick={() => setIsFormOpen(false)}
                 className="text-slate-400 hover:text-white"
+                aria-label="Close changelog form"
               >
-                <Trash2 size={20} />
+                <X size={20} />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label htmlFor="changelog-version" className="block text-sm font-medium text-slate-300 mb-2">
                   Version (e.g., 1.0.0)
                 </label>
                 <input
+                  id="changelog-version"
                   type="text"
                   value={formData.version}
                   onChange={(e) => setFormData({ ...formData, version: e.target.value })}
@@ -271,10 +282,11 @@ export default function AdminChangelog() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label htmlFor="changelog-title" className="block text-sm font-medium text-slate-300 mb-2">
                   Title
                 </label>
                 <input
+                  id="changelog-title"
                   type="text"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -285,10 +297,11 @@ export default function AdminChangelog() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label htmlFor="changelog-description" className="block text-sm font-medium text-slate-300 mb-2">
                   Description
                 </label>
                 <textarea
+                  id="changelog-description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
@@ -298,10 +311,11 @@ export default function AdminChangelog() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label htmlFor="changelog-features" className="block text-sm font-medium text-slate-300 mb-2">
                   Features (one per line)
                 </label>
                 <textarea
+                  id="changelog-features"
                   value={formData.features}
                   onChange={(e) => setFormData({ ...formData, features: e.target.value })}
                   rows={4}
@@ -311,10 +325,11 @@ export default function AdminChangelog() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label htmlFor="changelog-fixes" className="block text-sm font-medium text-slate-300 mb-2">
                   Fixes (one per line)
                 </label>
                 <textarea
+                  id="changelog-fixes"
                   value={formData.fixes}
                   onChange={(e) => setFormData({ ...formData, fixes: e.target.value })}
                   rows={4}
@@ -324,10 +339,11 @@ export default function AdminChangelog() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label htmlFor="changelog-breaking-changes" className="block text-sm font-medium text-slate-300 mb-2">
                   Breaking Changes (one per line)
                 </label>
                 <textarea
+                  id="changelog-breaking-changes"
                   value={formData.breaking_changes}
                   onChange={(e) => setFormData({ ...formData, breaking_changes: e.target.value })}
                   rows={3}

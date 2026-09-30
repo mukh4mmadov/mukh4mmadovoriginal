@@ -15,6 +15,7 @@ export default function AdminSupportChat() {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [sendError, setSendError] = useState("");
   const [searchQuery, setSearchQuery] = useState('');
   const messagesEndRef = useRef(null);
   const subscriptionRef = useRef(null);
@@ -107,24 +108,29 @@ export default function AdminSupportChat() {
     if (!inputValue.trim() || isLoading || !selectedUserId) return;
 
     const message = inputValue.trim();
-    setInputValue('');
     setIsLoading(true);
+    setSendError("");
 
     try {
       await supportRepository.sendSupportMessage(selectedUserId, message, true, user.id);
-      
-      await notificationsRepository.createNotification(
-        selectedUserId,
-        'support_reply',
-        'New support reply',
-        'You have a new message from the support team',
-        '/support'
-      );
-      
+      setInputValue("");
+      try {
+        await notificationsRepository.createNotification(
+          selectedUserId,
+          'support_reply',
+          'New support reply',
+          'You have a new message from the support team',
+          '/support'
+        );
+      } catch (error) {
+        console.error('Reply sent, but notification creation failed:', error);
+        setSendError("Reply sent. The notification could not be created, but the message is saved in the conversation.");
+      }
       await loadMessages(selectedUserId);
       await loadChatList();
     } catch (error) {
       console.error('Error sending message:', error);
+      setSendError("The reply was not sent. Your draft is still in the box so you can retry.");
     } finally {
       setIsLoading(false);
     }
@@ -145,7 +151,7 @@ export default function AdminSupportChat() {
     <>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-40 bg-brand-500 hover:bg-brand-600 text-white p-3 rounded-full shadow-lg transition-all hover:scale-110"
+        className="fixed bottom-6 right-20 z-40 bg-brand-500 hover:bg-brand-600 text-white p-3 rounded-full shadow-lg transition-all hover:scale-110"
         aria-label="Open admin support chat"
         title="Admin Support Chat"
       >
@@ -158,12 +164,15 @@ export default function AdminSupportChat() {
       </button>
 
       {isOpen && (
-        <div className="fixed bottom-24 right-6 z-50 w-[600px] h-[600px] bg-surface border border-white/10 rounded-2xl shadow-2xl flex">
-          <div className="flex items-center justify-between p-4 border-b border-white/10">
-            <h3 className="font-semibold text-white flex items-center gap-2">
-              <Users size={20} />
-              Support Messages
-            </h3>
+        <div className="fixed inset-0 z-50 flex h-[100dvh] w-full flex-col overflow-hidden bg-surface shadow-2xl md:inset-x-auto md:bottom-24 md:right-6 md:h-[min(600px,calc(100dvh-8rem))] md:w-[min(600px,calc(100vw-3rem))] md:rounded-2xl md:border md:border-white/10">
+          <div className="flex shrink-0 items-center justify-between p-4 border-b border-white/10">
+            <div>
+              <h3 className="font-semibold text-white flex items-center gap-2">
+                <Users size={20} />
+                Support Messages
+              </h3>
+              <p className="mt-1 text-xs text-slate-400">Response target: within one business day</p>
+            </div>
             <button
               onClick={() => setIsOpen(false)}
               className="text-slate-400 hover:text-white transition-colors"
@@ -174,7 +183,7 @@ export default function AdminSupportChat() {
           </div>
 
           <div className="flex flex-1 overflow-hidden">
-            <div className="w-64 border-r border-white/10 flex flex-col">
+            <div className="w-[35%] shrink-0 border-r border-white/10 flex flex-col md:w-64">
               <div className="p-3 border-b border-white/10">
                 <div className="relative">
                   <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -268,12 +277,14 @@ export default function AdminSupportChat() {
                   </div>
 
                   <form onSubmit={handleSendMessage} className="p-4 border-t border-white/10">
+                    {sendError && <p role="alert" className="mb-2 text-xs text-amber-200">{sendError}</p>}
                     <div className="flex gap-2">
                       <input
                         type="text"
                         value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
+                        onChange={(e) => { setInputValue(e.target.value); setSendError(""); }}
                         placeholder="Type your reply..."
+                        aria-label="Type your support reply"
                         className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
                         disabled={isLoading}
                       />

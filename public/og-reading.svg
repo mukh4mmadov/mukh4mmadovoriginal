@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title description">
+  <title id="title">IELTS Reading Practice</title>
+  <desc id="description">Timed IELTS Reading passages, practice questions, and progress tracking.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#020617" />
+      <stop offset="1" stop-color="#172554" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#38bdf8" />
+      <stop offset="1" stop-color="#818cf8" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" rx="32" fill="url(#background)" />
+  <circle cx="1030" cy="100" r="240" fill="#2563eb" opacity=".15" />
+  <rect x="96" y="112" width="82" height="8" rx="4" fill="url(#accent)" />
+  <text x="96" y="245" fill="#f8fafc" font-family="Arial, sans-serif" font-size="72" font-weight="700">IELTS Reading</text>
+  <text x="96" y="335" fill="#f8fafc" font-family="Arial, sans-serif" font-size="72" font-weight="700">Practice</text>
+  <text x="100" y="410" fill="#cbd5e1" font-family="Arial, sans-serif" font-size="30">Timed passages · exam-style questions · clear progress</text>
+  <text x="100" y="530" fill="#7dd3fc" font-family="Arial, sans-serif" font-size="24" font-weight="700">MUHAMMADOV IELTS READING</text>
+</svg>

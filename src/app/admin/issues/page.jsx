@@ -144,7 +144,7 @@ export default function IssueTracker() {
     <div>
       <h1 className="text-3xl font-bold text-white mb-8">Issue Tracker</h1>
 
-      <div className="flex gap-2 mb-6 border-b border-white/10">
+      <div className="flex flex-wrap gap-2 mb-6 border-b border-white/10">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           return (

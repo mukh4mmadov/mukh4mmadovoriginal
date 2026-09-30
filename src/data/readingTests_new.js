@@ -3456,18 +3456,34 @@ const passages = [
   },
 ];
 
-const readingTests = passages.map((passage, index) => {
+const readingTests = passages.map((passage) => {
+  const questions = passage.questionGroups.flatMap((group) => group.questions);
+  const formats = new Set(questions.map((question) => question.type));
+  const hasMultipleComplexFormats = formats.has("matching-headings") &&
+    (formats.has("sentence-completion") || formats.has("multiple-choice"));
   let difficulty = "medium";
-  if (index % 3 === 0) difficulty = "easy";
-  else if (index % 3 === 1) difficulty = "medium";
-  else difficulty = "hard";
-  
+  let difficultyRationale = "Standard passage length and question-format mix.";
+
+  if (passage.wordCount < 800 && formats.size <= 3) {
+    difficulty = "easy";
+    difficultyRationale = "Shorter passage with a smaller mix of question formats.";
+  } else if (passage.wordCount >= 950 || (passage.wordCount >= 850 && hasMultipleComplexFormats)) {
+    difficulty = "hard";
+    difficultyRationale = "Longer passage or a wider mix of question formats.";
+  }
+
   return {
     slug: passage.slug,
     title: passage.title,
     subtitle: passage.subtitle || "Academic Reading Practice",
-    passages: [passage],
+    passages: [{
+      ...passage,
+      difficulty,
+      difficultyRationale,
+      provenanceLabel: "Practice content · not identified as official IELTS material",
+    }],
     difficulty,
+    difficultyRationale,
   };
 });
 

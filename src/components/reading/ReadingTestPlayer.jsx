@@ -45,6 +45,7 @@ export default function ReadingTestPlayer({ passage }) {
   const [submitMessage, setSubmitMessage] = useState("");
   const [answerErrors, setAnswerErrors] = useState({});
   const [draftRestored, setDraftRestored] = useState(false);
+  const [draftSaveStatus, setDraftSaveStatus] = useState("");
   const [fontSize, setFontSize] = useState("medium");
   const [panelWidth, setPanelWidth] = useState(65);
   const [isResizing, setIsResizing] = useState(false);
@@ -216,7 +217,10 @@ export default function ReadingTestPlayer({ passage }) {
         `ielts-reading-${passage.slug}`,
         JSON.stringify(saveData),
       );
-    } catch (e) {}
+      setDraftSaveStatus("Draft saved on this device · Not submitted");
+    } catch (e) {
+      setDraftSaveStatus("Draft could not be saved on this device");
+    }
   }, [answers, timeSpent, timerRunning, submitted, passage.slug, draftRestored]);
 
   const answeredCount = Object.keys(answers).filter((id) => answers[id]).length;
@@ -481,6 +485,8 @@ export default function ReadingTestPlayer({ passage }) {
             <h1 className="truncate font-display text-base font-semibold sm:text-xl md:text-2xl">
               {passage.title}
             </h1>
+            <p className="mt-1 text-[10px] text-slate-400 sm:text-xs">{passage.provenanceLabel}</p>
+            {draftRestored && draftSaveStatus && <p role="status" className="mt-1 text-[10px] text-slate-500 sm:text-xs">{draftSaveStatus}</p>}
           </div>
           <div className="flex w-full flex-wrap items-center justify-between gap-1 sm:w-auto sm:flex-shrink-0 sm:justify-end sm:gap-2 md:gap-3">
             <div className="hidden sm:flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-1">

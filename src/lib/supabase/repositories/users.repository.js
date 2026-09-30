@@ -15,7 +15,7 @@ export const usersRepository = {
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
-      .eq('user_id', userId)
+      .eq('id', userId)
       .single();
 
     if (profileError) throw profileError;
@@ -92,7 +92,7 @@ export const usersRepository = {
     const { error } = await supabase
       .from('profiles')
       .delete()
-      .eq('user_id', userId);
+      .eq('id', userId);
 
     if (error) throw error;
   },

@@ -48,6 +48,10 @@ export default function AdminUsers() {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-white">Users</h1>
       </div>
+      <p className="-mt-6 mb-6 text-sm text-slate-400">
+        This list uses activity summary records and may not include every account. The dashboard total counts all profiles.
+        Showing {filteredUsers.length} matching {filteredUsers.length === 1 ? 'record' : 'records'}.
+      </p>
 
       <div className="mb-6">
         <div className="relative">

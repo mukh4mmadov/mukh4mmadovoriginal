@@ -10,6 +10,7 @@ export default function MigrationPrompt() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMigrating, setIsMigrating] = useState(false);
   const [migrationSummary, setMigrationSummary] = useState('');
+  const [migrationMessage, setMigrationMessage] = useState('');
   const [isDismissed, setIsDismissed] = useState(false);
 
   if (!user || !hasLocalStorageData || isDismissed) {
@@ -26,10 +27,15 @@ export default function MigrationPrompt() {
     setIsMigrating(true);
     try {
       const data = migrationService.extractLocalStorageData();
-      await migrateLocalStorage();
-      setIsOpen(false);
+      const result = await migrateLocalStorage();
+      if (result?.success) {
+        setIsOpen(false);
+      } else {
+        setMigrationMessage(`Imported supported data. Kept local data for: ${(result?.failedDatasets || []).join(', ') || 'items that could not be imported'}.`);
+      }
     } catch (error) {
       console.error('Migration failed:', error);
+      setMigrationMessage('Import failed. Your local data was kept. Check your connection and try again.');
     } finally {
       setIsMigrating(false);
     }
@@ -56,10 +62,11 @@ export default function MigrationPrompt() {
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-surface border border-white/10 rounded-2xl w-full max-w-md p-6 relative">
+      <div role="dialog" aria-modal="true" aria-labelledby="migration-title" className="bg-surface border border-white/10 rounded-2xl w-full max-w-md p-6 relative">
         <button
           onClick={handleDismiss}
           className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 transition-colors"
+          aria-label="Close data import"
         >
           <X size={20} />
         </button>
@@ -70,10 +77,12 @@ export default function MigrationPrompt() {
               <AlertTriangle className="text-brand-400" size={24} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-slate-200">Import Local Data</h2>
+              <h2 id="migration-title" className="text-xl font-bold text-slate-200">Import Local Data</h2>
               <p className="text-slate-400 text-sm">Sync your existing progress to the cloud</p>
             </div>
           </div>
+
+          {migrationMessage && <p role="status" className="mb-4 rounded-lg border border-amber-400/20 bg-amber-400/5 p-3 text-sm text-amber-100">{migrationMessage}</p>}
 
           <div className="bg-white/5 border border-white/10 rounded-lg p-4 mb-4">
             <p className="text-slate-300 text-sm mb-2">

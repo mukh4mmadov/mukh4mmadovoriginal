@@ -140,11 +140,11 @@ export default function RoadmapPage() {
   };
 
   function getPublicRoadmapCopy(item) {
-    if (item.title?.trim().toLowerCase() === "speaking") {
+    if (item.title?.trim().toLowerCase().includes("speaking")) {
       return {
-        title: "Guided Speaking Practice",
+        title: "Deferred: speaking practice expansion",
         description:
-          "Explore guided voice or video conversations for English speaking practice. Scope, privacy details, and availability will be shared before release.",
+          "This is deferred until the focused reading practice loop, mistake review, and support reliability are proven with learners.",
       };
     }
 

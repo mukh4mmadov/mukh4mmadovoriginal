@@ -9,3 +9,5 @@ export { feedbackRepository } from './feedback.repository';
 export { supportRepository } from './support.repository';
 export { notificationsRepository } from './notifications.repository';
 export { usersRepository } from './users.repository';
+export { aiConversationsRepository } from './ai-conversations.repository';
+export { dailyMissionsRepository } from './daily-missions.repository';

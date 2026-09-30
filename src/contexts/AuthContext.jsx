@@ -164,12 +164,15 @@ export function AuthProvider({ children }) {
     const result = await migrationService.migrateToSupabase(user.id, data);
 
     if (result.success) {
-      migrationService.clearLocalStorage();
+      migrationService.clearLocalStorage(result.failedDatasets);
       setHasLocalStorageData(false);
     } else {
+      migrationService.clearLocalStorage(result.failedDatasets);
+      setHasLocalStorageData(migrationService.hasLocalStorageData());
       console.error('Migration completed with failures. Local data retained:',
         result.failedDatasets.join(', '), result.errors);
     }
+    return result;
   };
 
   const value = {

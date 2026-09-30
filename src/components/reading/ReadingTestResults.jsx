@@ -16,6 +16,7 @@ import {
   Eye,
   History,
   Bot,
+  Share2,
 } from "lucide-react";
 import AIChatPanel from "@/components/ai/AIChatPanel";
 import DailyInspiration from "@/components/shared/DailyInspiration";
@@ -59,6 +60,7 @@ export default function ReadingTestResults({
   const [reviewQueueCount, setReviewQueueCount] = useState(0);
   const [reviewQueueMessage, setReviewQueueMessage] = useState("");
   const [missedQuestionsSaved, setMissedQuestionsSaved] = useState(false);
+  const [shareMessage, setShareMessage] = useState("");
 
   const correctCount = questions.filter((q) =>
     isAnswerCorrect(q, answers[q.id]),
@@ -236,6 +238,46 @@ export default function ReadingTestResults({
     setReviewQueueCount(queue.length);
     setMissedQuestionsSaved(true);
     setReviewQueueMessage(`${missedCount} missed or skipped question${missedCount === 1 ? "" : "s"} saved to your review queue.`);
+  };
+
+  const shareResult = async () => {
+    const report = [
+      "My IELTS Reading practice result",
+      `Passage: ${passage.title}`,
+      `Date: ${new Date().toLocaleDateString()}`,
+      `Estimated band: ${band.toFixed(1)} (practice estimate, not an official score)`,
+      `Score: ${correctCount}/${questions.length} correct`,
+      `Time: ${formatTime(timeSpent)}`,
+      `Review status: ${missedCount === 0 ? "No missed questions" : `${missedCount} missed or skipped question${missedCount === 1 ? "" : "s"}; ${missedQuestionsSaved ? "saved to review queue" : "not yet saved to review queue"}`}`,
+    ].join("\n");
+
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "My IELTS Reading practice result", text: report });
+        setShareMessage("Your result was shared.");
+        return;
+      }
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(report);
+        setShareMessage("Result copied. You can paste it into a message.");
+        return;
+      }
+    } catch (error) {
+      if (error.name === "AbortError") return;
+    }
+
+    try {
+      const file = new Blob([report], { type: "text/plain;charset=utf-8" });
+      const fileUrl = URL.createObjectURL(file);
+      const link = document.createElement("a");
+      link.href = fileUrl;
+      link.download = `reading-result-${passage.slug}.txt`;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(fileUrl), 1000);
+      setShareMessage("Result downloaded as a text file.");
+    } catch {
+      setShareMessage("Could not share or download this result. Please try again.");
+    }
   };
 
   return (
@@ -507,6 +549,10 @@ export default function ReadingTestResults({
             Open review queue ({reviewQueueCount})
           </Link>
         )}
+        <button type="button" onClick={shareResult} className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/10">
+          <Share2 size={15} aria-hidden="true" /> Share this result
+        </button>
+        {shareMessage && <p className="w-full text-sm text-slate-300" role="status">{shareMessage}</p>}
         {reviewQueueMessage && <p className="w-full text-sm text-slate-300" role="status">{reviewQueueMessage}</p>}
       </div>
 
