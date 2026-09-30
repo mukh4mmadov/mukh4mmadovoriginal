@@ -42,27 +42,22 @@ export default function AdminLayout({ children }) {
   }, [isSidebarOpen]);
 
   useEffect(() => {
-    const updateConnectionStatus = () => setIsOffline(!navigator.onLine);
-    updateConnectionStatus();
-    window.addEventListener('online', updateConnectionStatus);
-    window.addEventListener('offline', updateConnectionStatus);
+    const handleOffline = () => setIsOffline(true);
+    const handleOnline = () => {
+      setIsOffline(false);
+      setAdminCheckError('');
+      setIsAdminUser(null);
+      setAdminCheckAttempt((attempt) => attempt + 1);
+    };
+
+    setIsOffline(!navigator.onLine);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
     return () => {
-      window.removeEventListener('online', updateConnectionStatus);
-      window.removeEventListener('offline', updateConnectionStatus);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
   }, []);
-
-  useEffect(() => {
-    const handleEscape = (event) => {
-      if (event.key === 'Escape' && isSidebarOpen) {
-        setIsSidebarOpen(false);
-      }
-    };
-    if (isSidebarOpen) {
-      window.addEventListener('keydown', handleEscape);
-      return () => window.removeEventListener('keydown', handleEscape);
-    }
-  }, [isSidebarOpen]);
 
   useEffect(() => {
     let isActive = true;
@@ -116,7 +111,14 @@ export default function AdminLayout({ children }) {
           <p className="mt-2 text-sm">Reconnect to verify administrator access and load current admin data.</p>
           <button
             type="button"
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              setIsOffline(!navigator.onLine);
+              if (navigator.onLine) {
+                setAdminCheckError('');
+                setIsAdminUser(null);
+                setAdminCheckAttempt((attempt) => attempt + 1);
+              }
+            }}
             className="mt-4 min-h-11 rounded-lg border border-amber-200/30 px-4 text-sm font-semibold hover:bg-amber-200/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
           >
             Retry connection
@@ -256,7 +258,14 @@ export default function AdminLayout({ children }) {
               <p className="text-sm">You are offline. Admin data and changes require an internet connection; nothing can be saved until you reconnect.</p>
               <button
                 type="button"
-                onClick={() => window.location.reload()}
+                onClick={() => {
+                  setIsOffline(!navigator.onLine);
+                  if (navigator.onLine) {
+                    setAdminCheckError('');
+                    setIsAdminUser(null);
+                    setAdminCheckAttempt((attempt) => attempt + 1);
+                  }
+                }}
                 className="min-h-11 shrink-0 rounded-lg border border-amber-200/30 px-4 text-sm font-semibold hover:bg-amber-200/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
               >
                 Retry connection

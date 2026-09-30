@@ -362,15 +362,15 @@
   }
 }
 
-:where(button, a, input, select, textarea, [tabindex]):focus-visible {
-  outline-style: solid !important;
-  outline-width: 3px !important;
-  outline-color: #7dd3fc !important;
-  outline-offset: 3px !important;
-  box-shadow: 0 0 0 3px rgba(125, 211, 252, 0.3) !important;
-}
+@layer base {
+  :where(button, a, input, select, textarea, [tabindex], [role="button"], [role="link"]):focus-visible {
+    outline: 3px solid #7dd3fc !important;
+    outline-offset: 3px !important;
+    box-shadow: 0 0 0 3px rgba(125, 211, 252, 0.3) !important;
+  }
 
-html:not(.dark) :where(button, a, input, select, textarea, [tabindex]):focus-visible {
-  outline-color: #0369a1 !important;
-  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.3) !important;
+  html:not(.dark) :where(button, a, input, select, textarea, [tabindex], [role="button"], [role="link"]):focus-visible {
+    outline-color: #0369a1 !important;
+    box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.3) !important;
+  }
 }
