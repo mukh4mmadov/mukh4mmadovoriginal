@@ -42,7 +42,11 @@ CREATE POLICY "Admins can reply to support messages"
   ON public.support_messages FOR INSERT TO authenticated
   WITH CHECK (public.is_admin_user(auth.uid()) AND is_from_admin = TRUE AND admin_id = auth.uid());
 
-CREATE OR REPLACE FUNCTION public.mark_support_messages_read(p_user_id UUID)
+-- An earlier deployment may have created this function with a return value;
+-- PostgreSQL requires dropping it before changing its return type to VOID.
+DROP FUNCTION IF EXISTS public.mark_support_messages_read(UUID);
+
+CREATE FUNCTION public.mark_support_messages_read(p_user_id UUID)
 RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
