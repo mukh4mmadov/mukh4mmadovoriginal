@@ -12,8 +12,9 @@ export default function AdminChangelog() {
   const [loadError, setLoadError] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
+  const formTriggerRef = useRef(null);
   const versionInputRef = useRef(null);
-  const modalRef = useModalAccessibility(isFormOpen, () => setIsFormOpen(false), versionInputRef);
+  const modalRef = useModalAccessibility(isFormOpen, () => setIsFormOpen(false), versionInputRef, formTriggerRef);
   const [formData, setFormData] = useState({
     version: '',
     title: '',
@@ -97,7 +98,8 @@ export default function AdminChangelog() {
     }
   }
 
-  function openForm(entry) {
+  function openForm(entry, event) {
+    if (event?.currentTarget) formTriggerRef.current = event.currentTarget;
     if (entry) {
       setEditingEntry(entry);
       setFormData({
@@ -135,7 +137,7 @@ export default function AdminChangelog() {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-white">Changelog</h1>
         <button
-          onClick={() => openForm()}
+          onClick={(event) => openForm(null, event)}
           className="flex items-center gap-2 px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg transition-colors"
         >
           <Plus size={18} />
@@ -168,7 +170,7 @@ export default function AdminChangelog() {
                     </div>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => openForm(entry)}
+                        onClick={(event) => openForm(entry, event)}
                         className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                       >
                         <Edit size={16} className="text-slate-400" />

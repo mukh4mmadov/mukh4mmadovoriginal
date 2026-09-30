@@ -5,12 +5,12 @@ import { X, User, BookOpen, MessageSquare, Bot, Activity, Calendar, Clock, Targe
 import { usersRepository } from '@/lib/supabase/repositories/users.repository';
 import { useModalAccessibility } from '@/hooks/useModalAccessibility';
 
-export default function UserDetails({ userId, onClose }) {
+export default function UserDetails({ userId, onClose, returnFocusRef }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [userData, setUserData] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
-  const modalRef = useModalAccessibility(true, onClose);
+  const modalRef = useModalAccessibility(true, onClose, null, returnFocusRef);
 
   useEffect(() => {
     loadUserData();

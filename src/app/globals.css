@@ -363,7 +363,9 @@
 }
 
 :where(button, a, input, select, textarea, [tabindex]):focus-visible {
-  outline: 3px solid #7dd3fc !important;
+  outline-style: solid !important;
+  outline-width: 3px !important;
+  outline-color: #7dd3fc !important;
   outline-offset: 3px !important;
   box-shadow: 0 0 0 3px rgba(125, 211, 252, 0.3) !important;
 }

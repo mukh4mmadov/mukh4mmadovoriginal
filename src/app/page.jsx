@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import {
   BookOpen,
@@ -34,6 +34,7 @@ export default function Home() {
     accuracy: null,
   });
   const [isContactFormOpen, setIsContactFormOpen] = useState(false);
+  const contactTriggerRef = useRef(null);
 
   useEffect(() => {
     let isActive = true;
@@ -251,7 +252,7 @@ export default function Home() {
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <button
-              onClick={() => setIsContactFormOpen(true)}
+              onClick={(event) => { contactTriggerRef.current = event.currentTarget; setIsContactFormOpen(true); }}
               className="group flex items-center gap-3 rounded-full border border-brand-500/30 bg-brand-500/10 px-6 py-3 transition-all hover:border-brand-500 hover:bg-brand-500/20"
             >
               <Mail
@@ -270,6 +271,7 @@ export default function Home() {
       <ContactForm
         isOpen={isContactFormOpen}
         onClose={() => setIsContactFormOpen(false)}
+        returnFocusRef={contactTriggerRef}
       />
     </>
   );

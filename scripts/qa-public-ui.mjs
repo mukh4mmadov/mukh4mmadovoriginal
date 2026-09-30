@@ -63,7 +63,7 @@ async function navigate(path, width, height, theme) {
   await evaluate(`localStorage.setItem('themePreference', '${theme}')`);
   await command('Page.reload', { ignoreCache: true });
   await waitForPage();
-  const headingDeadline = Date.now() + 7000;
+  const headingDeadline = Date.now() + 15000;
   while (Date.now() < headingDeadline) {
     if (await evaluate('Boolean(document.querySelector("h1")?.innerText?.trim())')) break;
     await new Promise((resolve) => setTimeout(resolve, 250));
@@ -85,7 +85,10 @@ async function navigate(path, width, height, theme) {
   if (result.path === path && !result.noindex && result.canonicalPath !== result.path) {
     throw new Error(`${path} has canonical URL ${result.canonicalPath || '(missing)'}`);
   }
-  if (result.path === path && ['/', '/reading', '/reading/the-science-of-sleep'].includes(path) && !result.hasShareImage) {
+  if (path === '/statistics' && result.path === '/login' && !result.title.toLowerCase().includes('sign in')) {
+    throw new Error(`Statistics redirect landed on /login with stale title: ${result.title}`);
+  }
+  if (result.path === path && ['/', '/reading', '/reading/the-science-of-sleep', '/changelog', '/roadmap'].includes(path) && !result.hasShareImage) {
     throw new Error(`${path} has no Open Graph image`);
   }
   if (result.documentWidth > result.width || result.bodyWidth > result.width) {

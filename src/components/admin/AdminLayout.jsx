@@ -108,6 +108,24 @@ export default function AdminLayout({ children }) {
     };
   }, [authLoading, user, router, adminCheckAttempt]);
 
+  if (isOffline) {
+    return (
+      <div className="min-h-screen bg-surface p-4 pt-16">
+        <div className="mx-auto max-w-xl rounded-xl border border-amber-300/30 bg-amber-300/10 p-6 text-center text-amber-100">
+          <h1 className="text-lg font-semibold">Admin is unavailable offline</h1>
+          <p className="mt-2 text-sm">Reconnect to verify administrator access and load current admin data.</p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-4 min-h-11 rounded-lg border border-amber-200/30 px-4 text-sm font-semibold hover:bg-amber-200/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
+          >
+            Retry connection
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (adminCheckError) {
     return (
       <div className="min-h-screen bg-surface p-4 pt-16">

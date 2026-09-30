@@ -15,8 +15,9 @@ export default function FeedbackManagement() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [selectedFeedback, setSelectedFeedback] = useState(null);
+  const detailsTriggerRef = useRef(null);
   const closeDetailsRef = useRef(null);
-  const detailsModalRef = useModalAccessibility(Boolean(selectedFeedback), () => setSelectedFeedback(null), closeDetailsRef);
+  const detailsModalRef = useModalAccessibility(Boolean(selectedFeedback), () => setSelectedFeedback(null), closeDetailsRef, detailsTriggerRef);
 
   useEffect(() => {
     loadFeedback();
@@ -231,7 +232,7 @@ export default function FeedbackManagement() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => setSelectedFeedback(item)}
+                        onClick={(event) => { detailsTriggerRef.current = event.currentTarget; setSelectedFeedback(item); }}
                         className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                         title="View details"
                       >

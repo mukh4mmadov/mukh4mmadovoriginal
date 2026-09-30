@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Users, Search, X } from 'lucide-react';
 import { usersRepository } from '@/lib/supabase/repositories/users.repository';
 import { AdminPageError, AdminPageLoading } from '@/components/admin/AdminPageStatus';
@@ -12,6 +12,7 @@ export default function AdminUsers() {
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUserId, setSelectedUserId] = useState(null);
+  const detailsTriggerRef = useRef(null);
 
   useEffect(() => {
     loadUsers();
@@ -111,7 +112,7 @@ export default function AdminUsers() {
                   </td>
                   <td className="p-4 text-center">
                     <button
-                      onClick={() => setSelectedUserId(user.user_id)}
+                      onClick={(event) => { detailsTriggerRef.current = event.currentTarget; setSelectedUserId(user.user_id); }}
                       className="px-3 py-1.5 bg-brand-500 hover:bg-brand-600 text-white text-sm rounded-lg transition-colors"
                     >
                       View Details
@@ -126,7 +127,7 @@ export default function AdminUsers() {
 
       {selectedUserId && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <UserDetails userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
+          <UserDetails userId={selectedUserId} onClose={() => setSelectedUserId(null)} returnFocusRef={detailsTriggerRef} />
         </div>
       )}
     </div>

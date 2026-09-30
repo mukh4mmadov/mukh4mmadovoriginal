@@ -24,17 +24,17 @@ export const usersRepository = {
       .from('admin_user_statistics')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
-    if (statsError && statsError.code !== 'PGRST116') throw statsError;
+    if (statsError) throw statsError;
 
     const { data: aiSummary, error: aiError } = await supabase
       .from('admin_user_ai_summary')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
-    if (aiError && aiError.code !== 'PGRST116') throw aiError;
+    if (aiError) throw aiError;
 
     return {
       profile,
@@ -94,11 +94,9 @@ export const usersRepository = {
   },
 
   async getUserSupportMessages(userId) {
-    const { data, error } = await supabase
-      .from('support_messages')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: true });
+    const { data, error } = await supabase.rpc('admin_get_user_support_messages', {
+      p_user_id: userId,
+    });
 
     if (error) throw error;
     return data || [];

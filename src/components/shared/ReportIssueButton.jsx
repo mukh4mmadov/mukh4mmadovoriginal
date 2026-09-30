@@ -36,7 +36,7 @@ export default function ReportIssueButton() {
   const [isLoading, setIsLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
-  const modalRef = useModalAccessibility(isOpen, () => setIsOpen(false), nameInputRef);
+  const modalRef = useModalAccessibility(isOpen, () => setIsOpen(false), nameInputRef, triggerRef);
 
   const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password';
 

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-export function useModalAccessibility(isOpen, onClose, initialFocusRef) {
+export function useModalAccessibility(isOpen, onClose, initialFocusRef, returnFocusRef) {
   const dialogRef = useRef(null);
   const closeRef = useRef(onClose);
 
@@ -71,11 +71,12 @@ export function useModalAccessibility(isOpen, onClose, initialFocusRef) {
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
-      if (previousFocus instanceof HTMLElement && previousFocus.isConnected) {
-        previousFocus.focus();
+      const focusTarget = returnFocusRef?.current || previousFocus;
+      if (focusTarget instanceof HTMLElement && focusTarget.isConnected) {
+        focusTarget.focus();
       }
     };
-  }, [isOpen, initialFocusRef]);
+  }, [isOpen, initialFocusRef, returnFocusRef]);
 
   return dialogRef;
 }

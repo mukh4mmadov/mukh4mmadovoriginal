@@ -18,10 +18,11 @@ export default function AdminSupportChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [sendError, setSendError] = useState("");
   const [searchQuery, setSearchQuery] = useState('');
+  const launcherRef = useRef(null);
   const searchRef = useRef(null);
   const messagesEndRef = useRef(null);
   const subscriptionRef = useRef(null);
-  const modalRef = useModalAccessibility(isOpen, () => setIsOpen(false), searchRef);
+  const modalRef = useModalAccessibility(isOpen, () => setIsOpen(false), searchRef, launcherRef);
 
   useEffect(() => {
     if (user?.id) {
@@ -153,6 +154,7 @@ export default function AdminSupportChat() {
   return (
     <>
       <button
+        ref={launcherRef}
         onClick={() => setIsOpen(!isOpen)}
         className="fixed bottom-6 right-20 z-40 bg-brand-500 hover:bg-brand-600 text-white p-3 rounded-full shadow-lg transition-all hover:scale-110"
         aria-label="Open admin support chat"

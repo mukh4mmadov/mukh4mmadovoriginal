@@ -24,14 +24,14 @@ export default function StatisticsPage() {
 
   useEffect(() => {
     if (!isLoading && !user) {
-      router.push(`/login?redirect=${encodeURIComponent('/statistics')}`);
+      router.replace(`/login?redirect=${encodeURIComponent('/statistics')}`);
     }
   }, [user, isLoading, router]);
 
   useEffect(() => {
     const handleError = (error) => {
       console.error('Statistics page error:', error);
-      router.push(`/login?redirect=${encodeURIComponent('/statistics')}`);
+      router.replace(`/login?redirect=${encodeURIComponent('/statistics')}`);
     };
 
     window.addEventListener('error', handleError);

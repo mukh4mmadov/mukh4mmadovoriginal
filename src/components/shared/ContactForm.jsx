@@ -7,9 +7,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import Toast from "./Toast";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 
-export default function ContactForm({ isOpen, onClose }) {
+export default function ContactForm({ isOpen, onClose, returnFocusRef }) {
   const nameInputRef = useRef(null);
-  const modalRef = useModalAccessibility(isOpen, onClose, nameInputRef);
+  const modalRef = useModalAccessibility(isOpen, onClose, nameInputRef, returnFocusRef);
   const { user, profile } = useAuth();
   const [formData, setFormData] = useState({
     name: profile?.full_name || "",
