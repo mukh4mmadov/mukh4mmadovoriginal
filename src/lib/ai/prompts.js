@@ -1,5 +1,3 @@
-import { AIConversationContext, AIPersonality } from "@/types/aiCoach";
-
 export function buildSystemPrompt(personality, context) {
   const baseDirectives = `You are an expert IELTS Reading Coach. Your goal is to teach students how to think like an IELTS examiner, not simply give answers.
 

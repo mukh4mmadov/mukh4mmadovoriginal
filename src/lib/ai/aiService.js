@@ -1,11 +1,3 @@
-import {
-  AIProviderConfig,
-  AIStreamResponse,
-  AIMessage,
-  AIConversationContext,
-  AIPersonality,
-} from "@/types/aiCoach";
-
 export class OpenAIProvider {
   constructor(config) {
     this.config = config;
