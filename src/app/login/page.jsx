@@ -53,7 +53,14 @@ export default function LoginPage() {
   }, [user, authLoading, router]);
 
   if (authLoading) {
-    return null;
+    return (
+      <main className="flex min-h-screen items-center justify-center p-6" role="status" aria-live="polite">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-white">Sign in</h1>
+          <p className="mt-2 text-sm text-slate-300">Checking your session…</p>
+        </div>
+      </main>
+    );
   }
 
   if (user) {

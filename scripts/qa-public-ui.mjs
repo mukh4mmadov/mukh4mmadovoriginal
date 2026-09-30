@@ -71,6 +71,7 @@ async function navigate(path, width, height, theme) {
   const result = await evaluate(`({
     title: document.title,
     heading: document.querySelector('h1')?.innerText || '',
+    bodyPreview: document.body?.innerText?.slice(0, 180) || '',
     path: location.pathname,
     theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light',
     width: innerWidth,
@@ -80,7 +81,7 @@ async function navigate(path, width, height, theme) {
     hasShareImage: Boolean(document.querySelector('meta[property="og:image"]')),
     noindex: document.querySelector('meta[name="robots"]')?.content?.includes('noindex') || false,
   })`);
-  if (!result.heading.trim()) throw new Error(`${path} never rendered a page heading`);
+  if (!result.heading.trim()) throw new Error(`${path} never rendered a page heading; final route=${result.path}; title=${result.title}; body=${result.bodyPreview}; browser errors=${browserErrors.join(' | ') || 'none captured'}`);
   if (result.theme !== theme) throw new Error(`${path} did not apply ${theme} theme`);
   if (result.path === path && !result.noindex && result.canonicalPath !== result.path) {
     throw new Error(`${path} has canonical URL ${result.canonicalPath || '(missing)'}`);
@@ -115,7 +116,12 @@ try {
   socket.addEventListener('message', (event) => {
     const message = JSON.parse(String(event.data));
     if (message.method === 'Runtime.exceptionThrown') {
-      browserErrors.push(message.params.exceptionDetails?.text || 'Browser runtime exception');
+      const details = message.params.exceptionDetails;
+      browserErrors.push([
+        details?.text || 'Browser runtime exception',
+        details?.exception?.description || '',
+        details?.url ? `${details.url}:${details.lineNumber}` : '',
+      ].filter(Boolean).join(' '));
     }
     const current = pending.get(message.id);
     if (!current) return;

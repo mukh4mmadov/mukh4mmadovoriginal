@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { BarChart3, ArrowLeft, BookOpen, CalendarDays, Clock, Share2, Target, TrendingUp } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAllProgress } from '@/lib/progressTracker';
@@ -10,7 +9,6 @@ import { supabase } from '@/lib/supabase/client';
 import { getReviewedQuestionCount } from '@/lib/reading/answer-review';
 
 export default function StatisticsPage() {
-  const router = useRouter();
   const { user, isLoading } = useAuth();
   const userId = user?.id;
   const [stats, setStats] = useState(null);
@@ -24,19 +22,9 @@ export default function StatisticsPage() {
 
   useEffect(() => {
     if (!isLoading && !user) {
-      router.replace(`/login?redirect=${encodeURIComponent('/statistics')}`);
+      window.location.replace(`/login?redirect=${encodeURIComponent('/statistics')}`);
     }
-  }, [user, isLoading, router]);
-
-  useEffect(() => {
-    const handleError = (error) => {
-      console.error('Statistics page error:', error);
-      router.replace(`/login?redirect=${encodeURIComponent('/statistics')}`);
-    };
-
-    window.addEventListener('error', handleError);
-    return () => window.removeEventListener('error', handleError);
-  }, [router]);
+  }, [user, isLoading]);
 
   useEffect(() => {
     if (userId) {
@@ -145,6 +133,14 @@ export default function StatisticsPage() {
       active = false;
     };
   }, [userId]);
+
+  if (!isLoading && !user) {
+    return (
+      <main className="flex min-h-screen items-center justify-center p-6" role="status" aria-live="polite">
+        <p className="text-sm text-slate-300">Taking you to sign in…</p>
+      </main>
+    );
+  }
 
   const saveGoal = async (event) => {
     event.preventDefault();
