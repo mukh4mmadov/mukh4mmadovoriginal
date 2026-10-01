@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ticketsRepository } from "@/lib/supabase/repositories/tickets.repository";
+import { ticketNeedsReply } from "@/lib/support/tickets";
 
 const statuses = ["new", "in_progress", "waiting_on_learner", "resolved"];
 const categories = ["bug", "feature", "incorrect_answer", "general", "support"];
@@ -91,8 +92,7 @@ export default function AdminSupportInbox() {
     {loading ? <p className="text-slate-400">Loading tickets…</p> : <div className="grid min-h-[65vh] gap-4 lg:grid-cols-[minmax(16rem,0.8fr)_minmax(0,1.8fr)]">
       <aside className="max-h-[75vh] space-y-2 overflow-y-auto rounded-xl border border-white/10 p-2" aria-label="Support tickets">
         {filteredTickets.map((ticket) => {
-          const thread = [...(ticket.messages || [])].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-          const needsReply = thread.at(-1)?.sender_type === "learner";
+          const needsReply = ticketNeedsReply(ticket);
           return <button type="button" key={ticket.id} onClick={() => selectTicket(ticket.id)} className={`w-full rounded-lg border p-3 text-left ${selectedId === ticket.id ? "border-brand-400/50 bg-brand-500/10" : "border-transparent hover:bg-white/5"}`}>
             <div className="flex items-start justify-between gap-2"><span className="truncate font-semibold text-white">{ticket.subject}</span>{needsReply && <span className="shrink-0 rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-semibold text-amber-200">Needs reply</span>}</div>
             <p className="mt-1 truncate text-xs text-slate-400">{ticket.owner?.full_name || ticket.owner?.username || ticket.owner?.email || ticket.contact_email} · {readable(ticket.category)}</p><div className="mt-2 flex justify-between text-xs text-slate-500"><span>{readable(ticket.status)}</span><time>{new Date(ticket.updated_at).toLocaleString()}</time></div>
