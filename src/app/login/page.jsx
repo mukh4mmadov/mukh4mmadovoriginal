@@ -16,7 +16,10 @@ export default function LoginPage() {
   const [toast, setToast] = useState(null);
   const redirect = typeof window === "undefined"
     ? null
-    : getSafeRedirectPath(new URLSearchParams(window.location.search).get("redirect"));
+    : (() => {
+        const params = new URLSearchParams(window.location.search);
+        return getSafeRedirectPath(params.get("redirect") || params.get("next"));
+      })();
 
   const showToast = (message, type) => {
     setToast({ message, type });
@@ -43,7 +46,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (user && !authLoading) {
       const urlParams = new URLSearchParams(window.location.search);
-      const redirect = getSafeRedirectPath(urlParams.get("redirect"));
+      const redirect = getSafeRedirectPath(urlParams.get("redirect") || urlParams.get("next"));
       if (redirect) {
         router.replace(redirect);
       } else {

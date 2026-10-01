@@ -404,11 +404,11 @@ function UserFeedbackHistory({ userId }) {
       {feedback.map((item) => (
         <div key={item.id} className="bg-white/5 rounded-lg p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-brand-400">{item.message_type}</span>
+            <span className="text-sm font-medium text-brand-400">{item.category}</span>
             <span className="text-xs text-slate-500">{new Date(item.created_at).toLocaleString()}</span>
           </div>
           <p className="text-sm text-white font-medium mb-1">{item.subject}</p>
-          <p className="text-sm text-slate-400">{item.message}</p>
+          <p className="text-sm text-slate-400">{item.messages?.[0]?.body}</p>
           {item.status && (
             <span className="inline-block mt-2 text-xs px-2 py-1 rounded-full bg-white/10 text-slate-300">
               {item.status}
@@ -459,14 +459,14 @@ function UserSupportMessages({ userId }) {
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-white">Support Messages</h3>
       {messages.map((msg) => (
-        <div key={msg.id} className={`bg-white/5 rounded-lg p-4 ${msg.is_from_admin ? 'border-l-4 border-brand-500' : ''}`}>
+        <div key={msg.id} className={`bg-white/5 rounded-lg p-4 ${msg.sender_type === 'admin' ? 'border-l-4 border-brand-500' : ''}`}>
           <div className="flex items-center justify-between mb-2">
-            <span className={`text-sm font-medium ${msg.is_from_admin ? 'text-brand-400' : 'text-slate-400'}`}>
-              {msg.is_from_admin ? 'Admin' : 'User'}
+            <span className={`text-sm font-medium ${msg.sender_type === 'admin' ? 'text-brand-400' : 'text-slate-400'}`}>
+              {msg.sender_type === 'admin' ? 'Support team' : 'User'}
             </span>
             <span className="text-xs text-slate-500">{new Date(msg.created_at).toLocaleString()}</span>
           </div>
-          <p className="text-sm text-white">{msg.message}</p>
+          <p className="whitespace-pre-wrap text-sm text-white">{msg.body}</p>
         </div>
       ))}
     </div>

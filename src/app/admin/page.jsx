@@ -45,7 +45,7 @@ export default function AdminDashboard() {
             .from('analytics_events')
             .select('*', { count: 'exact', head: true })
             .eq('event_type', 'ai_message_sent'),
-          supabase.from('feedback_messages').select('*', { count: 'exact', head: true }),
+          supabase.from('support_tickets').select('*', { count: 'exact', head: true }),
         ]);
 
         const requestError = [totalUsers, activeUsers, passageCompleted, questionAnswered, aiMessages, feedback]
@@ -147,7 +147,7 @@ export default function AdminDashboard() {
       borderColor: 'border-yellow-500/20',
     },
     {
-      name: 'Total Feedback',
+      name: 'Support Tickets',
       value: stats.totalFeedback,
       icon: MessageSquare,
       color: 'text-orange-400',

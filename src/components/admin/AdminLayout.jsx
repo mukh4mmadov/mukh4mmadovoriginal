@@ -7,7 +7,6 @@ import {
   LayoutDashboard, 
   MessageSquare, 
   BarChart3, 
-  AlertTriangle, 
   FileText, 
   Map, 
   LogOut, 
@@ -18,7 +17,6 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { isAdmin } from '@/lib/supabase/auth-admin';
 import AdminNotifications from './AdminNotifications';
-import AdminSupportChat from './AdminSupportChat';
 import { AdminPageError } from './AdminPageStatus';
 
 export default function AdminLayout({ children }) {
@@ -156,9 +154,8 @@ export default function AdminLayout({ children }) {
   const navigation = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
     { name: 'Users', href: '/admin/users', icon: Users },
-    { name: 'Feedback', href: '/admin/feedback', icon: MessageSquare },
+    { name: 'Support inbox', href: '/admin/support', icon: MessageSquare },
     { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
-    { name: 'Issues', href: '/admin/issues', icon: AlertTriangle },
     { name: 'Changelog', href: '/admin/changelog', icon: FileText },
     { name: 'Roadmap', href: '/admin/roadmap', icon: Map },
   ];
@@ -276,7 +273,6 @@ export default function AdminLayout({ children }) {
         </main>
       </div>
 
-      <AdminSupportChat />
     </div>
   );
 }

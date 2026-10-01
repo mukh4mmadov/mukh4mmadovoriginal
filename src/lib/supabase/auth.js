@@ -49,7 +49,10 @@ export class AuthService {
   async signInWithGoogle() {
     const currentOrigin = typeof window !== 'undefined' ? window.location.origin : null;
     const redirect = currentOrigin
-      ? getSafeRedirectPath(new URLSearchParams(window.location.search).get('redirect'))
+      ? (() => {
+          const params = new URLSearchParams(window.location.search);
+          return getSafeRedirectPath(params.get('redirect') || params.get('next'));
+        })()
       : null;
 
     if (currentOrigin) {

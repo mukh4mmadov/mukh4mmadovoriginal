@@ -84,22 +84,20 @@ export const usersRepository = {
 
   async getUserFeedbackHistory(userId) {
     const { data, error } = await supabase
-      .from('feedback_messages')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .from('support_tickets')
+      .select('*, messages:support_ticket_messages(*)')
+      .eq('owner_id', userId)
+      .order('updated_at', { ascending: false });
 
     if (error) throw error;
     return data || [];
   },
 
   async getUserSupportMessages(userId) {
-    const { data, error } = await supabase.rpc('admin_get_user_support_messages', {
-      p_user_id: userId,
-    });
-
+    const { data, error } = await supabase.from('support_tickets')
+      .select('messages:support_ticket_messages(*)').eq('owner_id', userId);
     if (error) throw error;
-    return data || [];
+    return (data || []).flatMap((ticket) => ticket.messages || []).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
   },
 
   async deleteUser(userId) {

@@ -1,455 +1,143 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
-import {
-  AlertTriangle,
-  X,
-  Bug,
-  Lightbulb,
-  AlertCircle,
-  MessageSquare,
-} from "lucide-react";
-import { feedbackRepository } from "@/lib/supabase/repositories/feedback.repository";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
+import { LifeBuoy, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import Toast from "./Toast";
-import { useModalAccessibility } from "@/hooks/useModalAccessibility";
+import { ticketsRepository, validateTicketInput } from "@/lib/supabase/repositories/tickets.repository";
+
+const PENDING_KEY = "support-ticket-pending-v1";
+const blankForm = () => ({ category: "bug", severity: "medium", subject: "", body: "", reproduction_steps: "", expected_behavior: "", actual_behavior: "", page_url: "" });
+const fieldClass = "mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-60";
+
+function readPending() {
+  try { return JSON.parse(window.localStorage.getItem(PENDING_KEY) || "null"); } catch { return null; }
+}
 
 export default function ReportIssueButton() {
-  const triggerRef = useRef(null);
-  const nameInputRef = useRef(null);
   const pathname = usePathname();
-  const { user, profile } = useAuth();
-  const [isOpen, setIsOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    name: profile?.full_name || "",
-    email: user?.email || "",
-    message_type: "bug",
-    subject: "",
-    message: "",
-    severity: "medium",
-    reproduction_steps: "",
-    expected_behavior: "",
-    actual_behavior: "",
-  });
-  const [errors, setErrors] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
-  const modalRef = useModalAccessibility(isOpen, () => setIsOpen(false), nameInputRef, triggerRef);
+  const router = useRouter();
+  const { user, profile, isLoading } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [guestPrompt, setGuestPrompt] = useState(false);
+  const [form, setForm] = useState(blankForm);
+  const [pending, setPending] = useState(null);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const ticketKey = useRef(null);
+  const messageKey = useRef(null);
+  const restoredForUser = useRef(null);
 
-  const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password';
-
-  function isFeedbackMessageType(value) {
-    return (
-      value === "bug" ||
-      value === "feature" ||
-      value === "incorrect_answer" ||
-      value === "general"
-    );
-  }
-
-  const messageTypes = [
-    { value: "bug", label: "Report a Bug", icon: Bug, color: "text-red-400" },
-    {
-      value: "feature",
-      label: "Suggest a Feature",
-      icon: Lightbulb,
-      color: "text-yellow-400",
-    },
-    {
-      value: "incorrect_answer",
-      label: "Incorrect Answer",
-      icon: AlertCircle,
-      color: "text-orange-400",
-    },
-    {
-      value: "general",
-      label: "General Feedback",
-      icon: MessageSquare,
-      color: "text-blue-400",
-    },
-  ];
-
-  const validateEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = "Name is required";
+  const restorePending = useCallback((userId, showDialog = true) => {
+    const saved = readPending();
+    if (!saved) return false;
+    if (saved.userId !== userId) {
+      window.localStorage.removeItem(PENDING_KEY);
+      return false;
     }
-
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!validateEmail(formData.email)) {
-      newErrors.email = "Please enter a valid email address";
+    if (!saved.ticketKey || !saved.messageKey || !saved.form || typeof saved.form.body !== "string") {
+      window.localStorage.removeItem(PENDING_KEY);
+      return false;
     }
+    setPending(saved);
+    setForm(saved.form);
+    ticketKey.current = saved.ticketKey;
+    messageKey.current = saved.messageKey;
+    if (showDialog) setOpen(true);
+    return true;
+  }, []);
 
-    if (!formData.subject.trim()) {
-      newErrors.subject = "Subject is required";
-    }
-
-    if (!formData.message.trim()) {
-      newErrors.message = "Message is required";
-    } else if (formData.message.trim().length < 10) {
-      newErrors.message = "Message must be at least 10 characters";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
+  useEffect(() => {
+    if (isLoading) return;
+    if (!user) {
+      // Auth has finished loading, so this is a real signed-out state.
+      window.localStorage.removeItem(PENDING_KEY);
+      setPending(null);
+      setOpen(false);
+      restoredForUser.current = null;
       return;
     }
+    if (restoredForUser.current === user.id) return;
+    restoredForUser.current = user.id;
+    restorePending(user.id, true);
+  }, [isLoading, user, restorePending]);
 
-    setIsLoading(true);
+  if (pathname?.startsWith("/admin")) return null;
+  const update = (event) => setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
 
+  const start = () => {
+    if (!user) { setGuestPrompt(true); return; }
+    if (restorePending(user.id, true)) return;
+    setForm(blankForm()); setError(""); setPending(null);
+    ticketKey.current = crypto.randomUUID();
+    messageKey.current = crypto.randomUUID();
+    setOpen(true);
+  };
+
+  async function finishPending(record) {
+    if (busy) return;
+    setBusy(true); setError("");
+    let current = record;
     try {
-      await feedbackRepository.submitFeedback({
-        user_id: user?.id || null,
-        name: formData.name,
-        email: formData.email,
-        subject: formData.subject,
-        message: formData.message,
-        message_type: formData.message_type,
-        severity: formData.severity,
-        reproduction_steps: formData.reproduction_steps,
-        expected_behavior: formData.expected_behavior,
-        actual_behavior: formData.actual_behavior,
-        page_url: typeof window !== 'undefined' ? window.location.href : '',
-        browser_info: typeof window !== 'undefined' ? {
-          userAgent: navigator.userAgent,
-          language: navigator.language,
-          platform: navigator.platform,
-        } : { userAgent: '', language: '', platform: '' },
-        screen_size: typeof window !== 'undefined' ? `${window.innerWidth}x${window.innerHeight}` : 'unknown',
-      });
+      if (!current.ticketId) {
+        const ticket = await ticketsRepository.createTicket(current.form, user, profile, current.ticketKey);
+        current = { ...current, ticketId: ticket.id };
+        window.localStorage.setItem(PENDING_KEY, JSON.stringify(current));
+        setPending(current);
+      }
+      await ticketsRepository.addOpeningMessage(current.ticketId, current.userId, current.form.body, current.messageKey);
+      window.localStorage.removeItem(PENDING_KEY);
+      setPending(null); setOpen(false); setError("");
+      router.push(`/my-feedback?ticket=${current.ticketId}`);
+    } catch (cause) {
+      const ticketExists = Boolean(current.ticketId);
+      setError(`${ticketExists ? "You have an unfinished request. Its ticket is saved; retry only the opening message." : "The request could not be confirmed. Retry safely; the same idempotency key will be reused."} ${cause?.message || "Please try again."}`);
+    } finally { setBusy(false); }
+  }
 
-      setToastMessage("Thank you! Your report has been received.");
-      setShowToast(true);
-      setFormData({
-        name: profile?.full_name || "",
-        email: user?.email || "",
-        message_type: "bug",
-        subject: "",
-        message: "",
-        severity: "medium",
-        reproduction_steps: "",
-        expected_behavior: "",
-        actual_behavior: "",
-      });
-      setIsOpen(false);
-    } catch (error) {
-      setErrors({
-        submit: error.message || "Failed to send report. Please try again.",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  async function submit(event) {
+    event.preventDefault();
+    if (busy) return;
+    if (pending) { await finishPending(pending); return; }
+    const input = { ...form, page_url: window.location.href };
+    const validation = validateTicketInput(input);
+    if (Object.keys(validation).length) { setError(Object.values(validation)[0]); return; }
+    const record = {
+      userId: user.id,
+      ticketId: null,
+      ticketKey: ticketKey.current || crypto.randomUUID(),
+      messageKey: messageKey.current || crypto.randomUUID(),
+      form: input,
+    };
+    // Persist before network I/O: after an ambiguous ticket insert, retrying
+    // uses the same ticket key and resolves to the existing ticket if saved.
+    window.localStorage.setItem(PENDING_KEY, JSON.stringify(record));
+    ticketKey.current = record.ticketKey;
+    messageKey.current = record.messageKey;
+    setPending(record); setForm(input);
+    await finishPending(record);
+  }
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
-    }
-  };
-
-  return (
-    <>
-      {!isAuthPage && (
-        <button
-          ref={triggerRef}
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-40 bg-brand-500 hover:bg-brand-600 text-white p-3 rounded-full shadow-lg transition-all hover:scale-110"
-          aria-label="Report an issue"
-          title="Report an issue"
-          aria-expanded={isOpen}
-          aria-controls={isOpen ? "report-issue-dialog" : undefined}
-        >
-          <AlertTriangle size={24} />
-        </button>
-      )}
-
-      {isOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div
-            ref={modalRef}
-            id="report-issue-dialog"
-            className="bg-surface border border-white/10 rounded-2xl w-full max-w-lg p-6 relative max-h-[90vh] overflow-y-auto"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="report-issue-title"
-            data-modal-focus-scope="report-issue"
-            tabIndex={-1}
-          >
-            <button
-              onClick={() => setIsOpen(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 transition-colors"
-              aria-label="Close"
-            >
-              <X size={20} />
-            </button>
-
-            <div className="mb-6">
-              <h2 id="report-issue-title" className="text-2xl font-bold text-slate-200 mb-2 flex items-center gap-2">
-                <AlertTriangle className="text-brand-400" size={24} />
-                Report an Issue
-              </h2>
-              <p className="text-slate-400 text-sm">
-                Help us improve by reporting bugs, suggesting features, or
-                providing feedback
-              </p>
-            </div>
-
-            {errors.submit && (
-              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-                <p className="text-red-300 text-sm">{errors.submit}</p>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Type of Report *
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {messageTypes.map((type) => {
-                    const Icon = type.icon;
-                    return (
-                      <button
-                        key={type.value}
-                        type="button"
-                        onClick={() => {
-                          const value = type.value;
-                          setFormData((prev) => ({
-                            ...prev,
-                            message_type: isFeedbackMessageType(value)
-                              ? value
-                              : "bug",
-                          }));
-                        }}
-                        className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
-                          formData.message_type === type.value
-                            ? "border-brand-500 bg-brand-500/10"
-                            : "border-white/10 bg-white/5 hover:border-white/20"
-                        }`}
-                      >
-                        <Icon className={type.color} size={18} />
-                        <span className="text-sm text-slate-200">
-                          {type.label}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="name"
-                  className="block text-sm font-medium text-slate-300 mb-2"
-                >
-                  Name *
-                </label>
-                <input
-                  type="text"
-                  ref={nameInputRef}
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  className={`w-full bg-white/5 border rounded-lg px-4 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent ${
-                    errors.name ? "border-red-500" : "border-white/10"
-                  }`}
-                  placeholder="Your name"
-                  required
-                />
-                {errors.name && (
-                  <p className="mt-1 text-xs text-red-400">{errors.name}</p>
-                )}
-              </div>
-
-              <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-slate-300 mb-2"
-                >
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className={`w-full bg-white/5 border rounded-lg px-4 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent ${
-                    errors.email ? "border-red-500" : "border-white/10"
-                  }`}
-                  placeholder="your@email.com"
-                  required
-                />
-                {errors.email && (
-                  <p className="mt-1 text-xs text-red-400">{errors.email}</p>
-                )}
-              </div>
-
-              <div>
-                <label
-                  htmlFor="subject"
-                  className="block text-sm font-medium text-slate-300 mb-2"
-                >
-                  Subject *
-                </label>
-                <input
-                  type="text"
-                  id="subject"
-                  name="subject"
-                  value={formData.subject}
-                  onChange={handleChange}
-                  className={`w-full bg-white/5 border rounded-lg px-4 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent ${
-                    errors.subject ? "border-red-500" : "border-white/10"
-                  }`}
-                  placeholder="Brief description"
-                  required
-                />
-                {errors.subject && (
-                  <p className="mt-1 text-xs text-red-400">{errors.subject}</p>
-                )}
-              </div>
-
-              <div>
-                <label
-                  htmlFor="message"
-                  className="block text-sm font-medium text-slate-300 mb-2"
-                >
-                  Details *
-                </label>
-                <textarea
-                  id="message"
-                  name="message"
-                  value={formData.message}
-                  onChange={handleChange}
-                  rows={4}
-                  className={`w-full bg-white/5 border rounded-lg px-4 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none ${
-                    errors.message ? "border-red-500" : "border-white/10"
-                  }`}
-                  placeholder="Please provide as much detail as possible..."
-                  required
-                />
-                {errors.message && (
-                  <p className="mt-1 text-xs text-red-400">{errors.message}</p>
-                )}
-              </div>
-
-              {formData.message_type === "bug" && (
-                <>
-                  <div>
-                    <label htmlFor="severity" className="block text-sm font-medium text-slate-300 mb-2">
-                      How serious is the issue?
-                    </label>
-                    <select
-                      id="severity"
-                      name="severity"
-                      value={formData.severity}
-                      onChange={handleChange}
-                      className="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                    >
-                      <option value="low">Low — minor inconvenience</option>
-                      <option value="medium">Medium — a feature is affected</option>
-                      <option value="high">High — an important flow is blocked</option>
-                      <option value="critical">Critical — the site or account is unusable</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="reproduction_steps" className="block text-sm font-medium text-slate-300 mb-2">
-                      Steps to reproduce (optional)
-                    </label>
-                    <textarea
-                      id="reproduction_steps"
-                      name="reproduction_steps"
-                      value={formData.reproduction_steps}
-                      onChange={handleChange}
-                      rows={3}
-                      className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y"
-                      placeholder="1. Open… 2. Select… 3. The issue appears…"
-                    />
-                  </div>
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    <div>
-                      <label htmlFor="expected_behavior" className="block text-sm font-medium text-slate-300 mb-2">
-                        What did you expect? (optional)
-                      </label>
-                      <textarea
-                        id="expected_behavior"
-                        name="expected_behavior"
-                        value={formData.expected_behavior}
-                        onChange={handleChange}
-                        rows={2}
-                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="actual_behavior" className="block text-sm font-medium text-slate-300 mb-2">
-                        What happened instead? (optional)
-                      </label>
-                      <textarea
-                        id="actual_behavior"
-                        name="actual_behavior"
-                        value={formData.actual_behavior}
-                        onChange={handleChange}
-                        rows={2}
-                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y"
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-
-              <div className="text-xs text-slate-500">
-                <p>System info will be automatically included:</p>
-                <p>• Page: {typeof window !== 'undefined' ? window.location.href : 'N/A'}</p>
-                <p>
-                  • Screen: {typeof window !== 'undefined' ? `${window.innerWidth}x${window.innerHeight}` : 'N/A'}
-                </p>
-                <p>• User: {user?.id ? "Logged in" : "Guest"}</p>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-brand-500 hover:bg-brand-600 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {isLoading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Sending...
-                  </>
-                ) : (
-                  "Submit Report"
-                )}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {showToast && (
-        <Toast
-          message={toastMessage}
-          type="success"
-          onClose={() => setShowToast(false)}
-        />
-      )}
-    </>
-  );
+  const loginUrl = `/login?next=${encodeURIComponent(pathname || "/")}`;
+  return <>
+    <button type="button" onClick={start} className="fixed bottom-6 right-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-brand-500 text-white shadow-xl hover:bg-brand-600 sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-3" aria-label="Get help or report an issue" title="Help"><LifeBuoy size={20} /><span className="hidden sm:inline">Help</span></button>
+    {guestPrompt && <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setGuestPrompt(false); }}><section role="dialog" aria-modal="true" aria-labelledby="guest-help-title" className="w-full max-w-sm rounded-2xl border border-white/10 bg-surface p-5 text-white shadow-2xl"><div className="flex items-start justify-between gap-3"><h2 id="guest-help-title" className="text-lg font-semibold">Please sign up or sign in to send feedback</h2><button type="button" onClick={() => setGuestPrompt(false)} aria-label="Close" className="rounded-lg p-1 text-slate-400 hover:bg-white/10"><X size={18} /></button></div><p className="mt-2 text-sm text-slate-400">Your request and replies are saved to your account.</p><Link href={loginUrl} onClick={() => setGuestPrompt(false)} className="mt-5 block rounded-lg bg-brand-500 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-brand-600">Sign in or sign up</Link></section></div>}
+    {open && <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) setOpen(false); }}>
+      <section role="dialog" aria-modal="true" aria-labelledby="help-title" className="max-h-[94vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-white/10 bg-surface p-5 text-slate-100 shadow-2xl sm:p-7">
+        <div className="mb-5 flex items-start justify-between"><div><h2 id="help-title" className="text-2xl font-bold">How can we help?</h2><p className="mt-1 text-sm text-slate-400">Your request and replies will be available in My feedback.</p>{pending && <p role="status" className="mt-3 rounded-lg border border-amber-300/20 bg-amber-300/10 p-3 text-sm text-amber-100">You have an unfinished request. Retry its opening message to finish sending it.</p>}</div><button type="button" disabled={busy} onClick={() => setOpen(false)} aria-label="Close help form" className="rounded-lg p-2 text-slate-400 hover:bg-white/10 disabled:opacity-40"><X size={20} /></button></div>
+        {error && <p role="alert" className="mb-4 rounded-lg border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">{error}</p>}
+        {user && <Link href="/my-feedback" onClick={() => setOpen(false)} className="mb-4 inline-block text-sm text-brand-300 underline">View my feedback</Link>}
+        <form onSubmit={submit} className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2"><label className="text-sm">Type<select disabled={Boolean(pending) || busy} name="category" value={form.category} onChange={update} className={fieldClass}><option value="bug">Report a bug</option><option value="feature">Suggest a feature</option><option value="incorrect_answer">Incorrect answer</option><option value="general">General feedback</option><option value="support">Account or other support</option></select></label><label className="text-sm">Severity<select disabled={Boolean(pending) || busy} name="severity" value={form.severity} onChange={update} className={fieldClass}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select></label></div>
+          <label className="block text-sm">Subject<input disabled={Boolean(pending) || busy} name="subject" maxLength={200} required value={form.subject} onChange={update} className={fieldClass} /></label>
+          <label className="block text-sm">What would you like us to know?<textarea disabled={Boolean(pending) || busy} name="body" maxLength={10000} required rows={4} value={form.body} onChange={update} className={fieldClass} /></label>
+          <label className="block text-sm">Reproduction steps<textarea disabled={Boolean(pending) || busy} name="reproduction_steps" maxLength={10000} rows={3} value={form.reproduction_steps} onChange={update} className={fieldClass} /></label>
+          <div className="grid gap-4 sm:grid-cols-2"><label className="text-sm">Expected behavior<textarea disabled={Boolean(pending) || busy} name="expected_behavior" maxLength={5000} rows={3} value={form.expected_behavior} onChange={update} className={fieldClass} /></label><label className="text-sm">Actual behavior<textarea disabled={Boolean(pending) || busy} name="actual_behavior" maxLength={5000} rows={3} value={form.actual_behavior} onChange={update} className={fieldClass} /></label></div>
+          <p className="break-all text-xs text-slate-500">Page attached automatically: {form.page_url || (typeof window !== "undefined" ? window.location.href : "")}</p>
+          <button type="submit" disabled={busy} className="w-full rounded-lg bg-brand-500 px-4 py-3 font-semibold text-white hover:bg-brand-600 disabled:cursor-wait disabled:opacity-50">{busy ? "Saving…" : pending ? "Retry opening message" : "Send request"}</button>
+        </form>
+      </section>
+    </div>}
+  </>;
 }
