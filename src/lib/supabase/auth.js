@@ -5,8 +5,6 @@ export class AuthService {
   profileRequests = new Map();
 
   async signUp(data) {
-    console.log('[SIGNUP] Attempting signup with email:', data.email);
-    
     const { data: authData, error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
@@ -17,30 +15,15 @@ export class AuthService {
       },
     });
 
-    console.log("[SIGNUP] error:", error);
-    console.log("[SIGNUP] user:", authData.user);
-    console.log("[SIGNUP] session:", authData.session);
-    console.log("[SIGNUP] identities:", authData.user?.identities);
-    console.log("[SIGNUP] email_confirmed_at:", authData.user?.email_confirmed_at);
-
     if (error) throw error;
     return authData;
   }
 
   async signIn(data) {
-    console.log('[SIGNIN] Attempting signin with email:', data.email);
-    
     const { data: authData, error } = await supabase.auth.signInWithPassword({
       email: data.email,
       password: data.password,
     });
-
-    console.log("[SIGNIN] error:", error);
-    console.log("[SIGNIN] error.message:", error?.message);
-    console.log("[SIGNIN] error.status:", error?.status);
-    console.log("[SIGNIN] error.code:", error?.code);
-    console.log("[SIGNIN] user:", authData.user);
-    console.log("[SIGNIN] session:", authData.session);
 
     if (error) throw error;
     return authData;

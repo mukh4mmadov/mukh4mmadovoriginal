@@ -58,6 +58,12 @@ export default function ReportIssueButton() {
       restoredForUser.current = null;
       return;
     }
+    if (user.is_anonymous) {
+      setPending(null);
+      setOpen(false);
+      restoredForUser.current = null;
+      return;
+    }
     if (restoredForUser.current === user.id) return;
     restoredForUser.current = user.id;
     restorePending(user.id, true);
@@ -67,13 +73,23 @@ export default function ReportIssueButton() {
   const update = (event) => setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
 
   const start = () => {
-    if (!user) { setGuestPrompt(true); return; }
+    if (!user || user.is_anonymous) { setGuestPrompt(true); return; }
     if (restorePending(user.id, true)) return;
     setForm(blankForm()); setError(""); setPending(null);
     ticketKey.current = crypto.randomUUID();
     messageKey.current = crypto.randomUUID();
     setOpen(true);
   };
+
+  function discardPendingDraft() {
+    if (!pending || pending.ticketId !== null || busy) return;
+    window.localStorage.removeItem(PENDING_KEY);
+    setPending(null);
+    setForm(blankForm());
+    setError("");
+    ticketKey.current = crypto.randomUUID();
+    messageKey.current = crypto.randomUUID();
+  }
 
   async function finishPending(record) {
     if (busy) return;
@@ -127,7 +143,7 @@ export default function ReportIssueButton() {
       <section role="dialog" aria-modal="true" aria-labelledby="help-title" className="max-h-[94vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-white/10 bg-surface p-5 text-slate-100 shadow-2xl sm:p-7">
         <div className="mb-5 flex items-start justify-between"><div><h2 id="help-title" className="text-2xl font-bold">How can we help?</h2><p className="mt-1 text-sm text-slate-400">Your request and replies will be available in My feedback.</p>{pending && <p role="status" className="mt-3 rounded-lg border border-amber-300/20 bg-amber-300/10 p-3 text-sm text-amber-100">You have an unfinished request. Retry its opening message to finish sending it.</p>}</div><button type="button" disabled={busy} onClick={() => setOpen(false)} aria-label="Close help form" className="rounded-lg p-2 text-slate-400 hover:bg-white/10 disabled:opacity-40"><X size={20} /></button></div>
         {error && <p role="alert" className="mb-4 rounded-lg border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">{error}</p>}
-        {user && <Link href="/my-feedback" onClick={() => setOpen(false)} className="mb-4 inline-block text-sm text-brand-300 underline">View my feedback</Link>}
+        {user && !user.is_anonymous && <Link href="/my-feedback" onClick={() => setOpen(false)} className="mb-4 inline-block text-sm text-brand-300 underline">View my feedback</Link>}
         <form onSubmit={submit} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2"><label className="text-sm">Type<select disabled={Boolean(pending) || busy} name="category" value={form.category} onChange={update} className={fieldClass}><option value="bug">Report a bug</option><option value="feature">Suggest a feature</option><option value="incorrect_answer">Incorrect answer</option><option value="general">General feedback</option><option value="support">Account or other support</option></select></label><label className="text-sm">Severity<select disabled={Boolean(pending) || busy} name="severity" value={form.severity} onChange={update} className={fieldClass}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select></label></div>
           <label className="block text-sm">Subject<input disabled={Boolean(pending) || busy} name="subject" maxLength={200} required value={form.subject} onChange={update} className={fieldClass} /></label>
@@ -135,6 +151,7 @@ export default function ReportIssueButton() {
           <label className="block text-sm">Reproduction steps<textarea disabled={Boolean(pending) || busy} name="reproduction_steps" maxLength={10000} rows={3} value={form.reproduction_steps} onChange={update} className={fieldClass} /></label>
           <div className="grid gap-4 sm:grid-cols-2"><label className="text-sm">Expected behavior<textarea disabled={Boolean(pending) || busy} name="expected_behavior" maxLength={5000} rows={3} value={form.expected_behavior} onChange={update} className={fieldClass} /></label><label className="text-sm">Actual behavior<textarea disabled={Boolean(pending) || busy} name="actual_behavior" maxLength={5000} rows={3} value={form.actual_behavior} onChange={update} className={fieldClass} /></label></div>
           <p className="break-all text-xs text-slate-500">Page attached automatically: {form.page_url || (typeof window !== "undefined" ? window.location.href : "")}</p>
+          {pending && pending.ticketId === null && <button type="button" disabled={busy} onClick={discardPendingDraft} className="w-full rounded-lg border border-white/15 px-4 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/5 disabled:opacity-50">Discard draft</button>}
           <button type="submit" disabled={busy} className="w-full rounded-lg bg-brand-500 px-4 py-3 font-semibold text-white hover:bg-brand-600 disabled:cursor-wait disabled:opacity-50">{busy ? "Saving…" : pending ? "Retry opening message" : "Send request"}</button>
         </form>
       </section>
