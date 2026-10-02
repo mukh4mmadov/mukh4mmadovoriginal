@@ -115,7 +115,7 @@ export const cambridgePassages = [
         ]
       },
       {
-        instructions: "Complete the table below. Choose ONE WORD ONLY from the passage for each answer.",
+        instructions: "Complete the sentences below. Choose ONE WORD ONLY from the passage for each answer.",
         questions: [
           {
             id: "q9",
@@ -154,8 +154,8 @@ export const cambridgePassages = [
             id: "q12",
             number: 12,
             type: "sentence-completion",
-            before: "Britain",
-            after: "from around 1960",
+            before: "From around 1960, British crime writers replaced straightforward puzzles with stories full of unexpected",
+            after: ".",
             maxWords: 1,
             answer: ["twists"],
             explanation: "The passage states that writers 'eschewed private detectives for police inspectors, and straightforward puzzles for stories that were full of unexpected twists.'",
@@ -165,8 +165,8 @@ export const cambridgePassages = [
             id: "q13",
             number: 13,
             type: "sentence-completion",
-            before: "Britain",
-            after: "today",
+            before: "Today, British society no longer holds the belief that scientific developments are invariably",
+            after: ".",
             maxWords: 1,
             answer: ["beneficial"],
             explanation: "The passage states 'The belief that scientific developments were invariably beneficial possibly reached its height during the period when the classic detective story flourished'",
