@@ -553,12 +553,14 @@ export default function ReadingTestPlayer({ passage }) {
         totalTime: finalTime,
         attempts: locallySaved?.attempts,
       }, user?.id).catch((error) => console.error("Failed to sync reading progress:", error));
+      // The local attempt is durable now; remove its active-draft marker before
+      // any asynchronous module loading so an immediate refresh cannot revive it.
+      localStorage.removeItem(`ielts-reading-${passage.slug}`);
       if (user?.id) {
         const { supabase } = await import('@/lib/supabase/client');
         const { flushReadingAttemptOutbox } = await import('@/lib/reading/reading-attempt-outbox.mjs');
         void flushReadingAttemptOutbox(window.localStorage, user.id, supabase);
       }
-      localStorage.removeItem(`ielts-reading-${passage.slug}`);
     } catch (error) {
       console.error("Failed to save local reading attempt:", error);
     }
