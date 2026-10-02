@@ -277,6 +277,8 @@ BEGIN
     SELECT count(*) AS attempts, coalesce(sum(question_count),0) AS exposures,
            coalesce(sum(answered_count),0) AS answered, coalesce(sum(correct_count),0) AS correct,
            coalesce(sum(time_spent_seconds),0) AS seconds,
+           coalesce(sum(time_spent_seconds) FILTER (WHERE time_spent_seconds > 0),0) AS positive_seconds,
+           count(*) FILTER (WHERE time_spent_seconds > 0) AS timed_attempts,
            count(*) FILTER (WHERE completed_at >= (v_today::timestamp AT TIME ZONE 'Asia/Tashkent')
              AND completed_at < ((v_today+1)::timestamp AT TIME ZONE 'Asia/Tashkent')) AS attempts_today,
            count(DISTINCT user_id) FILTER (WHERE completed_at >= (v_today::timestamp AT TIME ZONE 'Asia/Tashkent')
@@ -287,7 +289,7 @@ BEGIN
     'total_profiles', pc.learners, 'guest_profiles', pc.guests,
     'total_attempts', o.attempts, 'question_exposures', o.exposures, 'answered', o.answered, 'correct', o.correct,
     'accuracy_percent', CASE WHEN o.exposures=0 THEN 0 ELSE round(100.0*o.correct/o.exposures) END,
-    'avg_seconds_per_attempt', CASE WHEN o.attempts=0 THEN 0 ELSE round(o.seconds::numeric/o.attempts) END,
+    'avg_seconds_per_attempt', CASE WHEN o.timed_attempts=0 THEN 0 ELSE round(o.positive_seconds::numeric/o.timed_attempts) END,
     'active_learners_today', o.active_today, 'attempts_today', o.attempts_today,
     'daily', d.value, 'registrations_daily', r.value, 'question_types', t.value
   ) INTO v_result
@@ -413,12 +415,22 @@ SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub', current_setting('app.reading_test_admin'), true);
 SELECT set_config('request.jwt.claims', jsonb_build_object('sub',current_setting('app.reading_test_admin'),'role','authenticated')::text, true);
 DO $admin_tests$
+DECLARE metrics jsonb; expected_average numeric;
 BEGIN
   IF NOT public.is_admin_user((select auth.uid())) THEN RAISE EXCEPTION 'Selected admin fixture is not an admin'; END IF;
   IF NOT EXISTS (SELECT 1 FROM public.reading_history WHERE id=current_setting('app.reading_test_attempt')::uuid) THEN RAISE EXCEPTION 'FAIL: admin cannot read all attempts'; END IF;
   IF NOT EXISTS (SELECT 1 FROM public.reading_attempt_answers WHERE attempt_id=current_setting('app.reading_test_attempt')::uuid) THEN RAISE EXCEPTION 'FAIL: admin cannot read all answer rows'; END IF;
-  IF public.get_admin_reading_metrics(7) IS NULL THEN RAISE EXCEPTION 'FAIL: admin metrics returned null'; END IF;
-  IF NOT EXISTS (SELECT 1 FROM jsonb_array_elements(public.get_admin_reading_metrics(7)->'daily') d WHERE d->>'date'=(now() AT TIME ZONE 'Asia/Tashkent')::date::text AND (d->>'attempts')::integer>0) THEN RAISE EXCEPTION 'FAIL: recent completion did not appear on the Tashkent day'; END IF;
+  metrics := public.get_admin_reading_metrics(7);
+  IF metrics IS NULL THEN RAISE EXCEPTION 'FAIL: admin metrics returned null'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM jsonb_array_elements(metrics->'daily') d WHERE d->>'date'=(now() AT TIME ZONE 'Asia/Tashkent')::date::text AND (d->>'attempts')::integer>0) THEN RAISE EXCEPTION 'FAIL: recent completion did not appear on the Tashkent day'; END IF;
+  SELECT CASE WHEN count(*) FILTER (WHERE time_spent_seconds>0)=0 THEN 0 ELSE round(avg(time_spent_seconds) FILTER (WHERE time_spent_seconds>0)) END
+    INTO expected_average FROM public.reading_history WHERE attempt_key IS NOT NULL;
+  IF (metrics->>'avg_seconds_per_attempt')::numeric<>expected_average THEN RAISE EXCEPTION 'FAIL: admin average included zero or negative durations'; END IF;
+  IF coalesce((SELECT (d->>'seconds')::bigint FROM jsonb_array_elements(metrics->'daily') d WHERE d->>'date'=(now() AT TIME ZONE 'Asia/Tashkent')::date::text),0)
+     <> (SELECT coalesce(sum(time_spent_seconds),0) FROM public.reading_history WHERE attempt_key IS NOT NULL
+         AND completed_at >= ((now() AT TIME ZONE 'Asia/Tashkent')::date::timestamp AT TIME ZONE 'Asia/Tashkent')
+         AND completed_at < (((now() AT TIME ZONE 'Asia/Tashkent')::date+1)::timestamp AT TIME ZONE 'Asia/Tashkent'))
+  THEN RAISE EXCEPTION 'FAIL: daily total duration changed'; END IF;
   RAISE NOTICE 'PASS: admin can read attempts and call admin metrics';
 END
 $admin_tests$;

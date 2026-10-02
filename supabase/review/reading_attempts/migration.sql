@@ -266,6 +266,8 @@ BEGIN
     SELECT count(*) AS attempts, coalesce(sum(question_count),0) AS exposures,
            coalesce(sum(answered_count),0) AS answered, coalesce(sum(correct_count),0) AS correct,
            coalesce(sum(time_spent_seconds),0) AS seconds,
+           coalesce(sum(time_spent_seconds) FILTER (WHERE time_spent_seconds > 0),0) AS positive_seconds,
+           count(*) FILTER (WHERE time_spent_seconds > 0) AS timed_attempts,
            count(*) FILTER (WHERE completed_at >= (v_today::timestamp AT TIME ZONE 'Asia/Tashkent')
              AND completed_at < ((v_today+1)::timestamp AT TIME ZONE 'Asia/Tashkent')) AS attempts_today,
            count(DISTINCT user_id) FILTER (WHERE completed_at >= (v_today::timestamp AT TIME ZONE 'Asia/Tashkent')
@@ -276,7 +278,7 @@ BEGIN
     'total_profiles', pc.learners, 'guest_profiles', pc.guests,
     'total_attempts', o.attempts, 'question_exposures', o.exposures, 'answered', o.answered, 'correct', o.correct,
     'accuracy_percent', CASE WHEN o.exposures=0 THEN 0 ELSE round(100.0*o.correct/o.exposures) END,
-    'avg_seconds_per_attempt', CASE WHEN o.attempts=0 THEN 0 ELSE round(o.seconds::numeric/o.attempts) END,
+    'avg_seconds_per_attempt', CASE WHEN o.timed_attempts=0 THEN 0 ELSE round(o.positive_seconds::numeric/o.timed_attempts) END,
     'active_learners_today', o.active_today, 'attempts_today', o.attempts_today,
     'daily', d.value, 'registrations_daily', r.value, 'question_types', t.value
   ) INTO v_result
