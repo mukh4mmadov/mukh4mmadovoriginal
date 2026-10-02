@@ -63,9 +63,9 @@ export default function AdminLayout({ children }) {
     async function checkAdmin() {
       if (authLoading) return;
 
-      if (!user) {
+      if (!user || user.is_anonymous) {
         setIsAdminUser(false);
-        router.replace('/');
+        router.replace(`/login?next=${encodeURIComponent(pathname || '/admin')}`);
         return;
       }
 
@@ -81,7 +81,7 @@ export default function AdminLayout({ children }) {
         if (!isActive) return;
         setIsAdminUser(admin);
         if (!admin) {
-          router.replace('/');
+          router.replace('/?noAdminAccess=1');
         }
       } catch (error) {
         console.error('Error checking admin status:', error);

@@ -6,6 +6,7 @@ import MigrationPrompt from "@/components/auth/MigrationPrompt";
 import ReportIssueButton from "@/components/shared/ReportIssueButton";
 import OfflineNotice from "@/components/shared/OfflineNotice";
 import PushActivityTracker from "@/components/shared/PushActivityTracker";
+import AdminAccessNotice from "@/components/shared/AdminAccessNotice";
 
 export const metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://mukh4mmadovoriginal.vercel.app"),
@@ -72,6 +73,7 @@ export default function RootLayout({
           </div>
           <OfflineNotice />
           <Footer />
+          <AdminAccessNotice />
           <MigrationPrompt />
           <ReportIssueButton />
         </AuthProvider>
