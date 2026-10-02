@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { enqueueReadingAttempt, flushReadingAttemptOutbox, readReadingAttemptOutbox } from '../src/lib/reading/reading-attempt-outbox.mjs';
+import { enqueueReadingAttempt, flushReadingAttemptOutbox, readFailedReadingAttempts, readReadingAttemptOutbox } from '../src/lib/reading/reading-attempt-outbox.mjs';
 import { collectLegacyAttempts } from '../src/lib/reading/legacy-attempt-import.mjs';
 import { formatAggregateTime, getTashkentTodayRange } from '../src/lib/reading/metrics.mjs';
 
@@ -11,6 +11,12 @@ class MemoryStorage {
   get length() { return this.values.size; }
 }
 
+{
+  const storage = new MemoryStorage();
+  storage.setItem('reading-attempt-outbox-failed-v1:cap-user', JSON.stringify(Array.from({ length: 105 }, (_, index) => ({ attemptKey: String(index) }))));
+  assert.equal(readFailedReadingAttempts(storage, 'cap-user').length, 100);
+}
+
 const attempt = { attemptKey: 'stable-key', passageId: 'sample', durationSeconds: 30, completedAt: '2026-10-02T09:00:00.000Z', answers: [{ question_id: 'q1' }] };
 
 {
@@ -20,6 +26,44 @@ const attempt = { attemptKey: 'stable-key', passageId: 'sample', durationSeconds
   const result = await flushReadingAttemptOutbox(storage, 'u1', { rpc: async (_name, args) => { rpcArgs = args; return { data: 'id-1', error: null }; } });
   assert.deepEqual(result, { confirmed: 1, pending: 0 });
   assert.equal(rpcArgs.p_completed_at, attempt.completedAt);
+}
+
+{
+  const storage = new MemoryStorage();
+  const middle = { ...attempt, attemptKey: 'invalid-middle' };
+  const last = { ...attempt, attemptKey: 'valid-after' };
+  enqueueReadingAttempt(storage, 'validation-user', { ...attempt, attemptKey: 'valid-before' });
+  enqueueReadingAttempt(storage, 'validation-user', middle);
+  enqueueReadingAttempt(storage, 'validation-user', last);
+  const sent = [];
+  const result = await flushReadingAttemptOutbox(storage, 'validation-user', { rpc: async (_name, args) => {
+    sent.push(args.p_attempt_key);
+    if (args.p_attempt_key === middle.attemptKey) return { data: null, error: { code: 'P0001', message: 'answers must contain a valid response' } };
+    return { data: 'saved', error: null };
+  } });
+  assert.deepEqual(sent, ['valid-before', 'invalid-middle', 'valid-after']);
+  assert.deepEqual(result, { confirmed: 2, pending: 0 });
+  assert.equal(readFailedReadingAttempts(storage, 'validation-user')[0].attemptKey, 'invalid-middle');
+}
+{
+  const storage = new MemoryStorage();
+  enqueueReadingAttempt(storage, 'transient-user', { ...attempt, attemptKey: 'one' });
+  enqueueReadingAttempt(storage, 'transient-user', { ...attempt, attemptKey: 'two' });
+  const result = await flushReadingAttemptOutbox(storage, 'transient-user', { rpc: async () => ({ data: null, error: { code: 'PGRST202', message: 'function not found' } }) });
+  assert.deepEqual(result, { confirmed: 0, pending: 2 });
+}
+{
+  const storage = new MemoryStorage();
+  enqueueReadingAttempt(storage, 'locked-user', { ...attempt, attemptKey: 'only-once' });
+  let calls = 0;
+  let release;
+  const client = { rpc: async () => { calls += 1; await new Promise((resolve) => { release = resolve; }); return { data: 'same-row', error: null }; } };
+  const first = flushReadingAttemptOutbox(storage, 'locked-user', client);
+  const second = flushReadingAttemptOutbox(storage, 'locked-user', client);
+  release();
+  const both = await Promise.all([first, second]);
+  assert.equal(calls, 1);
+  assert.deepEqual(both[0], both[1]);
 }
 {
   const storage = new MemoryStorage();
@@ -53,7 +97,7 @@ const attempt = { attemptKey: 'stable-key', passageId: 'sample', durationSeconds
   assert.equal(result.notImportable, 1);
 }
 
-console.log('PASS: outbox success, offline retention, duplicate confirmation, missing-function retention, and legacy import filtering');
+console.log('PASS: validation poison-pill continuation, transient retention, duplicate confirmation, flush locking, and legacy import filtering');
 assert.equal(formatAggregateTime(59), '59s');
 assert.equal(formatAggregateTime(90), '2m');
 assert.equal(formatAggregateTime(3600), '1h 0m');

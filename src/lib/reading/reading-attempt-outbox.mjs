@@ -1,4 +1,28 @@
 export const READING_ATTEMPT_OUTBOX_PREFIX = 'reading-attempt-outbox-v1:';
+export const READING_ATTEMPT_OUTBOX_FAILED_PREFIX = 'reading-attempt-outbox-failed-v1:';
+export const READING_ATTEMPT_OUTBOX_FAILED_LIMIT = 100;
+const flushLocks = new Map();
+
+export function readFailedReadingAttempts(storage, userId) {
+  if (!storage || !userId) return [];
+  try {
+    const value = JSON.parse(storage.getItem(`${READING_ATTEMPT_OUTBOX_FAILED_PREFIX}${userId}`) || '[]');
+    return Array.isArray(value) ? value.slice(-READING_ATTEMPT_OUTBOX_FAILED_LIMIT) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function isReadingAttemptValidationError(error) {
+  const code = String(error?.code || '');
+  const status = Number(error?.status || error?.statusCode || 0);
+  const message = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`.toLowerCase();
+  if (/auth|sign in|permission|forbidden|admin access/.test(message)) return false;
+  if (['42883', '42P01', '42501', 'PGRST202', 'PGRST205', 'PGRST301'].includes(code)) return false;
+  if (status === 401 || status === 403 || status >= 500) return false;
+  if (code === 'P0001') return true;
+  return status === 400 && /answer|duration|attempt key|question|passage|limit|invalid|must be|required|exceeds/.test(message);
+}
 
 export function readReadingAttemptOutbox(storage, userId) {
   if (!storage || !userId) return [];
@@ -23,8 +47,17 @@ export function enqueueReadingAttempt(storage, userId, attempt) {
   }
 }
 
-export async function flushReadingAttemptOutbox(storage, userId, client) {
+export function flushReadingAttemptOutbox(storage, userId, client) {
   if (!storage || !userId || !client?.rpc) return { confirmed: 0, pending: readReadingAttemptOutbox(storage, userId).length };
+  if (flushLocks.has(userId)) return flushLocks.get(userId);
+  const task = flushReadingAttemptOutboxUnlocked(storage, userId, client);
+  flushLocks.set(userId, task);
+  return task.finally(() => {
+    if (flushLocks.get(userId) === task) flushLocks.delete(userId);
+  });
+}
+
+async function flushReadingAttemptOutboxUnlocked(storage, userId, client) {
   const key = `${READING_ATTEMPT_OUTBOX_PREFIX}${userId}`;
   const queue = readReadingAttemptOutbox(storage, userId);
   let confirmed = 0;
@@ -37,12 +70,35 @@ export async function flushReadingAttemptOutbox(storage, userId, client) {
         p_answers: attempt.answers,
         ...(attempt.completedAt ? { p_completed_at: attempt.completedAt } : {}),
       });
-      if (error || !data) break;
+      if (error || !data) {
+        if (!error || !isReadingAttemptValidationError(error)) break;
+        const failedKey = `${READING_ATTEMPT_OUTBOX_FAILED_PREFIX}${userId}`;
+        const failures = readFailedReadingAttempts(storage, userId);
+        failures.push({ ...attempt, failure: { code: error.code || null, message: error.message || 'Attempt validation failed' } });
+        try {
+          storage.setItem(failedKey, JSON.stringify(failures.slice(-READING_ATTEMPT_OUTBOX_FAILED_LIMIT)));
+          const current = readReadingAttemptOutbox(storage, userId).filter((item) => item.attemptKey !== attempt.attemptKey);
+          storage.setItem(key, JSON.stringify(current));
+        } catch {
+          break;
+        }
+        continue;
+      }
       const current = readReadingAttemptOutbox(storage, userId).filter((item) => item.attemptKey !== attempt.attemptKey);
       storage.setItem(key, JSON.stringify(current));
       confirmed += 1;
-    } catch {
-      break;
+    } catch (error) {
+      if (!isReadingAttemptValidationError(error)) break;
+      const failedKey = `${READING_ATTEMPT_OUTBOX_FAILED_PREFIX}${userId}`;
+      const failures = readFailedReadingAttempts(storage, userId);
+      failures.push({ ...attempt, failure: { code: error.code || null, message: error.message || 'Attempt validation failed' } });
+      try {
+        storage.setItem(failedKey, JSON.stringify(failures.slice(-READING_ATTEMPT_OUTBOX_FAILED_LIMIT)));
+        const current = readReadingAttemptOutbox(storage, userId).filter((item) => item.attemptKey !== attempt.attemptKey);
+        storage.setItem(key, JSON.stringify(current));
+      } catch {
+        break;
+      }
     }
   }
   return { confirmed, pending: readReadingAttemptOutbox(storage, userId).length };
