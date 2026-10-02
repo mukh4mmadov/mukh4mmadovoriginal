@@ -34,6 +34,13 @@ export function formatAggregateTime(seconds) {
   return hours ? `${hours}h ${minutes}m` : `${totalMinutes}m`;
 }
 
+export function getHomeMetricsSource(todayMetrics, allTimeMetrics, hasLocalAttemptHistory) {
+  if (!todayMetrics) return 'local';
+  if (todayMetrics.attempts > 0 || !hasLocalAttemptHistory) return 'server';
+  if (!allTimeMetrics) return 'local';
+  return allTimeMetrics.attempts > 0 ? 'server' : 'local-older';
+}
+
 export async function getMyReadingMetrics(client, from, to) {
   if (!client?.rpc) return null;
   try {

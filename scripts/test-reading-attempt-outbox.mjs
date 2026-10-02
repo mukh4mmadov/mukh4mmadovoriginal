@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { enqueueReadingAttempt, flushReadingAttemptOutbox, readFailedReadingAttempts, readReadingAttemptOutbox } from '../src/lib/reading/reading-attempt-outbox.mjs';
 import { collectLegacyAttempts } from '../src/lib/reading/legacy-attempt-import.mjs';
-import { formatAggregateTime, getTashkentTodayRange } from '../src/lib/reading/metrics.mjs';
+import { formatAggregateTime, getHomeMetricsSource, getTashkentTodayRange } from '../src/lib/reading/metrics.mjs';
 
 class MemoryStorage {
   values = new Map();
@@ -109,3 +109,10 @@ const tashkentRange = getTashkentTodayRange(new Date('2026-10-02T10:00:00.000Z')
 assert.equal(new Date(tashkentRange.from).toISOString(), '2026-10-01T19:00:00.000Z');
 assert.equal(new Date(tashkentRange.to).toISOString(), '2026-10-02T19:00:00.000Z');
 console.log('PASS: aggregate time rounding and Asia/Tashkent day range');
+assert.equal(getHomeMetricsSource({ attempts: 0 }, { attempts: 0 }, true), 'local-older');
+assert.equal(getHomeMetricsSource({ attempts: 0 }, { attempts: 4 }, true), 'server');
+assert.equal(getHomeMetricsSource({ attempts: 0 }, null, true), 'local');
+assert.equal(getHomeMetricsSource({ attempts: 0 }, null, false), 'server');
+assert.equal(getHomeMetricsSource(null, null, true), 'local');
+assert.equal(getHomeMetricsSource({ attempts: 2 }, null, true), 'server');
+console.log('PASS: Home distinguishes local history, all-time server history, and unavailable metrics');

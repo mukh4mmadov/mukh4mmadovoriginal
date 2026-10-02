@@ -18,7 +18,7 @@ import { getAllProgress } from "@/lib/progressTracker";
 import { useAuth } from "@/contexts/AuthContext";
 import readingTestsModule from "@/data/readingTests_new";
 import { supabase } from '@/lib/supabase/client';
-import { formatAggregateTime, getMyReadingMetrics, getTashkentTodayRange } from '@/lib/reading/metrics.mjs';
+import { formatAggregateTime, getHomeMetricsSource, getMyReadingMetrics, getTashkentTodayRange } from '@/lib/reading/metrics.mjs';
 import { requestOpenMigrationPrompt } from '@/lib/reading/migration-prompt-events.mjs';
 
 const readingTests = readingTestsModule?.readingTests || [];
@@ -39,12 +39,17 @@ export default function Home() {
     let isActive = true;
     const loadProgress = async () => {
       const range = getTashkentTodayRange();
-      const [progress, serverMetrics] = await Promise.all([
+      const [progress, todayMetrics] = await Promise.all([
         getAllProgress(userId),
         userId ? getMyReadingMetrics(supabase, range.from, range.to) : Promise.resolve(null),
       ]);
       if (!isActive) return;
       setProgressData(progress || []);
+      const localAttemptHistoryExists = (progress || []).some((item) => (item.attemptHistory || []).length > 0);
+      const allTimeMetrics = todayMetrics?.attempts === 0 && localAttemptHistoryExists
+        ? await getMyReadingMetrics(supabase, '1970-01-01T00:00:00.000Z', new Date(Date.now() + 86400000).toISOString())
+        : null;
+      if (!isActive) return;
 
       const todayProgress = (progress || []).filter(p => {
         const lastAttempt = new Date(p.lastAttempt);
@@ -66,7 +71,6 @@ export default function Home() {
         return totals;
       }, { questions: 0, correct: 0 });
 
-      const localAttemptHistoryExists = (progress || []).some((item) => (item.attemptHistory || []).length > 0);
       const localStats = {
         readingTimeSeconds: totalTime,
         testsCompleted: completedPassages.length,
@@ -74,17 +78,15 @@ export default function Home() {
         accuracy: completedTotals.questions
           ? Math.round((completedTotals.correct / completedTotals.questions) * 100)
           : null,
-        source: serverMetrics ? (serverMetrics.attempts > 0 || !localAttemptHistoryExists ? 'server' : 'local-older') : 'local',
       };
-      setTodayStats(serverMetrics?.attempts > 0 || (serverMetrics && !localAttemptHistoryExists) ? {
-        readingTimeSeconds: serverMetrics.total_seconds,
-        testsCompleted: serverMetrics.attempts,
-        highlightsCreated: serverMetrics.highlights_count,
-        accuracy: serverMetrics.question_exposures ? serverMetrics.accuracy_percent : null,
-        source: 'server',
-      } : {
-        ...localStats,
-      });
+      const source = getHomeMetricsSource(todayMetrics, allTimeMetrics, localAttemptHistoryExists);
+      setTodayStats(source === 'server' ? {
+        readingTimeSeconds: todayMetrics.total_seconds,
+        testsCompleted: todayMetrics.attempts,
+        highlightsCreated: todayMetrics.highlights_count,
+        accuracy: todayMetrics.question_exposures ? todayMetrics.accuracy_percent : null,
+        source,
+      } : { ...localStats, source });
     };
 
     loadProgress();
