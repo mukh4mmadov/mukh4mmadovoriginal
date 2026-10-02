@@ -12,6 +12,9 @@ export function useModalAccessibility(isOpen, onClose, initialFocusRef, returnFo
     if (!isOpen) return;
 
     const previousFocus = document.activeElement;
+    const explicitReturnFocus = returnFocusRef?.current;
+    const previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     const getDialog = () => {
       const scopedDialog = dialogRef.current;
       if (scopedDialog?.getClientRects().length) return scopedDialog;
@@ -71,7 +74,8 @@ export function useModalAccessibility(isOpen, onClose, initialFocusRef, returnFo
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
-      const focusTarget = returnFocusRef?.current || previousFocus;
+      document.body.style.overflow = previousBodyOverflow;
+      const focusTarget = explicitReturnFocus || previousFocus;
       if (focusTarget instanceof HTMLElement && focusTarget.isConnected) {
         focusTarget.focus();
       }
