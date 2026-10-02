@@ -80,7 +80,7 @@ row_counts_json AS (
     CASE WHEN to_regclass(format('public.%I', w.table_name)) IS NULL THEN NULL
     ELSE (
       SELECT ((xpath('/table/row/count/text()', query_to_xml(
-        format('SELECT count(*) AS count FROM public.%I', w.table_name), false, true, ''
+        format('SELECT count(*) AS count FROM public.%I', w.table_name), false, false, ''
       )))[1]::text)::bigint
     ) END
   ), '{}'::jsonb) AS value
@@ -114,7 +114,7 @@ reading_history_sample AS (
           ORDER BY completed_at DESC
           LIMIT 3
         ) sample_row
-      $sample$, false, true, '')))[1]::text)::jsonb
+      $sample$, false, false, '')))[1]::text)::jsonb
     )
   END AS value
 )
