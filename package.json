@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/check-reading-data.mjs",
     "build": "next build",
     "start": "next start",
     "qa:public": "node scripts/qa-public-ui.mjs",
