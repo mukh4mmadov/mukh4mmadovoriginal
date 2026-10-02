@@ -17,8 +17,8 @@ These files are for review and manual use in the Supabase SQL Editor. No SQL has
 ## Files
 
 - `inspect-production.sql`: read-only schema, privileges, policy, trigger, function, and row-count inventory.
-- `dry-run.sql`: transactional copy of the migration plus permission, idempotency, learner isolation, admin access, invalid input, duration clamp, and rollback checks. It ends with `ROLLBACK`.
-- `migration.sql`: additive columns, exact per-question answer table, RLS, submit and aggregate RPCs, and anon privilege assertions.
+- `dry-run.sql`: transactional copy of the migration plus permission, idempotency, learner isolation, admin access, oversized identifier and answer rejection, duration and timestamp clamps, and rollback checks. It ends with `ROLLBACK`. Its migration DDL (from `DO $preconditions$` through `$verify$;`) must match the same range in `migration.sql` exactly.
+- `migration.sql`: additive columns, exact per-question answer table, RLS, submit and aggregate RPCs, and anon privilege assertions. The RPC rejects passage IDs over 200, question IDs over 100, question types over 50, and selected answers over 500 characters rather than truncating them.
 - `rollback.sql`: refuses to run if any exact attempt or answer exists, then removes only objects this migration introduced.
 - `rollback-proof.sql`: post-dry-run check that new objects are absent and displays existing row counts.
 - `exact-attempt-update-hardening.sql`: follow-up transaction for databases that applied the earlier migration before the immutable-attempt trigger was added.

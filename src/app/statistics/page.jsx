@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { BarChart3, ArrowLeft, BookOpen, CalendarDays, Clock, Share2, Target, TrendingUp } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAllProgress } from '@/lib/progressTracker';
@@ -11,6 +12,7 @@ import { formatAggregateTime, getMyReadingMetrics } from '@/lib/reading/metrics.
 import { requestOpenMigrationPrompt } from '@/lib/reading/migration-prompt-events.mjs';
 
 export default function StatisticsPage() {
+  const router = useRouter();
   const { user, isLoading } = useAuth();
   const userId = user?.id;
   const [stats, setStats] = useState(null);

@@ -160,9 +160,10 @@ BEGIN
     END IF;
     IF length(v_row->>'question_id') > 100 THEN RAISE EXCEPTION 'question id exceeds the 100 character limit'; END IF;
     IF length(v_row->>'question_type') > 50 THEN RAISE EXCEPTION 'question type exceeds the 50 character limit'; END IF;
+    IF length(v_row->>'selected_answer') > 500 THEN RAISE EXCEPTION 'selected answer exceeds the 500 character limit'; END IF;
   END LOOP;
   SELECT count(*)::integer,
-         count(*) FILTER (WHERE NULLIF(btrim(left(value->>'selected_answer', 500)), '') IS NOT NULL)::integer,
+         count(*) FILTER (WHERE NULLIF(btrim(value->>'selected_answer'), '') IS NOT NULL)::integer,
          count(*) FILTER (WHERE value->>'is_correct' = 'true')::integer
     INTO v_question_count, v_answered_count, v_correct_count
   FROM jsonb_array_elements(p_answers) AS items(value);
@@ -190,8 +191,8 @@ BEGIN
   INSERT INTO public.reading_attempt_answers
     (attempt_id, question_id, question_type, selected_answer, is_answered, is_correct)
   SELECT v_attempt_id, value->>'question_id', value->>'question_type',
-         NULLIF(left(value->>'selected_answer',500),''),
-         NULLIF(btrim(left(value->>'selected_answer',500)), '') IS NOT NULL,
+         NULLIF(value->>'selected_answer',''),
+         NULLIF(btrim(value->>'selected_answer'), '') IS NOT NULL,
          (value->>'is_correct')::boolean
   FROM jsonb_array_elements(p_answers) AS items(value);
   RETURN v_attempt_id;
