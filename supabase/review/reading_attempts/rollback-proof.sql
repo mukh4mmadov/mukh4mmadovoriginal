@@ -9,8 +9,12 @@ BEGIN
   END IF;
   IF to_regprocedure('public.submit_reading_attempt(uuid,text,integer,jsonb,timestamp with time zone)') IS NOT NULL
      OR to_regprocedure('public.get_my_reading_metrics(timestamp with time zone,timestamp with time zone)') IS NOT NULL
-     OR to_regprocedure('public.get_admin_reading_metrics(integer)') IS NOT NULL THEN
+     OR to_regprocedure('public.get_admin_reading_metrics(integer)') IS NOT NULL
+     OR to_regprocedure('public.guard_reading_history_exact_attempt_update()') IS NOT NULL THEN
     RAISE EXCEPTION 'FAIL: dry-run left a function behind';
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid='public.reading_history'::regclass AND tgname='reading_history_exact_attempt_immutable' AND NOT tgisinternal) THEN
+    RAISE EXCEPTION 'FAIL: dry-run left the exact attempt update trigger behind';
   END IF;
   RAISE NOTICE 'PASS: no attempt schema objects remain after dry-run';
 END

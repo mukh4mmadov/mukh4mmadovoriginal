@@ -59,6 +59,23 @@ BEGIN
 END
 $constraints$;
 
+CREATE OR REPLACE FUNCTION public.guard_reading_history_exact_attempt_update()
+RETURNS trigger
+LANGUAGE plpgsql SECURITY INVOKER
+SET search_path = pg_catalog, public
+AS $function$
+BEGIN
+  RAISE EXCEPTION USING ERRCODE = '42501', MESSAGE = 'Exact reading attempts are immutable';
+  RETURN NEW;
+END
+$function$;
+REVOKE ALL ON FUNCTION public.guard_reading_history_exact_attempt_update() FROM PUBLIC, anon, authenticated;
+DROP TRIGGER IF EXISTS reading_history_exact_attempt_immutable ON public.reading_history;
+CREATE TRIGGER reading_history_exact_attempt_immutable
+  BEFORE UPDATE ON public.reading_history
+  FOR EACH ROW WHEN (OLD.attempt_key IS NOT NULL)
+  EXECUTE FUNCTION public.guard_reading_history_exact_attempt_update();
+
 DO $policy$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='reading_history' AND policyname='reading_history_admin_select_attempt_metrics') THEN
@@ -312,6 +329,21 @@ BEGIN
      OR has_function_privilege('anon','public.get_my_reading_metrics(timestamp with time zone,timestamp with time zone)','EXECUTE')
      OR has_function_privilege('anon','public.get_admin_reading_metrics(integer)','EXECUTE') THEN
     RAISE EXCEPTION 'Verification failed: anon can execute a new reading-attempt function';
+  END IF;
+  IF has_function_privilege('anon','public.guard_reading_history_exact_attempt_update()','EXECUTE')
+     OR has_function_privilege('authenticated','public.guard_reading_history_exact_attempt_update()','EXECUTE') THEN
+    RAISE EXCEPTION 'Verification failed: app roles can directly execute the attempt update trigger function';
+  END IF;
+  IF (SELECT prosecdef FROM pg_proc WHERE oid='public.guard_reading_history_exact_attempt_update()'::regprocedure) THEN
+    RAISE EXCEPTION 'Verification failed: attempt update trigger function must remain SECURITY INVOKER';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgrelid='public.reading_history'::regclass
+      AND tgname='reading_history_exact_attempt_immutable'
+      AND NOT tgisinternal AND tgenabled <> 'D'
+  ) THEN
+    RAISE EXCEPTION 'Verification failed: exact-attempt update trigger is missing or disabled';
   END IF;
   RAISE NOTICE 'PASS: anon has no privileges on new table or functions';
 END

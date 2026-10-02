@@ -70,6 +70,23 @@ BEGIN
 END
 $constraints$;
 
+CREATE OR REPLACE FUNCTION public.guard_reading_history_exact_attempt_update()
+RETURNS trigger
+LANGUAGE plpgsql SECURITY INVOKER
+SET search_path = pg_catalog, public
+AS $function$
+BEGIN
+  RAISE EXCEPTION USING ERRCODE = '42501', MESSAGE = 'Exact reading attempts are immutable';
+  RETURN NEW;
+END
+$function$;
+REVOKE ALL ON FUNCTION public.guard_reading_history_exact_attempt_update() FROM PUBLIC, anon, authenticated;
+DROP TRIGGER IF EXISTS reading_history_exact_attempt_immutable ON public.reading_history;
+CREATE TRIGGER reading_history_exact_attempt_immutable
+  BEFORE UPDATE ON public.reading_history
+  FOR EACH ROW WHEN (OLD.attempt_key IS NOT NULL)
+  EXECUTE FUNCTION public.guard_reading_history_exact_attempt_update();
+
 DO $policy$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='reading_history' AND policyname='reading_history_admin_select_attempt_metrics') THEN
@@ -324,6 +341,21 @@ BEGIN
      OR has_function_privilege('anon','public.get_admin_reading_metrics(integer)','EXECUTE') THEN
     RAISE EXCEPTION 'Verification failed: anon can execute a new reading-attempt function';
   END IF;
+  IF has_function_privilege('anon','public.guard_reading_history_exact_attempt_update()','EXECUTE')
+     OR has_function_privilege('authenticated','public.guard_reading_history_exact_attempt_update()','EXECUTE') THEN
+    RAISE EXCEPTION 'Verification failed: app roles can directly execute the attempt update trigger function';
+  END IF;
+  IF (SELECT prosecdef FROM pg_proc WHERE oid='public.guard_reading_history_exact_attempt_update()'::regprocedure) THEN
+    RAISE EXCEPTION 'Verification failed: attempt update trigger function must remain SECURITY INVOKER';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgrelid='public.reading_history'::regclass
+      AND tgname='reading_history_exact_attempt_immutable'
+      AND NOT tgisinternal AND tgenabled <> 'D'
+  ) THEN
+    RAISE EXCEPTION 'Verification failed: exact-attempt update trigger is missing or disabled';
+  END IF;
   RAISE NOTICE 'PASS: anon has no privileges on new table or functions';
 END
 $verify$;
@@ -375,6 +407,17 @@ BEGIN
   IF (SELECT count(*) FROM public.reading_attempt_answers aa WHERE aa.attempt_id=v_attempt_id)<>2 THEN RAISE EXCEPTION 'FAIL: learner cannot read own answers'; END IF;
   INSERT INTO public.reading_history(user_id,passage_id,score,time_spent_seconds) VALUES(auth.uid(),'dry-run-legacy-flow',1,1);
   IF NOT EXISTS (SELECT 1 FROM public.reading_history WHERE user_id=auth.uid() AND passage_id='dry-run-legacy-flow') THEN RAISE EXCEPTION 'FAIL: basic reading_history insert/select flow broke'; END IF;
+  BEGIN
+    UPDATE public.reading_history SET time_spent_seconds=61 WHERE id=v_attempt_id;
+    RAISE EXCEPTION 'FAIL: learner updated an exact reading attempt';
+  EXCEPTION WHEN insufficient_privilege THEN
+    IF SQLERRM<>'Exact reading attempts are immutable' THEN RAISE; END IF;
+    RAISE NOTICE 'PASS: learner cannot update an exact attempt';
+  END;
+  IF (SELECT time_spent_seconds FROM public.reading_history WHERE id=v_attempt_id)<>60 THEN RAISE EXCEPTION 'FAIL: rejected exact-attempt update changed stored data'; END IF;
+  UPDATE public.reading_history SET time_spent_seconds=2 WHERE user_id=auth.uid() AND passage_id='dry-run-legacy-flow';
+  IF (SELECT time_spent_seconds FROM public.reading_history WHERE user_id=auth.uid() AND passage_id='dry-run-legacy-flow')<>2 THEN RAISE EXCEPTION 'FAIL: legacy history update was unexpectedly blocked'; END IF;
+  RAISE NOTICE 'PASS: legacy history updates remain available';
   duration_id := public.submit_reading_attempt(gen_random_uuid(),'dry-run-clamp',99999,v_one);
   IF (SELECT time_spent_seconds FROM public.reading_history WHERE id=duration_id)<>7200 THEN RAISE EXCEPTION 'FAIL: duration was not clamped'; END IF;
   future_id := public.submit_reading_attempt(gen_random_uuid(),'dry-run-future-time',1,v_one,now()+interval '3 days');
@@ -458,7 +501,9 @@ BEGIN
     RAISE EXCEPTION 'FAIL: row counts differ from pre-test baseline';
   END IF;
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='reading_history' AND column_name IN ('attempt_key','question_count','answered_count','correct_count'))
-     OR to_regclass('public.reading_attempt_answers') IS NOT NULL THEN
+     OR to_regclass('public.reading_attempt_answers') IS NOT NULL
+     OR to_regprocedure('public.guard_reading_history_exact_attempt_update()') IS NOT NULL
+     OR EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid='public.reading_history'::regclass AND tgname='reading_history_exact_attempt_immutable' AND NOT tgisinternal) THEN
     RAISE EXCEPTION 'FAIL: migration objects survived savepoint rollback';
   END IF;
   RAISE NOTICE 'PASS: savepoint rollback restored schema and row counts to the printed baseline';

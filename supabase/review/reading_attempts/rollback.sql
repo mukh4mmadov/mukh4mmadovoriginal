@@ -12,6 +12,8 @@ $guard$;
 DROP FUNCTION IF EXISTS public.get_admin_reading_metrics(integer);
 DROP FUNCTION IF EXISTS public.get_my_reading_metrics(timestamptz, timestamptz);
 DROP FUNCTION IF EXISTS public.submit_reading_attempt(uuid, text, integer, jsonb, timestamptz);
+DROP TRIGGER IF EXISTS reading_history_exact_attempt_immutable ON public.reading_history;
+DROP FUNCTION IF EXISTS public.guard_reading_history_exact_attempt_update();
 DROP POLICY IF EXISTS reading_attempt_answers_owner_select ON public.reading_attempt_answers;
 DROP POLICY IF EXISTS reading_attempt_answers_owner_insert ON public.reading_attempt_answers;
 DROP POLICY IF EXISTS reading_attempt_answers_admin_select ON public.reading_attempt_answers;
