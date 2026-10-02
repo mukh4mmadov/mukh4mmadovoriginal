@@ -19,6 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import readingTestsModule from "@/data/readingTests_new";
 import { supabase } from '@/lib/supabase/client';
 import { formatAggregateTime, getMyReadingMetrics, getTashkentTodayRange } from '@/lib/reading/metrics.mjs';
+import { requestOpenMigrationPrompt } from '@/lib/reading/migration-prompt-events.mjs';
 
 const readingTests = readingTestsModule?.readingTests || [];
 
@@ -45,17 +46,6 @@ export default function Home() {
       if (!isActive) return;
       setProgressData(progress || []);
 
-      if (serverMetrics) {
-        setTodayStats({
-          readingTimeSeconds: serverMetrics.total_seconds,
-          testsCompleted: serverMetrics.attempts,
-          highlightsCreated: serverMetrics.highlights_count,
-          accuracy: serverMetrics.question_exposures ? serverMetrics.accuracy_percent : null,
-          source: 'server',
-        });
-        return;
-      }
-
       const todayProgress = (progress || []).filter(p => {
         const lastAttempt = new Date(p.lastAttempt);
         const today = new Date();
@@ -76,13 +66,24 @@ export default function Home() {
         return totals;
       }, { questions: 0, correct: 0 });
 
-      setTodayStats({
+      const localAttemptHistoryExists = (progress || []).some((item) => (item.attemptHistory || []).length > 0);
+      const localStats = {
         readingTimeSeconds: totalTime,
         testsCompleted: completedPassages.length,
         highlightsCreated: "Not tracked",
         accuracy: completedTotals.questions
           ? Math.round((completedTotals.correct / completedTotals.questions) * 100)
           : null,
+        source: serverMetrics ? (serverMetrics.attempts > 0 || !localAttemptHistoryExists ? 'server' : 'local-older') : 'local',
+      };
+      setTodayStats(serverMetrics?.attempts > 0 || (serverMetrics && !localAttemptHistoryExists) ? {
+        readingTimeSeconds: serverMetrics.total_seconds,
+        testsCompleted: serverMetrics.attempts,
+        highlightsCreated: serverMetrics.highlights_count,
+        accuracy: serverMetrics.question_exposures ? serverMetrics.accuracy_percent : null,
+        source: 'server',
+      } : {
+        ...localStats,
       });
     };
 
@@ -130,7 +131,8 @@ export default function Home() {
             <h2 className="text-lg font-semibold text-white">Today's Study</h2>
           </div>
           <div className="mb-3 text-sm text-slate-400">
-            {todayStats.source === 'server' ? 'Today in Asia/Tashkent, from saved reading attempts.' : 'Today from local passage progress while server metrics are unavailable.'}
+            {todayStats.source === 'server' ? 'Today in Asia/Tashkent, from saved reading attempts.' : todayStats.source === 'local-older' ? 'Older results are not saved to your account yet.' : 'Today from local passage progress while server metrics are unavailable.'}
+            {todayStats.source === 'local-older' && <button type="button" onClick={requestOpenMigrationPrompt} className="ml-2 underline underline-offset-2 hover:text-white">Save older results</button>}
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-xl border border-white/10 bg-white/5 p-4 transition-all duration-200 hover:border-brand-500/30 hover:bg-white/10 hover:shadow-lg hover:shadow-brand-500/10">

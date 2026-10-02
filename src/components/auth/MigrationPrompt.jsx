@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, CheckCircle, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { migrationService } from '@/lib/supabase/services/migration.service';
 import { supabase } from '@/lib/supabase/client';
 import { flushReadingAttemptOutbox } from '@/lib/reading/reading-attempt-outbox.mjs';
 import { collectLegacyAttempts, LEGACY_ATTEMPT_CONSENT_PREFIX, queueLegacyAttempts, rememberLegacyAttemptChoice } from '@/lib/reading/legacy-attempt-import.mjs';
+import { OPEN_MIGRATION_PROMPT_EVENT } from '@/lib/reading/migration-prompt-events.mjs';
 
 export default function MigrationPrompt() {
   const { user, hasLocalStorageData, migrateLocalStorage } = useAuth();
@@ -24,15 +25,22 @@ export default function MigrationPrompt() {
     setLegacyAttempts(collectLegacyAttempts(window.localStorage));
   }, [user?.id]);
 
+  const handleShowPrompt = useCallback(() => {
+    const data = migrationService.extractLocalStorageData();
+    setMigrationSummary(migrationService.getMigrationSummary(data));
+    setIsDismissed(false);
+    setIsOpen(true);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    window.addEventListener(OPEN_MIGRATION_PROMPT_EVENT, handleShowPrompt);
+    return () => window.removeEventListener(OPEN_MIGRATION_PROMPT_EVENT, handleShowPrompt);
+  }, [handleShowPrompt]);
+
   if (!user || !hasLocalStorageData || isDismissed) {
     return null;
   }
-
-  const handleShowPrompt = () => {
-    const data = migrationService.extractLocalStorageData();
-    setMigrationSummary(migrationService.getMigrationSummary(data));
-    setIsOpen(true);
-  };
 
   const handleMigrate = async () => {
     setIsMigrating(true);

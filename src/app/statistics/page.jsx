@@ -8,6 +8,7 @@ import readingTestsModule from '@/data/readingTests_new';
 import { supabase } from '@/lib/supabase/client';
 import { getReviewedQuestionCount } from '@/lib/reading/answer-review';
 import { formatAggregateTime, getMyReadingMetrics } from '@/lib/reading/metrics.mjs';
+import { requestOpenMigrationPrompt } from '@/lib/reading/migration-prompt-events.mjs';
 
 export default function StatisticsPage() {
   const { user, isLoading } = useAuth();
@@ -88,7 +89,8 @@ export default function StatisticsPage() {
           highlights_count: null,
           source: 'local',
         };
-        setStats(serverMetrics ? {
+        const useServerMetrics = serverMetrics && (serverMetrics.attempts > 0 || questionAttempts.length === 0);
+        setStats(useServerMetrics ? {
           ...localStats,
           total_passages_completed: serverMetrics.attempts,
           total_time_spent_seconds: serverMetrics.total_seconds,
@@ -99,7 +101,7 @@ export default function StatisticsPage() {
           correct_responses: serverMetrics.correct,
           highlights_count: serverMetrics.highlights_count,
           source: 'server',
-        } : localStats);
+        } : { ...localStats, source: serverMetrics?.attempts === 0 && questionAttempts.length > 0 ? 'local-older' : 'local' });
         setLoading(false);
       }).catch(() => {
         if (!isActive) return;
@@ -259,7 +261,8 @@ export default function StatisticsPage() {
 
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Your Statistics</h1>
-          <p className="text-slate-400">{stats?.source === 'server' ? 'All-time totals from saved reading attempts.' : 'All-time local summary; server attempt metrics are unavailable.'}</p>
+          <p className="text-slate-400">{stats?.source === 'server' ? 'All-time totals from saved reading attempts.' : stats?.source === 'local-older' ? 'Older results are not saved to your account yet.' : 'All-time local summary; server attempt metrics are unavailable.'}</p>
+          {stats?.source === 'local-older' && <button type="button" onClick={requestOpenMigrationPrompt} className="mt-2 text-sm text-brand-300 underline underline-offset-2 hover:text-white">Save older results to your account</button>}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
