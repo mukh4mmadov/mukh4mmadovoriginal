@@ -7,13 +7,15 @@ import { supabase } from "@/lib/supabase/client";
 export default function RoadmapPage() {
   const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [usingDemoData, setUsingDemoData] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     loadRoadmap();
   }, []);
 
   async function loadRoadmap() {
+    setIsLoading(true);
+    setLoadError(false);
     try {
       const { data, error } = await supabase
         .from("roadmap")
@@ -24,71 +26,11 @@ export default function RoadmapPage() {
       setItems(data || []);
     } catch (error) {
       console.error("Error loading roadmap:", error);
-      setItems(getDemoRoadmap());
-      setUsingDemoData(true);
+      setItems([]);
+      setLoadError(true);
     } finally {
       setIsLoading(false);
     }
-  }
-
-  function getDemoRoadmap() {
-    return [
-      {
-        id: 1,
-        title: "AI Reading Coach",
-        description:
-          "Deploy the AI coach as a real end-user feature when the required provider API key is configured.",
-        status: "in_progress",
-        priority: "high",
-        category: "feature",
-        progress: 72,
-        target_date: "2026-10-15",
-      },
-      {
-        id: 2,
-        title: "Reading Analytics & Progress Tracking",
-        description:
-          "Expand insight reporting for streaks, score trends, and practice consistency across passages.",
-        status: "completed",
-        priority: "high",
-        category: "improvement",
-        progress: 100,
-        target_date: "2026-09-15",
-      },
-      {
-        id: 3,
-        title: "Admin Feedback & Issue Reporting",
-        description:
-          "Keep feedback submission, moderation, and issue tracking available for product improvements.",
-        status: "completed",
-        priority: "medium",
-        category: "bug_fix",
-        progress: 100,
-        target_date: "2026-09-20",
-      },
-      {
-        id: 4,
-        title: "Speaking Practice Expansion",
-        description:
-          "Add future speaking and pronunciation modules after the core reading experience is fully stabilized.",
-        status: "planned",
-        priority: "medium",
-        category: "feature",
-        progress: 18,
-        target_date: "2026-12-01",
-      },
-      {
-        id: 5,
-        title: "Mobile & UX Polish",
-        description:
-          "Improve responsive behavior and small-screen interaction quality for users studying on mobile devices.",
-        status: "planned",
-        priority: "medium",
-        category: "improvement",
-        progress: 30,
-        target_date: "2026-11-15",
-      },
-    ];
   }
 
   const statusConfig = {
@@ -174,7 +116,6 @@ export default function RoadmapPage() {
   return (
     <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
-        {usingDemoData && <p className="mb-6 rounded-lg border border-amber-300/20 bg-amber-300/10 p-3 text-sm text-amber-100" role="status">Database content is unavailable. Showing sample roadmap data.</p>}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-white mb-4">
             Product Roadmap
@@ -183,6 +124,19 @@ export default function RoadmapPage() {
             See what we're working on and what's coming next
           </p>
         </div>
+
+        {loadError && (
+          <div className="mb-8 rounded-xl border border-amber-300/20 bg-amber-300/10 p-5 text-center" role="status">
+            <p className="text-sm text-amber-100">The roadmap is temporarily unavailable.</p>
+            <button
+              type="button"
+              onClick={loadRoadmap}
+              className="mt-3 min-h-11 rounded-lg border border-amber-200/30 px-4 text-sm font-semibold text-amber-50 hover:bg-amber-200/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
+            >
+              Try again
+            </button>
+          </div>
+        )}
 
         <div className="space-y-12">
           {["completed", "in_progress", "planned"]
@@ -276,7 +230,7 @@ export default function RoadmapPage() {
           })}
         </div>
 
-        {items.length === 0 && (
+        {!loadError && items.length === 0 && (
           <div className="text-center py-12 text-slate-400">
             <TrendingUp size={48} className="mx-auto mb-4 opacity-50" />
             <p>No roadmap items are available yet.</p>

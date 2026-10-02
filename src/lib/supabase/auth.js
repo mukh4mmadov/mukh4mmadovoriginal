@@ -4,31 +4,6 @@ import { getSafeRedirectPath } from '@/lib/auth/redirect';
 export class AuthService {
   profileRequests = new Map();
 
-  async signUp(data) {
-    const { data: authData, error } = await supabase.auth.signUp({
-      email: data.email,
-      password: data.password,
-      options: {
-        data: {
-          full_name: data.fullName,
-        },
-      },
-    });
-
-    if (error) throw error;
-    return authData;
-  }
-
-  async signIn(data) {
-    const { data: authData, error } = await supabase.auth.signInWithPassword({
-      email: data.email,
-      password: data.password,
-    });
-
-    if (error) throw error;
-    return authData;
-  }
-
   async signInWithGoogle() {
     const currentOrigin = typeof window !== 'undefined' ? window.location.origin : null;
     const redirect = currentOrigin
@@ -58,19 +33,6 @@ export class AuthService {
 
     if (error) throw error;
     return data;
-  }
-
-  async createGuestAccount() {
-    const { data: authData, error } = await supabase.auth.signInAnonymously({
-      options: {
-        data: {
-          is_guest: true,
-        },
-      },
-    });
-
-    if (error) throw error;
-    return authData;
   }
 
   async signOut() {

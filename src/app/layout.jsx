@@ -12,6 +12,8 @@ import ReadingAttemptOutboxSync from "@/components/shared/ReadingAttemptOutboxSy
 export const metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://mukh4mmadovoriginal.vercel.app"),
   alternates: { canonical: "/" },
+  manifest: "/site.webmanifest",
+  icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
   title: {
     default: "IELTS Reading Practice",
     template: "%s | Muhammadov IELTS Reading",

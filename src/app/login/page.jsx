@@ -131,9 +131,8 @@ export default function LoginPage() {
               </h1>
 
               <p className="text-base lg:text-xl text-slate-300 leading-relaxed">
-                Practice with authentic Cambridge passages, get AI-powered
-                coaching, and track your progress with clear feedback on every
-                question.
+                Practice reading passages, get AI-powered coaching, and track
+                your progress with clear feedback on every question.
               </p>
 
               <div className="space-y-4 pt-4">
@@ -143,10 +142,10 @@ export default function LoginPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-white">
-                      Authentic Passages
+                      Reading Practice
                     </h3>
                     <p className="text-slate-400 text-sm">
-                      Real Cambridge IELTS reading tests
+                      Practice passages with question-by-question feedback
                     </p>
                   </div>
                 </div>

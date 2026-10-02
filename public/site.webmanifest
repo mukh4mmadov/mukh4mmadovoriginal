@@ -1,0 +1,19 @@
+{
+  "id": "/",
+  "name": "Muhammadov IELTS Reading",
+  "short_name": "IELTS Reading",
+  "description": "Practice reading passages with question-by-question feedback.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

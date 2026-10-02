@@ -98,36 +98,6 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  const signIn = async (email, password) => {
-    const authData = await authService.signIn({ email, password });
-    setUser(authData.user);
-    
-    if (authData.user) {
-      try {
-        const userProfile = await authService.getUserProfile(authData.user.id);
-        setProfile(userProfile);
-        await analyticsService.trackUserLogin(authData.user.id);
-      } catch (error) {
-        console.error('Error fetching user profile after sign in:', error);
-      }
-    }
-  };
-
-  const signUp = async (email, password, fullName) => {
-    const authData = await authService.signUp({ email, password, fullName });
-    setUser(authData.user);
-    
-    if (authData.user) {
-      try {
-        const userProfile = await authService.getUserProfile(authData.user.id);
-        setProfile(userProfile);
-        await analyticsService.trackUserRegistration(authData.user.id, { fullName });
-      } catch (error) {
-        console.error('Error fetching user profile after sign up:', error);
-      }
-    }
-  };
-
   const signInWithGoogle = async () => {
     await authService.signInWithGoogle();
   };
@@ -139,21 +109,6 @@ export function AuthProvider({ children }) {
     setProfile(null);
     if (userId) {
       await analyticsService.trackUserLogout(userId);
-    }
-  };
-
-  const createGuestAccount = async () => {
-    const authData = await authService.createGuestAccount();
-    setUser(authData.user);
-    
-    if (authData.user) {
-      try {
-        const userProfile = await authService.getUserProfile(authData.user.id);
-        setProfile(userProfile);
-        await analyticsService.trackUserRegistration(authData.user.id, { isGuest: true });
-      } catch (error) {
-        console.error('Error fetching user profile after guest creation:', error);
-      }
     }
   };
 
