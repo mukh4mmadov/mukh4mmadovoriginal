@@ -30,7 +30,7 @@ export async function generateMetadata({ params }) {
 
   return {
     title: test.title,
-    description: `Practice the IELTS Academic Reading passage "${test.title}" with ${questionCount} questions. Timed at 20 minutes, exam-format questions with instant band estimate.`,
+    description: `Practice the IELTS Academic Reading passage "${test.title}" with ${questionCount} questions. Timed at 20 minutes, with exam-format questions and answer feedback.`,
     alternates: { canonical: `/reading/${test.slug}` },
     openGraph: {
       title: test.title,
