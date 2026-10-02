@@ -13,7 +13,6 @@ import {
   TrendingUp,
   CheckCircle,
 } from "lucide-react";
-import BandGauge from "@/components/shared/BandGauge";
 import DailyInspiration from "@/components/shared/DailyInspiration";
 import { getAllProgress } from "@/lib/progressTracker";
 import { useAuth } from "@/contexts/AuthContext";
@@ -161,7 +160,7 @@ export default function Home() {
             </h1>
             <p className="section-subtitle mb-8 max-w-xl text-balance">
               Timed passages, exam-style questions, and a highlighter built into
-              the text — scored instantly with an estimated band.
+              the text — scored instantly with clear question-by-question feedback.
             </p>
             <div className="flex flex-wrap gap-4">
               <Link href="/reading" className="btn-primary">
@@ -174,7 +173,24 @@ export default function Home() {
             <p className="mb-2 text-xs uppercase tracking-[0.28em] text-slate-400">
               Sample result
             </p>
-            <BandGauge band={7.5} correct={10} total={13} />
+            <div className="grid grid-cols-2 gap-4 text-center">
+              <div>
+                <p className="text-3xl font-semibold text-white">10 / 13</p>
+                <p className="mt-1 text-xs uppercase tracking-wider text-slate-400">Correct</p>
+              </div>
+              <div>
+                <p className="text-3xl font-semibold text-white">0</p>
+                <p className="mt-1 text-xs uppercase tracking-wider text-slate-400">Skipped</p>
+              </div>
+              <div>
+                <p className="text-3xl font-semibold text-white">77%</p>
+                <p className="mt-1 text-xs uppercase tracking-wider text-slate-400">Percentage</p>
+              </div>
+              <div>
+                <p className="text-3xl font-semibold text-white">12:34</p>
+                <p className="mt-1 text-xs uppercase tracking-wider text-slate-400">Time</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -198,8 +214,8 @@ export default function Home() {
             },
             {
               icon: Target,
-              title: "Instant band estimate",
-              body: "Submit and immediately see a band estimate with per-question feedback.",
+              title: "Immediate feedback",
+              body: "Submit and review your result with per-question feedback.",
             },
           ].map((item) => {
             const Icon = item.icon;

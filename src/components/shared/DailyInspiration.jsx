@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const motivationalQuotes = [
   "Consistent practice is the key to IELTS success.",
-  "Every passage you complete brings you closer to your target band.",
+  "Every passage gives you another chance to learn from your answers.",
   "Stay focused on your progress, not perfection.",
   "Reading speed improves with regular practice.",
   "Your dedication will pay off on exam day.",

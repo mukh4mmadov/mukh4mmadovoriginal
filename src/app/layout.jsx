@@ -16,7 +16,7 @@ export const metadata = {
     template: "%s | Muhammadov IELTS Reading",
   },
   description:
-    "Practice IELTS Reading with exam-format passages, a built-in highlighter, and instant band estimates.",
+    "Practice IELTS Reading with exam-format passages, a built-in highlighter, and question-by-question feedback.",
   keywords: ["IELTS", "reading", "practice", "exam", "study"],
   robots: {
     index: true,
@@ -35,14 +35,14 @@ export const metadata = {
     siteName: "Muhammadov IELTS Reading",
     title: "IELTS Reading Practice",
     description:
-      "Practice IELTS Reading with exam-format passages, a built-in highlighter, and instant band estimates.",
+      "Practice IELTS Reading with exam-format passages, a built-in highlighter, and question-by-question feedback.",
     images: [{ url: "/og-reading.svg", width: 1200, height: 630, alt: "IELTS Reading Practice" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "IELTS Reading Practice",
     description:
-      "Practice IELTS Reading with exam-format passages, a built-in highlighter, and instant band estimates.",
+      "Practice IELTS Reading with exam-format passages, a built-in highlighter, and question-by-question feedback.",
     images: ["/og-reading.svg"],
   },
 };

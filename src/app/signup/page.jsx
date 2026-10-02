@@ -108,8 +108,8 @@ export default function SignUpPage() {
 
               <p className="text-base lg:text-xl text-slate-300 leading-relaxed">
                 Join thousands of students practicing with authentic Cambridge
-                passages, getting AI-powered coaching, and achieving their
-                target band scores.
+                passages, and getting AI-powered coaching with feedback on
+                every question.
               </p>
 
               <div className="space-y-4 pt-4">

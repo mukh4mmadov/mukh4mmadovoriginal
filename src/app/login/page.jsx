@@ -132,8 +132,8 @@ export default function LoginPage() {
 
               <p className="text-base lg:text-xl text-slate-300 leading-relaxed">
                 Practice with authentic Cambridge passages, get AI-powered
-                coaching, and track your progress to achieve your target band
-                score.
+                coaching, and track your progress with clear feedback on every
+                question.
               </p>
 
               <div className="space-y-4 pt-4">

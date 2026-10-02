@@ -181,7 +181,6 @@ export default function StatisticsPage() {
       `Correct responses across attempts: ${stats?.correct_responses || 0}`,
       `Mastered questions: ${stats?.mastered_questions || 0}`,
       `Reading time: ${formatTime(stats?.total_time_spent_seconds || 0)}`,
-      `Target IELTS band: ${Number(goal.target_band).toFixed(1)}`,
       `Exam date: ${goal.exam_date || 'Not set'}`,
       `Study days per week: ${goal.study_days_per_week}`,
     ].join('\n');
@@ -326,21 +325,7 @@ export default function StatisticsPage() {
             </div>
           </div>
 
-          <form onSubmit={saveGoal} className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3 sm:items-end">
-            <div>
-              <label htmlFor="target-band" className="mb-2 block text-sm font-medium text-slate-200">Target IELTS band</label>
-              <select
-                id="target-band"
-                value={goal.target_band}
-                onChange={(event) => setGoal((current) => ({ ...current, target_band: event.target.value }))}
-                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-white"
-                disabled={goalLoading || goalSaving}
-              >
-                {Array.from({ length: 11 }, (_, index) => 4 + index * 0.5).map((band) => (
-                  <option key={band} value={band.toFixed(1)}>{band.toFixed(1)}</option>
-                ))}
-              </select>
-            </div>
+          <form onSubmit={saveGoal} className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-end">
             <div>
               <label htmlFor="exam-date" className="mb-2 block text-sm font-medium text-slate-200">Exam date (optional)</label>
               <input
@@ -368,7 +353,7 @@ export default function StatisticsPage() {
             <button
               type="submit"
               disabled={goalLoading || goalSaving}
-              className="min-h-11 rounded-xl bg-brand-500 px-4 py-2 font-semibold text-white transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-3 sm:justify-self-start"
+              className="min-h-11 rounded-xl bg-brand-500 px-4 py-2 font-semibold text-white transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-2 sm:justify-self-start"
             >
               {goalSaving ? 'Saving…' : 'Save study plan'}
             </button>
@@ -382,12 +367,10 @@ export default function StatisticsPage() {
             <p role="status" className="text-sm text-amber-200">That exam date has passed. Choose a future date to get a countdown.</p>
           ) : (
             <div className="rounded-xl border border-white/10 bg-slate-950/40 p-4">
-              <p className="mb-2 font-semibold text-white">Target band {Number(goal.target_band).toFixed(1)}</p>
               <p className="text-sm leading-6 text-slate-300">
                 Aim for {plannedStudyDays} reading practice {plannedStudyDays === 1 ? 'session' : 'sessions'} each week. For each session, complete one timed passage, then review the answers and explanations. {daysUntilExam !== null ? `Your exam is in ${daysUntilExam} days.` : 'Add an exam date to see your countdown.'}
                 {daysUntilExam !== null && daysUntilExam > 0 && daysUntilExam <= 14 ? ' With less than two weeks left, consider adding practice days if your schedule allows.' : ''}
               </p>
-              <p className="mt-2 text-xs text-slate-400">The plan uses your chosen target and schedule. Your saved passage results are not a certified IELTS band score.</p>
               <div className="mt-5 border-t border-white/10 pt-4">
                 <p className="mb-3 text-sm text-slate-300">Share a summary with a teacher or tutor when you choose. Nothing is shared until you press the button.</p>
                 <button

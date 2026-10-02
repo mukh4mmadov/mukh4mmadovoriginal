@@ -1,7 +1,7 @@
 # Muhammadov IELTS Reading
 
 A personal IELTS Reading practice site: timed passages, exam-format
-questions, a built-in highlighter, and instant band estimates.
+questions, and a built-in highlighter with question-by-question feedback.
 
 ## Run it
 

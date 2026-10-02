@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState, useEffect, useRef } from "react";
-import { scoreToBand } from "@/lib/bandScore";
 import {
   CheckCircle2,
   XCircle,
@@ -70,7 +69,6 @@ export default function ReadingTestResults({
   ).length;
   const skippedCount = questions.filter((q) => !answers[q.id]).length;
   const missedCount = incorrectCount + skippedCount;
-  const band = scoreToBand(correctCount, questions.length);
   const percentage = (correctCount / questions.length) * 100;
 
   useEffect(() => {
@@ -133,7 +131,7 @@ export default function ReadingTestResults({
     if (percentage >= 90)
       return "Outstanding! You are clearly building strong IELTS Reading instincts.";
     if (percentage >= 80)
-      return "Excellent work! You are close to Band 8 and ready for more challenge.";
+      return "Excellent work! You are ready for more challenge.";
     if (percentage >= 70)
       return "Great job! You are showing strong control of the passage and question logic.";
     if (percentage >= 60)
@@ -141,15 +139,6 @@ export default function ReadingTestResults({
     if (percentage >= 50)
       return "Keep practicing! Review the explanations carefully and build your accuracy.";
     return "Keep going! Each mistake is a lesson, and your next attempt will be stronger.";
-  };
-
-  const getBandLabel = () => {
-    if (band >= 8.0) return "Band 8+";
-    if (band >= 7.5) return "Band 7.5";
-    if (band >= 7.0) return "Band 7";
-    if (band >= 6.5) return "Band 6.5";
-    if (band >= 6.0) return "Band 6";
-    return `Band ${band.toFixed(1)}`;
   };
 
   const formatTime = (seconds) => {
@@ -245,8 +234,9 @@ export default function ReadingTestResults({
       "My IELTS Reading practice result",
       `Passage: ${passage.title}`,
       `Date: ${new Date().toLocaleDateString()}`,
-      `Estimated band: ${band.toFixed(1)} (practice estimate, not an official score)`,
       `Score: ${correctCount}/${questions.length} correct`,
+      `Skipped: ${skippedCount}`,
+      `Percentage: ${percentage.toFixed(0)}%`,
       `Time: ${formatTime(timeSpent)}`,
       `Review status: ${missedCount === 0 ? "No missed questions" : `${missedCount} missed or skipped question${missedCount === 1 ? "" : "s"}; ${missedQuestionsSaved ? "saved to review queue" : "not yet saved to review queue"}`}`,
     ].join("\n");
@@ -350,14 +340,6 @@ export default function ReadingTestResults({
               You completed the reading test with focus and precision.
             </h2>
           </div>
-          <div className="rounded-2xl border border-brand-500/30 bg-brand-500/10 px-4 py-3 text-center">
-            <p className="premium-text-brand text-[11px] uppercase tracking-[0.24em]">
-              Estimated Band
-            </p>
-            <p className="premium-text-band text-3xl font-semibold">
-              {band.toFixed(1)}
-            </p>
-          </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -417,7 +399,6 @@ export default function ReadingTestResults({
               {formatTime(timeSpent)}
             </p>
             <p className="premium-text-muted mt-2 text-sm">
-              {getBandLabel()} •{" "}
               {correctCount >= 30 ? "Excellent pacing" : "Keep building speed"}
             </p>
           </div>
@@ -498,7 +479,7 @@ export default function ReadingTestResults({
             </p>
             <p className="text-sm text-white">
               {weakestSkill && weakestSkill.accuracy < 70
-                ? `Focus on ${weakestSkill.type.replace(/-/g, ' ')} questions to improve your overall band score.`
+                ? `Focus on ${weakestSkill.type.replace(/-/g, ' ')} questions to improve your reading accuracy.`
                 : "Great job! Try practicing more complex passages to challenge yourself further."}
             </p>
           </div>
