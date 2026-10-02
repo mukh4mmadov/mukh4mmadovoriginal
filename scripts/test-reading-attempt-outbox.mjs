@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { enqueueReadingAttempt, flushReadingAttemptOutbox, readReadingAttemptOutbox } from '../src/lib/reading/reading-attempt-outbox.mjs';
 import { collectLegacyAttempts } from '../src/lib/reading/legacy-attempt-import.mjs';
+import { formatAggregateTime, getTashkentTodayRange } from '../src/lib/reading/metrics.mjs';
 
 class MemoryStorage {
   values = new Map();
@@ -51,3 +52,10 @@ const attempt = { attemptKey: 'stable-key', passageId: 'sample', durationSeconds
 }
 
 console.log('PASS: outbox success, offline retention, duplicate confirmation, missing-function retention, and legacy import filtering');
+assert.equal(formatAggregateTime(59), '59s');
+assert.equal(formatAggregateTime(90), '2m');
+assert.equal(formatAggregateTime(3600), '1h 0m');
+const tashkentRange = getTashkentTodayRange(new Date('2026-10-02T10:00:00.000Z'));
+assert.equal(new Date(tashkentRange.from).toISOString(), '2026-10-01T19:00:00.000Z');
+assert.equal(new Date(tashkentRange.to).toISOString(), '2026-10-02T19:00:00.000Z');
+console.log('PASS: aggregate time rounding and Asia/Tashkent day range');

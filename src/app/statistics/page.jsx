@@ -7,6 +7,7 @@ import { getAllProgress } from '@/lib/progressTracker';
 import readingTestsModule from '@/data/readingTests_new';
 import { supabase } from '@/lib/supabase/client';
 import { getReviewedQuestionCount } from '@/lib/reading/answer-review';
+import { formatAggregateTime, getMyReadingMetrics } from '@/lib/reading/metrics.mjs';
 
 export default function StatisticsPage() {
   const { user, isLoading } = useAuth();
@@ -30,7 +31,10 @@ export default function StatisticsPage() {
     if (userId) {
       let isActive = true;
 
-      getAllProgress(userId).then((progress) => {
+      Promise.all([
+        getAllProgress(userId),
+        getMyReadingMetrics(supabase, '1970-01-01T00:00:00.000Z', new Date().toISOString()),
+      ]).then(([progress, serverMetrics]) => {
         if (!isActive) return;
 
         const completedProgress = (progress || []).filter((item) => item.completed);
@@ -65,7 +69,7 @@ export default function StatisticsPage() {
           return totals;
         }, { questions: 0, correct: 0 });
 
-        setStats({
+        const localStats = {
           total_passages_completed: completedProgress.length,
           total_time_spent_seconds: (progress || []).reduce(
             (total, item) => total + (Number(item.totalTime) || 0),
@@ -81,7 +85,21 @@ export default function StatisticsPage() {
           reviewed_questions: getReviewedQuestionCount(userId),
           mastered_questions: [...masteryCounts.values()].filter((correctAttempts) => correctAttempts >= 3).length,
           has_detailed_question_history: questionAttempts.length > 0,
-        });
+          highlights_count: null,
+          source: 'local',
+        };
+        setStats(serverMetrics ? {
+          ...localStats,
+          total_passages_completed: serverMetrics.attempts,
+          total_time_spent_seconds: serverMetrics.total_seconds,
+          total_questions_answered: serverMetrics.question_exposures,
+          correct_answers: serverMetrics.correct,
+          accuracy_rate: serverMetrics.question_exposures ? serverMetrics.accuracy_percent : 0,
+          question_attempts: serverMetrics.answered,
+          correct_responses: serverMetrics.correct,
+          highlights_count: serverMetrics.highlights_count,
+          source: 'server',
+        } : localStats);
         setLoading(false);
       }).catch(() => {
         if (!isActive) return;
@@ -180,7 +198,7 @@ export default function StatisticsPage() {
       `Answers submitted: ${stats?.question_attempts || 0}`,
       `Correct responses across attempts: ${stats?.correct_responses || 0}`,
       `Mastered questions: ${stats?.mastered_questions || 0}`,
-      `Reading time: ${formatTime(stats?.total_time_spent_seconds || 0)}`,
+      `Reading time: ${formatAggregateTime(stats?.total_time_spent_seconds || 0)}`,
       `Exam date: ${goal.exam_date || 'Not set'}`,
       `Study days per week: ${goal.study_days_per_week}`,
     ].join('\n');
@@ -218,15 +236,6 @@ export default function StatisticsPage() {
     );
   }
 
-  const formatTime = (seconds) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    }
-    return `${minutes}m`;
-  };
-
   const daysUntilExam = (() => {
     if (!goal.exam_date) return null;
     const [year, month, day] = goal.exam_date.split('-').map(Number);
@@ -250,14 +259,14 @@ export default function StatisticsPage() {
 
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Your Statistics</h1>
-          <p className="text-slate-400">Track your IELTS reading progress</p>
+          <p className="text-slate-400">{stats?.source === 'server' ? 'All-time totals from saved reading attempts.' : 'All-time local summary; server attempt metrics are unavailable.'}</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-6">
             <div className="flex items-center gap-3 mb-2">
               <BookOpen className="w-5 h-5 text-blue-400" />
-              <p className="text-slate-400 text-sm">Passages Completed</p>
+              <p className="text-slate-400 text-sm">Tests Completed</p>
             </div>
             <p className="text-3xl font-bold text-white">{stats?.total_passages_completed || 0}</p>
           </div>
@@ -267,15 +276,23 @@ export default function StatisticsPage() {
               <Clock className="w-5 h-5 text-purple-400" />
               <p className="text-slate-400 text-sm">Time Spent</p>
             </div>
-            <p className="text-3xl font-bold text-white">{formatTime(stats?.total_time_spent_seconds || 0)}</p>
+            <p className="text-3xl font-bold text-white">{formatAggregateTime(stats?.total_time_spent_seconds || 0)}</p>
           </div>
 
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-6">
             <div className="flex items-center gap-3 mb-2">
               <Target className="w-5 h-5 text-green-400" />
-              <p className="text-slate-400 text-sm">Questions in Completed Passages</p>
+              <p className="text-slate-400 text-sm">Question Exposures</p>
             </div>
             <p className="text-3xl font-bold text-white">{stats?.total_questions_answered || 0}</p>
+          </div>
+
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-6">
+            <div className="flex items-center gap-3 mb-2">
+              <CalendarDays className="w-5 h-5 text-amber-400" />
+              <p className="text-slate-400 text-sm">Highlights</p>
+            </div>
+            <p className="text-3xl font-bold text-white">{stats?.highlights_count == null ? 'Not tracked' : stats.highlights_count}</p>
           </div>
 
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-6">
@@ -415,7 +432,7 @@ export default function StatisticsPage() {
               How your statistics are counted
             </h3>
             <p className="text-sm leading-6 text-slate-400">
-              Passage accuracy is estimated from each completed passage&apos;s saved score, weighted by its question count. “Questions in completed passages” counts all questions in completed passages, including skipped questions; it is not the number of answers you submitted. Detailed answer counts include individual responses recorded from this update onward. A question is counted as mastered after at least three correct submitted attempts. Mistake-review counts are stored in this browser and do not sync across devices. Older results are not backfilled, and detailed question-type trends are not shown yet.
+              Exact attempt metrics include every question in each saved attempt, including skipped questions. Accuracy is total correct answers divided by total question exposures, rounded once. Answered-question totals count selected answers. Detailed mastery and review counts remain local to this browser.
             </p>
           </div>
         </div>

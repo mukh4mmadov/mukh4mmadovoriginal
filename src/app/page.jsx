@@ -17,6 +17,8 @@ import DailyInspiration from "@/components/shared/DailyInspiration";
 import { getAllProgress } from "@/lib/progressTracker";
 import { useAuth } from "@/contexts/AuthContext";
 import readingTestsModule from "@/data/readingTests_new";
+import { supabase } from '@/lib/supabase/client';
+import { formatAggregateTime, getMyReadingMetrics, getTashkentTodayRange } from '@/lib/reading/metrics.mjs';
 
 const readingTests = readingTestsModule?.readingTests || [];
 
@@ -25,18 +27,34 @@ export default function Home() {
   const userId = user?.id;
   const [progressData, setProgressData] = useState([]);
   const [todayStats, setTodayStats] = useState({
-    readingTime: 0,
+    readingTimeSeconds: 0,
     testsCompleted: 0,
-    highlightsCreated: "Not tracked",
+    highlightsCreated: null,
     accuracy: null,
+    source: 'local',
   });
 
   useEffect(() => {
     let isActive = true;
     const loadProgress = async () => {
-      const progress = await getAllProgress(userId);
+      const range = getTashkentTodayRange();
+      const [progress, serverMetrics] = await Promise.all([
+        getAllProgress(userId),
+        userId ? getMyReadingMetrics(supabase, range.from, range.to) : Promise.resolve(null),
+      ]);
       if (!isActive) return;
       setProgressData(progress || []);
+
+      if (serverMetrics) {
+        setTodayStats({
+          readingTimeSeconds: serverMetrics.total_seconds,
+          testsCompleted: serverMetrics.attempts,
+          highlightsCreated: serverMetrics.highlights_count,
+          accuracy: serverMetrics.question_exposures ? serverMetrics.accuracy_percent : null,
+          source: 'server',
+        });
+        return;
+      }
 
       const todayProgress = (progress || []).filter(p => {
         const lastAttempt = new Date(p.lastAttempt);
@@ -59,7 +77,7 @@ export default function Home() {
       }, { questions: 0, correct: 0 });
 
       setTodayStats({
-        readingTime: Math.round(totalTime / 60),
+        readingTimeSeconds: totalTime,
         testsCompleted: completedPassages.length,
         highlightsCreated: "Not tracked",
         accuracy: completedTotals.questions
@@ -112,7 +130,7 @@ export default function Home() {
             <h2 className="text-lg font-semibold text-white">Today's Study</h2>
           </div>
           <div className="mb-3 text-sm text-slate-400">
-            Counts use passages last updated today. Accuracy includes completed passages; reading time is the total saved time for those passages.
+            {todayStats.source === 'server' ? 'Today in Asia/Tashkent, from saved reading attempts.' : 'Today from local passage progress while server metrics are unavailable.'}
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-xl border border-white/10 bg-white/5 p-4 transition-all duration-200 hover:border-brand-500/30 hover:bg-white/10 hover:shadow-lg hover:shadow-brand-500/10">
@@ -120,7 +138,7 @@ export default function Home() {
                 <Clock size={16} aria-hidden="true" />
                 <p className="text-xs font-medium uppercase tracking-wider">Reading Time</p>
               </div>
-              <p className="text-2xl font-bold text-white">{todayStats.readingTime}m</p>
+              <p className="text-2xl font-bold text-white">{formatAggregateTime(todayStats.readingTimeSeconds)}</p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 p-4 transition-all duration-200 hover:border-brand-500/30 hover:bg-white/10 hover:shadow-lg hover:shadow-brand-500/10">
               <div className="flex items-center gap-2 text-slate-400 mb-2">
@@ -134,7 +152,7 @@ export default function Home() {
                 <Highlighter size={16} aria-hidden="true" />
                 <p className="text-xs font-medium uppercase tracking-wider">Highlights</p>
               </div>
-              <p className="text-2xl font-bold text-white">{todayStats.highlightsCreated}</p>
+              <p className="text-2xl font-bold text-white">{todayStats.highlightsCreated ?? 'Not tracked'}</p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 p-4 transition-all duration-200 hover:border-brand-500/30 hover:bg-white/10 hover:shadow-lg hover:shadow-brand-500/10">
               <div className="flex items-center gap-2 text-slate-400 mb-2">
