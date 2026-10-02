@@ -26,10 +26,6 @@ Then open http://localhost:3000
 - `src/components/reading/HighlightablePassage.tsx` — the built-in
   highlighter: click or drag across words to mark them in yellow, green, or
   pink, with an eraser tool
-- `src/components/shared/BandGauge.tsx` — the animated band-score gauge
-  shown after submitting
-- `src/lib/bandScore.ts` — rough raw-score → band conversion for practice
-  purposes
 
 ## Adding your own passages
 
