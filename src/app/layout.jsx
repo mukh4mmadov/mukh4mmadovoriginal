@@ -7,6 +7,7 @@ import ReportIssueButton from "@/components/shared/ReportIssueButton";
 import OfflineNotice from "@/components/shared/OfflineNotice";
 import PushActivityTracker from "@/components/shared/PushActivityTracker";
 import AdminAccessNotice from "@/components/shared/AdminAccessNotice";
+import ReadingAttemptOutboxSync from "@/components/shared/ReadingAttemptOutboxSync";
 
 export const metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://mukh4mmadovoriginal.vercel.app"),
@@ -60,6 +61,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body>
         <AuthProvider>
+          <ReadingAttemptOutboxSync />
           <PushActivityTracker />
           <a
             href="#main-content"

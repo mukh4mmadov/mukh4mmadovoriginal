@@ -16,10 +16,11 @@ import HighlightableText from "@/components/reading/HighlightableText";
 import { useTextHighlight } from "@/hooks/useTextHighlight";
 import ReadingTestResults from "@/components/reading/ReadingTestResults";
 import AIChatPanel from "@/components/ai/AIChatPanel";
-import { saveProgress } from "@/lib/progressTracker";
+import { saveAttemptLocally, saveProgress } from "@/lib/progressTracker";
 import { useAuth } from "@/contexts/AuthContext";
 import { analyticsService } from "@/lib/analytics/analytics.service";
 import { isAnswerCorrect } from "@/lib/reading/answer-review";
+import { enqueueReadingAttempt, makeAttemptUuid } from "@/lib/reading/reading-attempt-outbox.mjs";
 
 function allQuestions(passage) {
   return passage.questionGroups.flatMap((g) => g.questions);
@@ -495,9 +496,28 @@ export default function ReadingTestPlayer({ passage }) {
     ).length;
     const score = (correctCount / questions.length) * 100;
     const attemptTimestamp = Date.now();
-    const attemptId = typeof crypto !== "undefined" && crypto.randomUUID
-      ? crypto.randomUUID()
-      : `${attemptTimestamp}-${Math.random().toString(36).slice(2)}`;
+    const attemptId = makeAttemptUuid();
+    const questionResults = questions.map((question) => ({
+      id: question.id,
+      type: question.type,
+      answered: Boolean(answers[question.id]),
+      correct: isAnswerCorrect(question, answers[question.id]),
+      selectedAnswer: answers[question.id] == null ? null : String(answers[question.id]),
+    }));
+    const questionPayload = questionResults.map((answer) => ({
+      question_id: answer.id,
+      question_type: answer.type,
+      selected_answer: answer.selectedAnswer,
+      is_correct: answer.correct,
+    }));
+
+    const localAttempt = {
+      id: attemptId,
+      timestamp: attemptTimestamp,
+      passageId: passage.slug,
+      durationSeconds: finalTime,
+      questionResults,
+    };
 
     addEvent({ type: "submitted", timestamp: Date.now() });
 
@@ -512,33 +532,33 @@ export default function ReadingTestPlayer({ passage }) {
       score,
     );
 
+    const progressFields = { completed: true, bestScore: score, totalTime: finalTime, questionAttempt: localAttempt };
     try {
-      await saveProgress(
-        passage.slug,
-        {
-          completed: true,
-          bestScore: score,
-          totalTime: finalTime,
-          questionAttempt: {
-            id: attemptId,
-            timestamp: attemptTimestamp,
-            questionResults: questions.map((question) => ({
-              id: question.id,
-              type: question.type,
-              answered: Boolean(answers[question.id]),
-              correct: isAnswerCorrect(question, answers[question.id]),
-            })),
-          },
-        },
-        user?.id,
-      );
-
+      const locallySaved = saveAttemptLocally(passage.slug, progressFields);
+      if (user?.id) {
+        enqueueReadingAttempt(window.localStorage, user.id, {
+          attemptKey: attemptId,
+          passageId: passage.slug,
+          durationSeconds: finalTime,
+          answers: questionPayload,
+        });
+      }
+      // Keep the existing reading_progress sync, but never make the result screen
+      // wait for it or for the new exact-attempt RPC.
+      void saveProgress(passage.slug, {
+        completed: true,
+        bestScore: score,
+        totalTime: finalTime,
+        attempts: locallySaved?.attempts,
+      }, user?.id).catch((error) => console.error("Failed to sync reading progress:", error));
+      if (user?.id) {
+        const { supabase } = await import('@/lib/supabase/client');
+        const { flushReadingAttemptOutbox } = await import('@/lib/reading/reading-attempt-outbox.mjs');
+        void flushReadingAttemptOutbox(window.localStorage, user.id, supabase);
+      }
       localStorage.removeItem(`ielts-reading-${passage.slug}`);
     } catch (error) {
-      console.error(
-        "Failed to save progress on submit, draft retained:",
-        error,
-      );
+      console.error("Failed to save local reading attempt:", error);
     }
   };
 

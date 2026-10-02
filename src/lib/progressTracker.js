@@ -152,6 +152,30 @@ export async function saveProgress(
   }
 }
 
+export function saveAttemptLocally(slug, progress) {
+  if (typeof window === 'undefined') return null;
+  const key = `${LOCAL_STORAGE_PREFIX}${slug}`;
+  let existing = readStoredProgress(key) || {
+    slug, completed: false, bestScore: 0, lastScore: 0, attempts: 0,
+    lastAttempt: 0, totalTime: 0, attemptHistory: [],
+  };
+  const attempt = progress.questionAttempt;
+  const history = [...(existing.attemptHistory || [])];
+  if (attempt?.id && !history.some((item) => item?.id === attempt.id)) history.push(attempt);
+  const updated = {
+    ...existing,
+    completed: true,
+    bestScore: Math.max(Number(existing.bestScore) || 0, Number(progress.bestScore) || 0),
+    lastScore: Number(progress.bestScore) || 0,
+    attempts: (Number(existing.attempts) || 0) + (attempt ? 1 : 0),
+    totalTime: Number(progress.totalTime) || 0,
+    attemptHistory: history.slice(-100),
+    lastAttempt: attempt?.timestamp || Date.now(),
+  };
+  window.localStorage.setItem(key, JSON.stringify(updated));
+  return updated;
+}
+
 export async function getAllProgress(userId) {
   if (userId) {
     try {
