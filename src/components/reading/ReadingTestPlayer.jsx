@@ -25,6 +25,9 @@ function allQuestions(passage) {
   return passage.questionGroups.flatMap((g) => g.questions);
 }
 
+const TIMER_DURATION_SECONDS = 20 * 60;
+const TIMER_DURATION_MS = TIMER_DURATION_SECONDS * 1000;
+
 export default function ReadingTestPlayer({ passage }) {
   const { user } = useAuth();
   const questions = useMemo(() => allQuestions(passage), [passage]);
@@ -44,7 +47,7 @@ export default function ReadingTestPlayer({ passage }) {
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [timerRunning, setTimerRunning] = useState(true);
-  const [timerInitialSeconds, setTimerInitialSeconds] = useState(20 * 60);
+  const [remainingSeconds, setRemainingSeconds] = useState(TIMER_DURATION_SECONDS);
   const [activeQ, setActiveQ] = useState(null);
   const [timeSpent, setTimeSpent] = useState(0);
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
@@ -59,9 +62,12 @@ export default function ReadingTestPlayer({ passage }) {
   const [events, setEvents] = useState([]);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [aiPersonality, setAiPersonality] = useState("friendly");
-  const startTimeRef = useRef(Date.now());
-  const pausedTimeRef = useRef(0);
-  const lastPauseStartRef = useRef(null);
+  const remainingSecondsRef = useRef(TIMER_DURATION_SECONDS);
+  const remainingMillisecondsRef = useRef(TIMER_DURATION_MS);
+  const timerDeadlineRef = useRef(Date.now() + TIMER_DURATION_MS);
+  const timerRunningRef = useRef(true);
+  const submittedRef = useRef(false);
+  const expireHandlerRef = useRef(null);
   const questionRefs = useRef({});
   const previousAnswersRef = useRef({});
   const restoredDraftSlugRef = useRef(null);
@@ -70,9 +76,24 @@ export default function ReadingTestPlayer({ passage }) {
     analyticsService.trackReadingStarted(user?.id ?? null, passage.slug);
   }, [user?.id, passage.slug]);
 
-  const getElapsedSeconds = (now = Date.now()) => {
-    const elapsed = Math.floor((now - startTimeRef.current) / 1000);
-    return Math.max(0, elapsed - pausedTimeRef.current);
+  const getRemainingSeconds = (now = Date.now()) => {
+    return Math.ceil(getRemainingMilliseconds(now) / 1000);
+  };
+
+  const getRemainingMilliseconds = (now = Date.now()) => {
+    if (!timerRunningRef.current || timerDeadlineRef.current === null) {
+      return remainingMillisecondsRef.current;
+    }
+    return Math.max(0, Math.min(TIMER_DURATION_MS, timerDeadlineRef.current - now));
+  };
+
+  const syncTimerDisplay = (remainingMs = getRemainingMilliseconds()) => {
+    const safeMs = Math.max(0, Math.min(TIMER_DURATION_MS, remainingMs));
+    remainingMillisecondsRef.current = safeMs;
+    const seconds = Math.ceil(safeMs / 1000);
+    remainingSecondsRef.current = seconds;
+    setRemainingSeconds(seconds);
+    setTimeSpent(TIMER_DURATION_SECONDS - seconds);
   };
 
   const buildAIContext = () => {
@@ -159,7 +180,12 @@ export default function ReadingTestPlayer({ passage }) {
     setAnswers({});
     setTimeSpent(0);
     setTimerRunning(true);
-    setTimerInitialSeconds(20 * 60);
+    setRemainingSeconds(TIMER_DURATION_SECONDS);
+    remainingSecondsRef.current = TIMER_DURATION_SECONDS;
+    timerRunningRef.current = true;
+    remainingMillisecondsRef.current = TIMER_DURATION_MS;
+    timerDeadlineRef.current = Date.now() + TIMER_DURATION_MS;
+    submittedRef.current = false;
     previousAnswersRef.current = {};
     if (typeof window === "undefined") return;
 
@@ -171,20 +197,88 @@ export default function ReadingTestPlayer({ passage }) {
 
       if (savedData) {
         const parsed = JSON.parse(savedData);
-        if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
+        const now = Date.now();
+        const savedAt = parsed && Number.isFinite(parsed.timestamp)
+          ? parsed.timestamp
+          : null;
+        if (
+          parsed &&
+          savedAt !== null &&
+          now >= savedAt &&
+          now - savedAt < 24 * 60 * 60 * 1000
+        ) {
           const restoredAnswers =
-            parsed.answers && typeof parsed.answers === "object"
+            parsed.answers && typeof parsed.answers === "object" && !Array.isArray(parsed.answers)
               ? parsed.answers
               : {};
-          const parsedTimeSpent = Number(parsed.timeSpent);
-          const restoredTimeSpent = Number.isFinite(parsedTimeSpent)
-            ? Math.max(0, parsedTimeSpent)
-            : 0;
+          const isRunning = parsed.timerRunning !== false;
+          let restoredRemaining = TIMER_DURATION_SECONDS;
+          let restoredRemainingMs = null;
+
+          if (
+            parsed.timerVersion === 2 &&
+            Number.isFinite(parsed.remainingMilliseconds) &&
+            parsed.remainingMilliseconds >= 0 &&
+            parsed.remainingMilliseconds <= TIMER_DURATION_MS
+          ) {
+            restoredRemainingMs = parsed.remainingMilliseconds;
+            if (isRunning) {
+              restoredRemainingMs = Math.max(0, restoredRemainingMs - (now - savedAt));
+            }
+            restoredRemaining = Math.ceil(restoredRemainingMs / 1000);
+          } else if (
+            parsed.timerVersion === 2 &&
+            Number.isFinite(parsed.remainingSeconds) &&
+            parsed.remainingSeconds >= 0 &&
+            parsed.remainingSeconds <= TIMER_DURATION_SECONDS
+          ) {
+            restoredRemaining = parsed.remainingSeconds;
+            if (isRunning) {
+              restoredRemaining = Math.max(
+                0,
+                restoredRemaining - Math.ceil((now - savedAt) / 1000),
+              );
+            }
+            restoredRemainingMs = restoredRemaining * 1000;
+          } else if (
+            Number.isFinite(parsed.timeSpent) &&
+            parsed.timeSpent >= 0
+          ) {
+            // Legacy drafts stored elapsed time. Account for time since their last save.
+            restoredRemaining = TIMER_DURATION_SECONDS - parsed.timeSpent;
+            if (isRunning) {
+              restoredRemaining = Math.max(
+                0,
+                restoredRemaining - Math.ceil((now - savedAt) / 1000),
+              );
+            }
+            restoredRemainingMs = restoredRemaining * 1000;
+          } else if (
+            Number.isFinite(parsed.remainingSeconds) &&
+            parsed.remainingSeconds >= 0 &&
+            parsed.remainingSeconds <= TIMER_DURATION_SECONDS
+          ) {
+            restoredRemaining = parsed.remainingSeconds;
+            if (isRunning) {
+              restoredRemaining = Math.max(
+                0,
+                restoredRemaining - Math.ceil((now - savedAt) / 1000),
+              );
+            }
+            restoredRemainingMs = restoredRemaining * 1000;
+          }
+
+          restoredRemainingMs ??= restoredRemaining * 1000;
           setAnswers(restoredAnswers);
-          setTimeSpent(restoredTimeSpent);
-          setTimerInitialSeconds(Math.max(0, 20 * 60 - restoredTimeSpent));
-          setTimerRunning(parsed.timerRunning ?? true);
-          startTimeRef.current = Date.now() - restoredTimeSpent * 1000;
+          remainingSecondsRef.current = restoredRemaining;
+          remainingMillisecondsRef.current = restoredRemainingMs;
+          setRemainingSeconds(restoredRemaining);
+          setTimeSpent(TIMER_DURATION_SECONDS - restoredRemaining);
+          timerRunningRef.current = isRunning;
+          setTimerRunning(timerRunningRef.current);
+          timerDeadlineRef.current = timerRunningRef.current
+            ? now + restoredRemainingMs
+            : null;
           previousAnswersRef.current = restoredAnswers;
           hasValidSavedData = true;
         }
@@ -212,11 +306,14 @@ export default function ReadingTestPlayer({ passage }) {
     }
 
     try {
+      const savedAt = Date.now();
       const saveData = {
+        timerVersion: 2,
         answers,
-        timeSpent,
-        timerRunning,
-        timestamp: Date.now(),
+        remainingSeconds: getRemainingSeconds(savedAt),
+        remainingMilliseconds: getRemainingMilliseconds(savedAt),
+        timerRunning: timerRunningRef.current,
+        timestamp: savedAt,
       };
 
       window.localStorage.setItem(
@@ -247,39 +344,60 @@ export default function ReadingTestPlayer({ passage }) {
   };
 
   useEffect(() => {
-    if (!timerRunning || typeof window === "undefined") return;
+    if (!draftRestored || !timerRunning || typeof window === "undefined") return;
 
-    const tick = () => {
-      setTimeSpent(getElapsedSeconds());
+    const refresh = () => {
+      const remainingMs = getRemainingMilliseconds();
+      syncTimerDisplay(remainingMs);
+      const remaining = Math.ceil(remainingMs / 1000);
+      if (remaining === 0) {
+        timerRunningRef.current = false;
+        timerDeadlineRef.current = null;
+        setTimerRunning(false);
+        expireHandlerRef.current?.();
+      }
     };
 
-    tick();
-    const interval = window.setInterval(tick, 1000);
-    return () => window.clearInterval(interval);
-  }, [timerRunning]);
+    const handleVisible = () => refresh();
+    refresh();
+    const interval = window.setInterval(refresh, 500);
+    document.addEventListener("visibilitychange", handleVisible);
+    window.addEventListener("focus", handleVisible);
+    window.addEventListener("pageshow", handleVisible);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisible);
+      window.removeEventListener("focus", handleVisible);
+      window.removeEventListener("pageshow", handleVisible);
+    };
+  }, [draftRestored, timerRunning]);
 
   const handleTimerPause = () => {
+    const remainingMs = getRemainingMilliseconds();
+    syncTimerDisplay(remainingMs);
+    timerRunningRef.current = false;
+    timerDeadlineRef.current = null;
     setTimerRunning(false);
-    lastPauseStartRef.current = Date.now();
+    if (remainingMs === 0) expireHandlerRef.current?.();
   };
 
   const handleTimerResume = () => {
-    if (lastPauseStartRef.current) {
-      pausedTimeRef.current += Math.floor(
-        (Date.now() - lastPauseStartRef.current) / 1000,
-      );
-      lastPauseStartRef.current = null;
+    const now = Date.now();
+    if (remainingSecondsRef.current <= 0) {
+      expireHandlerRef.current?.();
+      return;
     }
+    timerDeadlineRef.current = now + remainingMillisecondsRef.current;
+    timerRunningRef.current = true;
     setTimerRunning(true);
   };
 
   const handleTimerReset = () => {
+    timerRunningRef.current = false;
+    timerDeadlineRef.current = null;
     setTimerRunning(false);
-    setTimeSpent(0);
-    setTimerInitialSeconds(20 * 60);
-    pausedTimeRef.current = 0;
-    lastPauseStartRef.current = null;
-    startTimeRef.current = Date.now();
+    submittedRef.current = false;
+    syncTimerDisplay(TIMER_DURATION_MS);
   };
 
   const addEvent = (event) => {
@@ -357,6 +475,11 @@ export default function ReadingTestPlayer({ passage }) {
   };
 
   const handleSubmit = () => {
+    if (submittedRef.current) return;
+    if (getRemainingSeconds() === 0) {
+      performSubmit();
+      return;
+    }
     if (answeredCount === 0) {
       setSubmitMessage("Answer the questions before submitting your test.");
       scrollToQuestion(questions[0]?.id);
@@ -370,8 +493,12 @@ export default function ReadingTestPlayer({ passage }) {
   };
 
   const performSubmit = async () => {
-    const finalTime = getElapsedSeconds();
+    if (submittedRef.current) return;
+    submittedRef.current = true;
+    const finalTime = TIMER_DURATION_SECONDS - getRemainingSeconds();
     setTimeSpent(finalTime);
+    timerRunningRef.current = false;
+    timerDeadlineRef.current = null;
     setSubmitted(true);
     setTimerRunning(false);
     setShowSubmitDialog(false);
@@ -428,17 +555,23 @@ export default function ReadingTestPlayer({ passage }) {
     }
   };
 
+  useEffect(() => {
+    expireHandlerRef.current = performSubmit;
+  });
+
   const resetTestState = () => {
     setAnswers({});
     setSubmitted(false);
+    submittedRef.current = false;
+    remainingSecondsRef.current = TIMER_DURATION_SECONDS;
+    remainingMillisecondsRef.current = TIMER_DURATION_MS;
+    timerDeadlineRef.current = Date.now() + TIMER_DURATION_MS;
+    timerRunningRef.current = true;
     setTimerRunning(true);
     setActiveQ(null);
     setTimeSpent(0);
-    setTimerInitialSeconds(20 * 60);
+    setRemainingSeconds(TIMER_DURATION_SECONDS);
     setShowSubmitDialog(false);
-    startTimeRef.current = Date.now();
-    pausedTimeRef.current = 0;
-    lastPauseStartRef.current = null;
   };
 
   const handleRetry = () => {
@@ -455,14 +588,16 @@ export default function ReadingTestPlayer({ passage }) {
     });
     setAnswers(nextAnswers);
     setSubmitted(false);
+    submittedRef.current = false;
+    remainingSecondsRef.current = TIMER_DURATION_SECONDS;
+    remainingMillisecondsRef.current = TIMER_DURATION_MS;
+    timerDeadlineRef.current = Date.now() + TIMER_DURATION_MS;
+    timerRunningRef.current = true;
     setTimerRunning(true);
     setActiveQ(null);
     setTimeSpent(0);
-    setTimerInitialSeconds(20 * 60);
+    setRemainingSeconds(TIMER_DURATION_SECONDS);
     setShowSubmitDialog(false);
-    startTimeRef.current = Date.now();
-    pausedTimeRef.current = 0;
-    lastPauseStartRef.current = null;
   };
 
   if (submitted) {
@@ -514,9 +649,8 @@ export default function ReadingTestPlayer({ passage }) {
             </div>
 
             <Timer
-              initialSeconds={timerInitialSeconds}
+              remainingSeconds={remainingSeconds}
               running={timerRunning}
-              onExpire={handleSubmit}
               onPause={handleTimerPause}
               onResume={handleTimerResume}
               onReset={handleTimerReset}

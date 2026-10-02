@@ -1,55 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import { Clock, Play, Pause, RotateCcw } from "lucide-react";
 
 export default function Timer({
-  initialSeconds,
+  remainingSeconds,
   running,
-  onExpire,
   onPause,
   onResume,
   onReset,
   showControls = true,
 }) {
-  const [remaining, setRemaining] = useState(initialSeconds);
-  const expiredRef = useRef(false);
-  const onExpireRef = useRef(onExpire);
-
-  useEffect(() => {
-    onExpireRef.current = onExpire;
-  }, [onExpire]);
-
-  useEffect(() => {
-    setRemaining(initialSeconds);
-    expiredRef.current = false;
-  }, [initialSeconds]);
-
-  useEffect(() => {
-    if (!running || typeof window === 'undefined') return;
-
-    const interval = window.setInterval(() => {
-      setRemaining((prev) => {
-        if (prev <= 1) {
-          window.clearInterval(interval);
-          if (!expiredRef.current) {
-            expiredRef.current = true;
-            onExpireRef.current?.();
-          }
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => window.clearInterval(interval);
-  }, [running]);
-
-  const mins = Math.floor(remaining / 60)
+  const mins = Math.floor(remainingSeconds / 60)
     .toString()
     .padStart(2, "0");
-  const secs = (remaining % 60).toString().padStart(2, "0");
-  const low = remaining <= 60;
+  const secs = (remainingSeconds % 60).toString().padStart(2, "0");
+  const low = remainingSeconds <= 60;
 
   const handlePause = () => {
     onPause?.();
@@ -60,8 +25,6 @@ export default function Timer({
   };
 
   const handleReset = () => {
-    setRemaining(initialSeconds);
-    expiredRef.current = false;
     onReset?.();
   };
 
@@ -97,7 +60,7 @@ export default function Timer({
               className="flex h-11 w-11 items-center justify-center rounded-full border border-brand-500/30 bg-brand-500/20 text-brand-300 transition-all hover:border-brand-500/50 hover:bg-brand-500/30"
               aria-label="Resume timer"
               title="Resume timer"
-              disabled={remaining === 0}
+              disabled={remainingSeconds === 0}
             >
               <Play size={14} />
             </button>
