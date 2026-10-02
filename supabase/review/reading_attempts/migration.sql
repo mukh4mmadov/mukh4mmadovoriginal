@@ -126,6 +126,7 @@ BEGIN
   IF v_user_id IS NULL THEN RAISE EXCEPTION 'Sign in is required to save reading attempts'; END IF;
   IF p_attempt_key IS NULL THEN RAISE EXCEPTION 'attempt key is required'; END IF;
   IF p_passage_id IS NULL OR length(btrim(p_passage_id)) = 0 THEN RAISE EXCEPTION 'passage id is required'; END IF;
+  IF length(p_passage_id) > 200 THEN RAISE EXCEPTION 'passage id exceeds the 200 character limit'; END IF;
   IF jsonb_typeof(p_answers) <> 'array' OR jsonb_array_length(p_answers) NOT BETWEEN 1 AND 200 THEN
     RAISE EXCEPTION 'answers must be an array containing 1 to 200 questions';
   END IF;
@@ -140,9 +141,11 @@ BEGIN
        OR jsonb_typeof(v_row->'selected_answer') NOT IN ('string','null') THEN
       RAISE EXCEPTION 'each answer needs question_id, question_type, selected_answer string or null, and boolean is_correct';
     END IF;
+    IF length(v_row->>'question_id') > 100 THEN RAISE EXCEPTION 'question id exceeds the 100 character limit'; END IF;
+    IF length(v_row->>'question_type') > 50 THEN RAISE EXCEPTION 'question type exceeds the 50 character limit'; END IF;
   END LOOP;
   SELECT count(*)::integer,
-         count(*) FILTER (WHERE NULLIF(btrim(value->>'selected_answer'), '') IS NOT NULL)::integer,
+         count(*) FILTER (WHERE NULLIF(btrim(left(value->>'selected_answer', 500)), '') IS NOT NULL)::integer,
          count(*) FILTER (WHERE value->>'is_correct' = 'true')::integer
     INTO v_question_count, v_answered_count, v_correct_count
   FROM jsonb_array_elements(p_answers) AS items(value);
@@ -170,8 +173,8 @@ BEGIN
   INSERT INTO public.reading_attempt_answers
     (attempt_id, question_id, question_type, selected_answer, is_answered, is_correct)
   SELECT v_attempt_id, value->>'question_id', value->>'question_type',
-         NULLIF(value->>'selected_answer',''),
-         NULLIF(btrim(value->>'selected_answer'), '') IS NOT NULL,
+         NULLIF(left(value->>'selected_answer',500),''),
+         NULLIF(btrim(left(value->>'selected_answer',500)), '') IS NOT NULL,
          (value->>'is_correct')::boolean
   FROM jsonb_array_elements(p_answers) AS items(value);
   RETURN v_attempt_id;
