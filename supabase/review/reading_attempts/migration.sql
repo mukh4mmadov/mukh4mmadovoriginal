@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS public.reading_attempt_answers (
 CREATE INDEX IF NOT EXISTS reading_attempt_answers_attempt_id_idx
   ON public.reading_attempt_answers(attempt_id);
 ALTER TABLE public.reading_attempt_answers ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON TABLE public.reading_attempt_answers FROM PUBLIC, anon;
+REVOKE ALL ON TABLE public.reading_attempt_answers FROM PUBLIC, anon, authenticated;
 GRANT SELECT, INSERT ON TABLE public.reading_attempt_answers TO authenticated;
 DO $answer_policies$
 BEGIN

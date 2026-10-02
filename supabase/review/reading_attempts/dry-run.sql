@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS public.reading_attempt_answers (
 CREATE INDEX IF NOT EXISTS reading_attempt_answers_attempt_id_idx
   ON public.reading_attempt_answers(attempt_id);
 ALTER TABLE public.reading_attempt_answers ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON TABLE public.reading_attempt_answers FROM PUBLIC, anon;
+REVOKE ALL ON TABLE public.reading_attempt_answers FROM PUBLIC, anon, authenticated;
 GRANT SELECT, INSERT ON TABLE public.reading_attempt_answers TO authenticated;
 DO $answer_policies$
 BEGIN
@@ -393,6 +393,7 @@ DO $admin_tests$
 BEGIN
   IF NOT public.is_admin_user((select auth.uid())) THEN RAISE EXCEPTION 'Selected admin fixture is not an admin'; END IF;
   IF NOT EXISTS (SELECT 1 FROM public.reading_history WHERE id=current_setting('app.reading_test_attempt')::uuid) THEN RAISE EXCEPTION 'FAIL: admin cannot read all attempts'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.reading_attempt_answers WHERE attempt_id=current_setting('app.reading_test_attempt')::uuid) THEN RAISE EXCEPTION 'FAIL: admin cannot read all answer rows'; END IF;
   IF public.get_admin_reading_metrics(7) IS NULL THEN RAISE EXCEPTION 'FAIL: admin metrics returned null'; END IF;
   RAISE NOTICE 'PASS: admin can read attempts and call admin metrics';
 END
