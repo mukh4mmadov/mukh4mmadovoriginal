@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { TrendingUp, Clock, Award, MessageSquare, Calendar } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { AdminPageLoading } from '@/components/admin/AdminPageStatus';
+import { formatAggregateTime } from '@/lib/reading/metrics.mjs';
 
 function eventDateInTashkent(value) {
   const parts = new Map(new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Tashkent', year: 'numeric', month: '2-digit', day: '2-digit' })
@@ -41,7 +42,7 @@ export default function AdminAnalytics() {
         });
         setData({
           attempts: daily.map((item) => ({ date: item.date, count: Number(item.attempts) || 0 })),
-          readingTime: daily.map((item) => ({ date: item.date, value: Math.round((Number(item.seconds) || 0) / 60) })),
+          readingTime: daily.map((item) => ({ date: item.date, value: Number(item.seconds) || 0, timeValue: true })),
           aiUsage: [...aiByDate].map(([date, count]) => ({ date, count })),
           registrations: (Array.isArray(metrics.registrations_daily) ? metrics.registrations_daily : []).map((item) => ({ date: item.date, count: Number(item.registrations) || 0 })),
           questionTypes: (Array.isArray(metrics.question_types) ? metrics.question_types : []).map((item) => ({
@@ -70,7 +71,7 @@ export default function AdminAnalytics() {
       {metricsUnavailable && <p role="status" className="mb-6 rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-100">Reading metrics unavailable. Check the database migration and try again.</p>}
       <div className="grid gap-6 lg:grid-cols-2">
         <ChartPanel icon={TrendingUp} title="Attempts per Tashkent Day" color="brand"><SimpleChart data={data.attempts} color="brand" /></ChartPanel>
-        <ChartPanel icon={Clock} title="Reading Time per Tashkent Day (minutes)" color="green"><SimpleChart data={data.readingTime} color="green" /></ChartPanel>
+        <ChartPanel icon={Clock} title="Reading Time per Tashkent Day" color="green"><SimpleChart data={data.readingTime} color="green" /></ChartPanel>
         <ChartPanel icon={MessageSquare} title="AI Usage" color="purple"><SimpleChart data={data.aiUsage} color="purple" /></ChartPanel>
         <ChartPanel icon={Calendar} title="New Registrations per Tashkent Day" color="blue"><SimpleChart data={data.registrations} color="blue" /></ChartPanel>
         <ChartPanel icon={Award} title="Question Type Exposures and Accuracy" color="yellow">
@@ -99,7 +100,7 @@ function SimpleChart({ data, color }) {
         return <div key={`${label}-${index}`} className="flex items-center gap-2">
           <span className="w-24 truncate text-xs text-slate-400" title={label}>{label}</span>
           <div className="h-8 flex-1 overflow-hidden rounded bg-white/5"><div className={`h-full ${colors[color]} transition-all`} style={{ width: `${(value / maxValue) * 100}%` }} /></div>
-          <span className="w-12 text-right text-xs text-slate-300">{value}</span>
+          <span className="w-12 text-right text-xs text-slate-300">{item.timeValue ? formatAggregateTime(value) : value}</span>
         </div>;
       })}
       {!data.length && <p className="text-sm text-slate-500">No data for this period.</p>}
