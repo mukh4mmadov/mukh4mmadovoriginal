@@ -30,6 +30,9 @@ BEGIN
      OR NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='profiles' AND column_name='is_admin' AND data_type='boolean') THEN
     RAISE EXCEPTION 'Precondition failed: profiles must have id uuid, created_at timestamptz, and is_admin boolean';
   END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='profiles' AND column_name='is_guest' AND data_type<>'boolean') THEN
+    RAISE EXCEPTION 'Precondition failed: profiles.is_guest exists but is not boolean';
+  END IF;
   IF to_regprocedure('public.is_admin_user(uuid)') IS NULL THEN
     RAISE EXCEPTION 'Precondition failed: public.is_admin_user(uuid) does not exist';
   END IF;
@@ -287,7 +290,10 @@ BEGIN
   IF has_table_privilege('anon','public.reading_attempt_answers','SELECT')
      OR has_table_privilege('anon','public.reading_attempt_answers','INSERT')
      OR has_table_privilege('anon','public.reading_attempt_answers','UPDATE')
-     OR has_table_privilege('anon','public.reading_attempt_answers','DELETE') THEN
+     OR has_table_privilege('anon','public.reading_attempt_answers','DELETE')
+     OR has_table_privilege('anon','public.reading_attempt_answers','TRUNCATE')
+     OR has_table_privilege('anon','public.reading_attempt_answers','REFERENCES')
+     OR has_table_privilege('anon','public.reading_attempt_answers','TRIGGER') THEN
     RAISE EXCEPTION 'Verification failed: anon has privileges on reading_attempt_answers';
   END IF;
   IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid='public.reading_attempt_answers'::regclass) THEN
