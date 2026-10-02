@@ -28,6 +28,12 @@ function allQuestions(passage) {
 export default function ReadingTestPlayer({ passage }) {
   const { user } = useAuth();
   const questions = useMemo(() => allQuestions(passage), [passage]);
+  const matchingChoiceIds = useMemo(
+    () => passage.headingBank?.length
+      ? passage.headingBank.map(({ id }) => id)
+      : [...new Set(passage.paragraphs.map(({ label }) => label).filter(Boolean))],
+    [passage],
+  );
   const questionNumbers = useMemo(() => {
     const map = new Map();
     questions.forEach((question, index) => {
@@ -701,7 +707,7 @@ export default function ReadingTestPlayer({ passage }) {
                   </HighlightableText>
 
                   {group.questions[0].type === "matching-headings" &&
-                    passage.headingBank && (
+                    passage.headingBank?.length > 0 && (
                       <div className="mb-4 rounded-xl border border-white/10 bg-surface/60 p-4">
                         <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-accent-400">
                           List of headings
@@ -790,7 +796,7 @@ export default function ReadingTestPlayer({ passage }) {
                                   containerKey={`${q.id}-prompt`}
                                   highlightState={highlightState}
                                 >
-                                  {q.type === "matching-headings"
+                                  {q.type === "matching-headings" && passage.headingBank?.length > 0
                                     ? q.paragraphLabel
                                     : q.prompt}
                                 </HighlightableText>
@@ -844,21 +850,20 @@ export default function ReadingTestPlayer({ passage }) {
                             </div>
                           )}
 
-                          {q.type === "matching-headings" &&
-                            passage.headingBank && (
+                          {q.type === "matching-headings" && (
                               <div className="ml-9 flex flex-wrap gap-2">
-                                {passage.headingBank.map((h) => (
+                                {matchingChoiceIds.map((choiceId) => (
                                   <button
                                     type="button"
-                                    key={h.id}
-                                    onClick={() => setAnswer(q.id, h.id)}
+                                    key={choiceId}
+                                    onClick={() => setAnswer(q.id, choiceId)}
                                     className={`rounded-full border px-3 py-2 text-[11px] font-semibold transition-all duration-200 min-h-[44px] ${
-                                      given === h.id
+                                      given === choiceId
                                         ? "border-brand-500 bg-brand-500/20 text-brand-300"
                                         : "border-white/15 text-slate-300 hover:border-white/30 hover:bg-white/10"
                                     }`}
                                   >
-                                    {h.id}
+                                    {choiceId}
                                   </button>
                                 ))}
                               </div>

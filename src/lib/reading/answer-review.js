@@ -92,7 +92,10 @@ export function addMissedQuestionsToReviewQueue(passage, answers, userId) {
       questionId: question.id,
       questionNumber: index + 1,
       questionType: question.type,
-      questionText: question.type === "matching-headings" ? question.paragraphLabel : question.prompt,
+      questionText:
+        question.type === "matching-headings" && passage.headingBank?.length > 0
+          ? question.paragraphLabel
+          : question.prompt,
       sentenceBefore: question.type === "sentence-completion" ? question.before : null,
       sentenceAfter: question.type === "sentence-completion" ? question.after : null,
       selectedAnswer: formatAnswer(question, answer, passage),

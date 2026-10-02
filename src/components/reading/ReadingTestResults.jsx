@@ -121,7 +121,10 @@ export default function ReadingTestResults({
         isCorrect: isAnswerCorrect(currentQuestion, answers[currentQuestion.id]),
         explanation: currentQuestion.explanation,
         evidence: currentQuestion.evidence,
-        paragraphLabel: currentQuestion.type === 'matching-headings' ? currentQuestion.paragraphLabel : undefined,
+        paragraphLabel:
+          currentQuestion.type === 'matching-headings' && passage.headingBank?.length > 0
+            ? currentQuestion.paragraphLabel
+            : undefined,
       } : undefined,
     };
   };
@@ -507,7 +510,7 @@ export default function ReadingTestResults({
             <p className="mb-4 text-sm text-slate-400">{group.instructions}</p>
 
             {group.questions[0].type === "matching-headings" &&
-              passage.headingBank && (
+              passage.headingBank?.length > 0 && (
                 <div className="mb-4 rounded-xl border border-white/10 bg-white/5 p-4">
                   <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-accent-400">
                     List of headings
@@ -563,7 +566,7 @@ export default function ReadingTestResults({
 
                         <div className="flex-1">
                           <p className="text-sm text-slate-200 mb-2">
-                            {q.type === "matching-headings"
+                            {q.type === "matching-headings" && passage.headingBank?.length > 0
                               ? q.paragraphLabel
                               : q.prompt}
                           </p>
