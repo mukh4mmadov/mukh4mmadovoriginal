@@ -74,9 +74,10 @@ async function flushReadingAttemptOutboxUnlocked(storage, userId, client) {
         if (!error || !isReadingAttemptValidationError(error)) break;
         const failedKey = `${READING_ATTEMPT_OUTBOX_FAILED_PREFIX}${userId}`;
         const failures = readFailedReadingAttempts(storage, userId);
+        if (failures.length >= READING_ATTEMPT_OUTBOX_FAILED_LIMIT) break;
         failures.push({ ...attempt, failure: { code: error.code || null, message: error.message || 'Attempt validation failed' } });
         try {
-          storage.setItem(failedKey, JSON.stringify(failures.slice(-READING_ATTEMPT_OUTBOX_FAILED_LIMIT)));
+          storage.setItem(failedKey, JSON.stringify(failures));
           const current = readReadingAttemptOutbox(storage, userId).filter((item) => item.attemptKey !== attempt.attemptKey);
           storage.setItem(key, JSON.stringify(current));
         } catch {
@@ -91,9 +92,10 @@ async function flushReadingAttemptOutboxUnlocked(storage, userId, client) {
       if (!isReadingAttemptValidationError(error)) break;
       const failedKey = `${READING_ATTEMPT_OUTBOX_FAILED_PREFIX}${userId}`;
       const failures = readFailedReadingAttempts(storage, userId);
+      if (failures.length >= READING_ATTEMPT_OUTBOX_FAILED_LIMIT) break;
       failures.push({ ...attempt, failure: { code: error.code || null, message: error.message || 'Attempt validation failed' } });
       try {
-        storage.setItem(failedKey, JSON.stringify(failures.slice(-READING_ATTEMPT_OUTBOX_FAILED_LIMIT)));
+        storage.setItem(failedKey, JSON.stringify(failures));
         const current = readReadingAttemptOutbox(storage, userId).filter((item) => item.attemptKey !== attempt.attemptKey);
         storage.setItem(key, JSON.stringify(current));
       } catch {

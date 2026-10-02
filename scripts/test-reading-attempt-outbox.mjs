@@ -13,7 +13,11 @@ class MemoryStorage {
 
 {
   const storage = new MemoryStorage();
-  storage.setItem('reading-attempt-outbox-failed-v1:cap-user', JSON.stringify(Array.from({ length: 105 }, (_, index) => ({ attemptKey: String(index) }))));
+  storage.setItem('reading-attempt-outbox-failed-v1:cap-user', JSON.stringify(Array.from({ length: 100 }, (_, index) => ({ attemptKey: String(index) }))));
+  assert.equal(readFailedReadingAttempts(storage, 'cap-user').length, 100);
+  enqueueReadingAttempt(storage, 'cap-user', { attemptKey: 'keep-pending-at-cap', passageId: 'sample', durationSeconds: 1, answers: [] });
+  await flushReadingAttemptOutbox(storage, 'cap-user', { rpc: async () => ({ data: null, error: { code: 'P0001', message: 'invalid answer' } }) });
+  assert.equal(readReadingAttemptOutbox(storage, 'cap-user')[0].attemptKey, 'keep-pending-at-cap');
   assert.equal(readFailedReadingAttempts(storage, 'cap-user').length, 100);
 }
 
