@@ -340,21 +340,21 @@ export default function ReadingTestResults({
         </div>
       </div>
 
-      <div className="mb-8 overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-br from-slate-900 via-slate-900/80 to-brand-950/70 p-6 shadow-[0_30px_80px_rgba(0,0,0,0.28)]">
+      <div className="premium-results-card mb-8 overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-br from-slate-900 via-slate-900/80 to-brand-950/70 p-6 shadow-[0_30px_80px_rgba(0,0,0,0.28)]">
         <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-brand-300">
+            <p className="premium-text-brand mb-2 text-[11px] font-semibold uppercase tracking-[0.28em]">
               Premium Results
             </p>
-            <h2 className="font-display text-3xl font-semibold text-white">
+            <h2 className="premium-text-primary font-display text-3xl font-semibold">
               You completed the reading test with focus and precision.
             </h2>
           </div>
           <div className="rounded-2xl border border-brand-500/30 bg-brand-500/10 px-4 py-3 text-center">
-            <p className="text-[11px] uppercase tracking-[0.24em] text-brand-300">
+            <p className="premium-text-brand text-[11px] uppercase tracking-[0.24em]">
               Estimated Band
             </p>
-            <p className="text-3xl font-semibold text-brand-100">
+            <p className="premium-text-band text-3xl font-semibold">
               {band.toFixed(1)}
             </p>
           </div>
@@ -362,34 +362,34 @@ export default function ReadingTestResults({
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500">
+            <p className="premium-text-muted text-[11px] uppercase tracking-[0.24em]">
               Overall Score
             </p>
-            <p className="mt-2 text-3xl font-semibold text-white">
+            <p className="premium-text-primary mt-2 text-3xl font-semibold">
               {correctCount} / {questions.length}
             </p>
           </div>
           <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4">
-            <p className="text-[11px] uppercase tracking-[0.24em] text-emerald-300">
+            <p className="premium-text-correct text-[11px] uppercase tracking-[0.24em]">
               Correct Answers
             </p>
-            <p className="mt-2 text-3xl font-semibold text-emerald-200">
+            <p className="premium-text-correct mt-2 text-3xl font-semibold">
               {correctCount}
             </p>
           </div>
           <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4">
-            <p className="text-[11px] uppercase tracking-[0.24em] text-rose-300">
+            <p className="premium-text-incorrect text-[11px] uppercase tracking-[0.24em]">
               Incorrect Answers
             </p>
-            <p className="mt-2 text-3xl font-semibold text-rose-200">
+            <p className="premium-text-incorrect mt-2 text-3xl font-semibold">
               {incorrectCount}
             </p>
           </div>
           <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4">
-            <p className="text-[11px] uppercase tracking-[0.24em] text-amber-300">
+            <p className="premium-text-skipped text-[11px] uppercase tracking-[0.24em]">
               Skipped Questions
             </p>
-            <p className="mt-2 text-3xl font-semibold text-amber-200">
+            <p className="premium-text-skipped mt-2 text-3xl font-semibold">
               {skippedCount}
             </p>
           </div>
@@ -397,26 +397,26 @@ export default function ReadingTestResults({
 
         <div className="mt-6 grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="flex items-center gap-2 text-brand-300">
+            <div className="premium-text-brand flex items-center gap-2">
               <Target size={16} />
               <p className="text-sm font-semibold">Accuracy Percentage</p>
             </div>
-            <p className="mt-3 text-4xl font-semibold text-white">
+            <p className="premium-text-primary mt-3 text-4xl font-semibold">
               {percentage.toFixed(0)}%
             </p>
-            <p className="mt-2 text-sm text-slate-400">
+            <p className="premium-text-muted mt-2 text-sm">
               {getMotivationalMessage()}
             </p>
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="flex items-center gap-2 text-brand-300">
+            <div className="premium-text-brand flex items-center gap-2">
               <Clock size={16} />
               <p className="text-sm font-semibold">Time Spent</p>
             </div>
-            <p className="mt-3 text-4xl font-semibold text-white">
+            <p className="premium-text-primary mt-3 text-4xl font-semibold">
               {formatTime(timeSpent)}
             </p>
-            <p className="mt-2 text-sm text-slate-400">
+            <p className="premium-text-muted mt-2 text-sm">
               {getBandLabel()} •{" "}
               {correctCount >= 30 ? "Excellent pacing" : "Keep building speed"}
             </p>

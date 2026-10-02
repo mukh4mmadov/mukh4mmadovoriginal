@@ -188,6 +188,38 @@
 }
 
 @layer components {
+  .premium-results-card {
+    background-color: #0f172a !important;
+  }
+
+  .premium-results-card .premium-text-primary {
+    color: #f8fafc !important;
+  }
+
+  .premium-results-card .premium-text-muted {
+    color: #cbd5e1 !important;
+  }
+
+  .premium-results-card .premium-text-brand {
+    color: #bae6fd !important;
+  }
+
+  .premium-results-card .premium-text-band {
+    color: #e0f2fe !important;
+  }
+
+  .premium-results-card .premium-text-correct {
+    color: #a7f3d0 !important;
+  }
+
+  .premium-results-card .premium-text-incorrect {
+    color: #fecdd3 !important;
+  }
+
+  .premium-results-card .premium-text-skipped {
+    color: #fde68a !important;
+  }
+
   .glass {
     @apply border border-white/10 bg-white/5 backdrop-blur-xl;
   }
