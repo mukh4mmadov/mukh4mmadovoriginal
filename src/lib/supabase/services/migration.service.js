@@ -17,7 +17,8 @@ export class MigrationService {
       'user-settings',
     ];
 
-    return keys.some(key => localStorage.getItem(key) !== null);
+    return keys.some(key => localStorage.getItem(key) !== null) ||
+      Object.keys(localStorage).some(key => key.startsWith('ielts_progress_'));
   }
 
   extractLocalStorageData() {

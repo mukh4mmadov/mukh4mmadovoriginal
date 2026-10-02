@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
 import { enqueueReadingAttempt, flushReadingAttemptOutbox, readReadingAttemptOutbox } from '../src/lib/reading/reading-attempt-outbox.mjs';
+import { collectLegacyAttempts } from '../src/lib/reading/legacy-attempt-import.mjs';
 
 class MemoryStorage {
   values = new Map();
   getItem(key) { return this.values.get(key) ?? null; }
   setItem(key, value) { this.values.set(key, value); }
+  key(index) { return [...this.values.keys()][index] ?? null; }
+  get length() { return this.values.size; }
 }
 
 const attempt = { attemptKey: 'stable-key', passageId: 'sample', durationSeconds: 30, answers: [{ question_id: 'q1' }] };
@@ -34,4 +37,17 @@ const attempt = { attemptKey: 'stable-key', passageId: 'sample', durationSeconds
   assert.equal(readReadingAttemptOutbox(storage, 'u1').length, 1);
 }
 
-console.log('PASS: outbox success, offline retention, duplicate confirmation, and missing-function retention');
+{
+  const storage = new MemoryStorage();
+  storage.setItem('ielts_progress_sample', JSON.stringify({ slug: 'sample', attemptHistory: [
+    { id: '27e68ebc-d297-4cc2-a8ee-05fb1581d015', questionResults: [{ id: 'q1', type: 'multiple-choice', correct: true, selectedAnswer: 'A' }] },
+    { id: 'old-aggregate-only' },
+  ] }));
+  storage.setItem('ielts-reading-sample', JSON.stringify({ answers: {} }));
+  const result = collectLegacyAttempts(storage);
+  assert.equal(result.importable.length, 1);
+  assert.equal(result.importable[0].answers[0].selected_answer, 'A');
+  assert.equal(result.notImportable, 1);
+}
+
+console.log('PASS: outbox success, offline retention, duplicate confirmation, missing-function retention, and legacy import filtering');

@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AlertTriangle, CheckCircle, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { migrationService } from '@/lib/supabase/services/migration.service';
+import { supabase } from '@/lib/supabase/client';
+import { flushReadingAttemptOutbox } from '@/lib/reading/reading-attempt-outbox.mjs';
+import { collectLegacyAttempts, LEGACY_ATTEMPT_CONSENT_PREFIX, queueLegacyAttempts, rememberLegacyAttemptChoice } from '@/lib/reading/legacy-attempt-import.mjs';
 
 export default function MigrationPrompt() {
   const { user, hasLocalStorageData, migrateLocalStorage } = useAuth();
@@ -12,6 +15,14 @@ export default function MigrationPrompt() {
   const [migrationSummary, setMigrationSummary] = useState('');
   const [migrationMessage, setMigrationMessage] = useState('');
   const [isDismissed, setIsDismissed] = useState(false);
+  const [legacyAttempts, setLegacyAttempts] = useState({ importable: [], notImportable: 0 });
+  const [attemptImportMessage, setAttemptImportMessage] = useState('');
+  const [isImportingAttempts, setIsImportingAttempts] = useState(false);
+
+  useEffect(() => {
+    if (!user?.id || typeof window === 'undefined') return;
+    setLegacyAttempts(collectLegacyAttempts(window.localStorage));
+  }, [user?.id]);
 
   if (!user || !hasLocalStorageData || isDismissed) {
     return null;
@@ -44,6 +55,28 @@ export default function MigrationPrompt() {
   const handleDismiss = () => {
     setIsDismissed(true);
     setIsOpen(false);
+  };
+
+  const handleAttemptConsent = async (consent) => {
+    if (!user?.id || typeof window === 'undefined') return;
+    if (!consent) {
+      rememberLegacyAttemptChoice(window.localStorage, user.id, 'no');
+      setAttemptImportMessage('No older attempts were imported. You can continue using your local data.');
+      return;
+    }
+    setIsImportingAttempts(true);
+    try {
+      const current = collectLegacyAttempts(window.localStorage);
+      const queued = queueLegacyAttempts(window.localStorage, user.id, current.importable);
+      if (queued !== current.importable.length) throw new Error('Could not save every attempt to the local retry queue');
+      rememberLegacyAttemptChoice(window.localStorage, user.id, 'yes');
+      const result = await flushReadingAttemptOutbox(window.localStorage, user.id, supabase);
+      setAttemptImportMessage(`${result.confirmed} of ${queued} older attempts are saved to your account.${current.notImportable ? ` ${current.notImportable} older records could not be imported because per-question details are missing or invalid.` : ''}${result.pending ? ' The rest remain queued and will retry when connected.' : ''}`);
+    } catch {
+      setAttemptImportMessage('The import could not reach the server. Your local attempts were kept and will retry when possible.');
+    } finally {
+      setIsImportingAttempts(false);
+    }
   };
 
   if (!isOpen) {
@@ -83,6 +116,18 @@ export default function MigrationPrompt() {
           </div>
 
           {migrationMessage && <p role="status" className="mb-4 rounded-lg border border-amber-400/20 bg-amber-400/5 p-3 text-sm text-amber-100">{migrationMessage}</p>}
+
+          {legacyAttempts.importable.length > 0 && user?.id && typeof window !== 'undefined' && !window.localStorage.getItem(`${LEGACY_ATTEMPT_CONSENT_PREFIX}${user.id}`) && (
+            <section className="mb-4 rounded-lg border border-brand-400/20 bg-brand-400/5 p-4" aria-labelledby="legacy-attempt-import-title">
+              <h3 id="legacy-attempt-import-title" className="font-semibold text-slate-100">Save older practice results?</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-300">{legacyAttempts.importable.length} older practice results will be saved to your account. Your answers and results will be available across your devices.</p>
+              <div className="mt-3 flex gap-2">
+                <button type="button" onClick={() => handleAttemptConsent(false)} disabled={isImportingAttempts} className="rounded-lg border border-white/15 px-3 py-2 text-sm text-slate-200">No thanks</button>
+                <button type="button" onClick={() => handleAttemptConsent(true)} disabled={isImportingAttempts} className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">{isImportingAttempts ? 'Saving…' : 'Save older results'}</button>
+              </div>
+            </section>
+          )}
+          {attemptImportMessage && <p role="status" className="mb-4 rounded-lg border border-amber-400/20 bg-amber-400/5 p-3 text-sm text-amber-100">{attemptImportMessage}</p>}
 
           <div className="bg-white/5 border border-white/10 rounded-lg p-4 mb-4">
             <p className="text-slate-300 text-sm mb-2">
