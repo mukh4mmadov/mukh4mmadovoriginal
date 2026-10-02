@@ -222,9 +222,6 @@ export default function ReadingTestPlayer({ passage }) {
             parsed.remainingMilliseconds <= TIMER_DURATION_MS
           ) {
             restoredRemainingMs = parsed.remainingMilliseconds;
-            if (isRunning) {
-              restoredRemainingMs = Math.max(0, restoredRemainingMs - (now - savedAt));
-            }
             restoredRemaining = Math.ceil(restoredRemainingMs / 1000);
           } else if (
             parsed.timerVersion === 2 &&
@@ -233,25 +230,16 @@ export default function ReadingTestPlayer({ passage }) {
             parsed.remainingSeconds <= TIMER_DURATION_SECONDS
           ) {
             restoredRemaining = parsed.remainingSeconds;
-            if (isRunning) {
-              restoredRemaining = Math.max(
-                0,
-                restoredRemaining - Math.ceil((now - savedAt) / 1000),
-              );
-            }
             restoredRemainingMs = restoredRemaining * 1000;
           } else if (
             Number.isFinite(parsed.timeSpent) &&
             parsed.timeSpent >= 0
           ) {
-            // Legacy drafts stored elapsed time. Account for time since their last save.
-            restoredRemaining = TIMER_DURATION_SECONDS - parsed.timeSpent;
-            if (isRunning) {
-              restoredRemaining = Math.max(
-                0,
-                restoredRemaining - Math.ceil((now - savedAt) / 1000),
-              );
-            }
+            // Legacy drafts stored elapsed time.
+            restoredRemaining = Math.max(
+              0,
+              Math.min(TIMER_DURATION_SECONDS, TIMER_DURATION_SECONDS - parsed.timeSpent),
+            );
             restoredRemainingMs = restoredRemaining * 1000;
           } else if (
             Number.isFinite(parsed.remainingSeconds) &&
@@ -259,22 +247,21 @@ export default function ReadingTestPlayer({ passage }) {
             parsed.remainingSeconds <= TIMER_DURATION_SECONDS
           ) {
             restoredRemaining = parsed.remainingSeconds;
-            if (isRunning) {
-              restoredRemaining = Math.max(
-                0,
-                restoredRemaining - Math.ceil((now - savedAt) / 1000),
-              );
-            }
             restoredRemainingMs = restoredRemaining * 1000;
           }
 
           restoredRemainingMs ??= restoredRemaining * 1000;
+          restoredRemainingMs = Math.max(
+            0,
+            Math.min(TIMER_DURATION_MS, restoredRemainingMs),
+          );
+          restoredRemaining = Math.ceil(restoredRemainingMs / 1000);
           setAnswers(restoredAnswers);
           remainingSecondsRef.current = restoredRemaining;
           remainingMillisecondsRef.current = restoredRemainingMs;
           setRemainingSeconds(restoredRemaining);
           setTimeSpent(TIMER_DURATION_SECONDS - restoredRemaining);
-          timerRunningRef.current = isRunning;
+          timerRunningRef.current = isRunning && restoredRemaining > 0;
           setTimerRunning(timerRunningRef.current);
           timerDeadlineRef.current = timerRunningRef.current
             ? now + restoredRemainingMs
