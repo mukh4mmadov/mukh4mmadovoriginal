@@ -1,216 +1,90 @@
-"use client";
+'use client';
 
 import { useEffect, useState } from 'react';
 import { Users, Activity, MessageSquare, AlertTriangle, Lightbulb, TrendingUp } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import ActivityFeed from '@/components/admin/ActivityFeed';
 import SystemHealth from '@/components/admin/SystemHealth';
-import { AdminPageError, AdminPageLoading } from '@/components/admin/AdminPageStatus';
+import { AdminPageLoading } from '@/components/admin/AdminPageStatus';
+import { formatAggregateTime } from '@/lib/reading/metrics.mjs';
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    activeUsersToday: 0,
-    totalPassagesSolved: 0,
-    totalQuestionsAnswered: 0,
-    totalAIMessages: 0,
-    totalFeedback: 0,
-    averageAccuracy: 0,
-    averageReadingTime: 0,
-  });
+  const [stats, setStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
+  const [metricsUnavailable, setMetricsUnavailable] = useState(false);
 
   useEffect(() => {
+    let active = true;
     async function loadStats() {
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       try {
-        setLoadError('');
-        const today = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-
-        const [totalUsers, activeUsers, passageCompleted, questionAnswered, aiMessages, feedback] = await Promise.all([
-          supabase.from('profiles').select('id', { count: 'exact', head: true }),
-          supabase
-            .from('analytics_events')
-            .select('user_id', { count: 'exact', head: true })
-            .gte('created_at', today),
-          supabase
-            .from('analytics_events')
-            .select('*', { count: 'exact', head: true })
-            .eq('event_type', 'passage_completed'),
-          supabase
-            .from('analytics_events')
-            .select('*', { count: 'exact', head: true })
-            .eq('event_type', 'question_answered'),
-          supabase
-            .from('analytics_events')
-            .select('*', { count: 'exact', head: true })
-            .eq('event_type', 'ai_message_sent'),
-          supabase.from('support_tickets').select('*', { count: 'exact', head: true }),
+        const [rpc, activity, ai, feedback] = await Promise.all([
+          supabase?.rpc('get_admin_reading_metrics', { p_days: 30 }) || Promise.resolve({ data: null, error: true }),
+          supabase?.from('analytics_events').select('*', { count: 'exact', head: true }).gte('created_at', since) || Promise.resolve({ count: 0 }),
+          supabase?.from('analytics_events').select('*', { count: 'exact', head: true }).eq('event_type', 'ai_message_sent') || Promise.resolve({ count: 0 }),
+          supabase?.from('support_tickets').select('*', { count: 'exact', head: true }) || Promise.resolve({ count: 0 }),
         ]);
-
-        const requestError = [totalUsers, activeUsers, passageCompleted, questionAnswered, aiMessages, feedback]
-          .find((result) => result.error)?.error;
-        if (requestError) throw requestError;
-
-        const { data: questionData, error: questionError } = await supabase
-          .from('analytics_events')
-          .select('event_data')
-          .eq('event_type', 'question_answered');
-        if (questionError) throw questionError;
-
-        let totalCorrect = 0;
-        let totalQuestions = 0;
-        questionData?.forEach((event) => {
-          if (event.event_data?.isCorrect !== undefined) {
-            totalQuestions++;
-            if (event.event_data.isCorrect) totalCorrect++;
-          }
-        });
-        const averageAccuracy = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
-
-        const { data: readingData, error: readingError } = await supabase
-          .from('analytics_events')
-          .select('event_data')
-          .eq('event_type', 'reading_finished');
-        if (readingError) throw readingError;
-
-        let totalTime = 0;
-        let totalSessions = 0;
-        readingData?.forEach((event) => {
-          if (event.event_data?.timeSpent) {
-            totalTime += event.event_data.timeSpent;
-            totalSessions++;
-          }
-        });
-        const averageReadingTime = totalSessions > 0 ? Math.round(totalTime / totalSessions / 60) : 0;
-
+        if (!active) return;
+        const metrics = Array.isArray(rpc.data) ? rpc.data[0] : rpc.data;
+        const unavailable = Boolean(rpc.error || !metrics);
+        setMetricsUnavailable(unavailable);
         setStats({
-          totalUsers: totalUsers.count || 0,
-          activeUsersToday: activeUsers.count || 0,
-          totalPassagesSolved: passageCompleted.count || 0,
-          totalQuestionsAnswered: questionAnswered.count || 0,
-          totalAIMessages: aiMessages.count || 0,
-          totalFeedback: feedback.count || 0,
-          averageAccuracy,
-          averageReadingTime,
+          users: metrics?.total_profiles ?? null,
+          guests: metrics?.guest_profiles ?? null,
+          attempts: metrics?.total_attempts ?? null,
+          answered: metrics?.answered ?? null,
+          accuracy: metrics?.accuracy_percent ?? null,
+          averageSeconds: metrics?.avg_seconds_per_attempt ?? null,
+          activeToday: metrics?.active_learners_today ?? null,
+          activityEvents: activity?.count || 0,
+          aiMessages: ai?.count || 0,
+          supportTickets: feedback?.count || 0,
         });
       } catch (error) {
-        console.error('Error loading stats:', error);
-        setLoadError(error.message || 'Dashboard data could not be loaded.');
+        console.error('Error loading dashboard metrics:', error);
+        if (active) {
+          setMetricsUnavailable(true);
+          setStats({ activityEvents: 0, aiMessages: 0, supportTickets: 0 });
+        }
       } finally {
-        setIsLoading(false);
+        if (active) setIsLoading(false);
       }
     }
-
     loadStats();
+    return () => { active = false; };
   }, []);
 
+  if (isLoading) return <AdminPageLoading label="Loading dashboard data" />;
+
+  const metricValue = (value) => metricsUnavailable || value == null ? 'metrics unavailable' : value.toLocaleString();
   const statCards = [
-    {
-      name: 'Total Users',
-      value: stats.totalUsers,
-      icon: Users,
-      color: 'text-blue-400',
-      bgColor: 'bg-blue-500/10',
-      borderColor: 'border-blue-500/20',
-    },
-    {
-      name: 'Activity Events (24h)',
-      value: stats.activeUsersToday,
-      icon: Activity,
-      color: 'text-green-400',
-      bgColor: 'bg-green-500/10',
-      borderColor: 'border-green-500/20',
-    },
-    {
-      name: 'Total Passages Solved',
-      value: stats.totalPassagesSolved,
-      icon: TrendingUp,
-      color: 'text-purple-400',
-      bgColor: 'bg-purple-500/10',
-      borderColor: 'border-purple-500/20',
-    },
-    {
-      name: 'Total Questions Answered',
-      value: stats.totalQuestionsAnswered,
-      icon: MessageSquare,
-      color: 'text-brand-400',
-      bgColor: 'bg-brand-500/10',
-      borderColor: 'border-brand-500/20',
-    },
-    {
-      name: 'Total AI Messages',
-      value: stats.totalAIMessages,
-      icon: MessageSquare,
-      color: 'text-yellow-400',
-      bgColor: 'bg-yellow-500/10',
-      borderColor: 'border-yellow-500/20',
-    },
-    {
-      name: 'Support Tickets',
-      value: stats.totalFeedback,
-      icon: MessageSquare,
-      color: 'text-orange-400',
-      bgColor: 'bg-orange-500/10',
-      borderColor: 'border-orange-500/20',
-    },
-    {
-      name: 'Average Accuracy',
-      value: `${stats.averageAccuracy}%`,
-      icon: AlertTriangle,
-      color: 'text-green-400',
-      bgColor: 'bg-green-500/10',
-      borderColor: 'border-green-500/20',
-    },
-    {
-      name: 'Average Reading Time',
-      value: `${stats.averageReadingTime} min`,
-      icon: Lightbulb,
-      color: 'text-blue-400',
-      bgColor: 'bg-blue-500/10',
-      borderColor: 'border-blue-500/20',
-    },
+    ['Total Users', metricValue(stats?.users), Users, 'text-blue-400', 'bg-blue-500/10', 'border-blue-500/20'],
+    ['Guest Profiles', metricValue(stats?.guests), Users, 'text-slate-400', 'bg-white/5', 'border-white/10'],
+    ['Activity Events (24h)', (stats?.activityEvents || 0).toLocaleString(), Activity, 'text-green-400', 'bg-green-500/10', 'border-green-500/20'],
+    ['Active Learners Today (Tashkent)', metricValue(stats?.activeToday), Activity, 'text-emerald-400', 'bg-emerald-500/10', 'border-emerald-500/20'],
+    ['Total Passages Solved', metricValue(stats?.attempts), TrendingUp, 'text-purple-400', 'bg-purple-500/10', 'border-purple-500/20'],
+    ['Total Questions Answered', metricValue(stats?.answered), MessageSquare, 'text-brand-400', 'bg-brand-500/10', 'border-brand-500/20'],
+    ['Total AI Messages', (stats?.aiMessages || 0).toLocaleString(), MessageSquare, 'text-yellow-400', 'bg-yellow-500/10', 'border-yellow-500/20'],
+    ['Support Tickets', (stats?.supportTickets || 0).toLocaleString(), MessageSquare, 'text-orange-400', 'bg-orange-500/10', 'border-orange-500/20'],
+    ['Average Accuracy', metricsUnavailable || stats?.accuracy == null ? 'metrics unavailable' : `${stats.accuracy}%`, AlertTriangle, 'text-green-400', 'bg-green-500/10', 'border-green-500/20'],
+    ['Average Reading Time', metricsUnavailable || stats?.averageSeconds == null ? 'metrics unavailable' : formatAggregateTime(stats.averageSeconds), Lightbulb, 'text-blue-400', 'bg-blue-500/10', 'border-blue-500/20'],
   ];
-
-  if (isLoading) {
-    return <AdminPageLoading label="Loading dashboard data" />;
-  }
-
-  if (loadError) {
-    return <AdminPageError message={loadError} onRetry={() => window.location.reload()} />;
-  }
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-white mb-2">Dashboard Overview</h1>
-      <p className="mb-8 text-sm text-slate-400">Platform-wide totals across all users and recorded activity.</p>
-      
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-8">
-        {statCards.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <div
-              key={stat.name}
-              className={`rounded-xl border ${stat.borderColor} ${stat.bgColor} p-6 transition-all hover:scale-105`}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-400">{stat.name}</p>
-                  <p className="mt-2 text-3xl font-bold text-white">{stat.value.toLocaleString()}</p>
-                </div>
-                <div className={`p-3 rounded-lg ${stat.bgColor}`}>
-                  <Icon className={stat.color} size={24} />
-                </div>
-              </div>
+      <h1 className="mb-2 text-3xl font-bold text-white">Dashboard Overview</h1>
+      <p className="mb-8 text-sm text-slate-400">Attempt totals use exact saved attempts. Activity Events (24h) counts analytics events, not learners.</p>
+      <div className="mb-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {statCards.map(([name, value, Icon, color, bgColor, borderColor]) => (
+          <div key={name} className={`rounded-xl border ${borderColor} ${bgColor} p-6 transition-all hover:scale-105`}>
+            <div className="flex items-center justify-between">
+              <div><p className="text-sm font-medium text-slate-400">{name}</p><p className="mt-2 text-2xl font-bold text-white">{value}</p></div>
+              <div className={`rounded-lg p-3 ${bgColor}`}><Icon className={color} size={24} /></div>
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <ActivityFeed />
-        <SystemHealth />
-      </div>
+      <div className="grid gap-6 lg:grid-cols-2"><ActivityFeed /><SystemHealth /></div>
     </div>
   );
 }

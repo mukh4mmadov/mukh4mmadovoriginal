@@ -1,267 +1,108 @@
-"use client";
+'use client';
 
 import { useEffect, useState } from 'react';
-import { TrendingUp, Clock, Award, MessageSquare, Users, Calendar } from 'lucide-react';
+import { TrendingUp, Clock, Award, MessageSquare, Calendar } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
-import { AdminPageError, AdminPageLoading } from '@/components/admin/AdminPageStatus';
+import { AdminPageLoading } from '@/components/admin/AdminPageStatus';
+
+const TASHKENT_DATE = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent', year: 'numeric', month: '2-digit', day: '2-digit' });
+
+function eventDateInTashkent(value) {
+  return TASHKENT_DATE.format(new Date(value));
+}
 
 export default function AdminAnalytics() {
-  const [data, setData] = useState({
-    dailyUsers: [],
-    weeklyReadingTime: [],
-    xpGrowth: [],
-    aiUsage: [],
-    registrationTrend: [],
-    questionTypes: [],
-    deviceTypes: [],
-  });
+  const [data, setData] = useState({ attempts: [], readingTime: [], aiUsage: [], registrations: [], questionTypes: [] });
   const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
+  const [metricsUnavailable, setMetricsUnavailable] = useState(false);
 
   useEffect(() => {
+    let active = true;
+    async function loadAnalytics() {
+      try {
+        const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+        const [metricsResult, aiResult] = await Promise.all([
+          supabase?.rpc('get_admin_reading_metrics', { p_days: 30 }) || Promise.resolve({ data: null, error: true }),
+          supabase?.from('analytics_events').select('created_at').eq('event_type', 'ai_message_sent').gte('created_at', since) || Promise.resolve({ data: [] }),
+        ]);
+        if (!active) return;
+        const metrics = Array.isArray(metricsResult.data) ? metricsResult.data[0] : metricsResult.data;
+        if (metricsResult.error || !metrics) {
+          setMetricsUnavailable(true);
+          setData({ attempts: [], readingTime: [], aiUsage: [], registrations: [], questionTypes: [] });
+          return;
+        }
+        const daily = Array.isArray(metrics.daily) ? metrics.daily : [];
+        const aiByDate = new Map();
+        daily.forEach((item) => aiByDate.set(item.date, 0));
+        (aiResult.data || []).forEach((event) => {
+          const date = eventDateInTashkent(event.created_at);
+          if (aiByDate.has(date)) aiByDate.set(date, aiByDate.get(date) + 1);
+        });
+        setData({
+          attempts: daily.map((item) => ({ date: item.date, count: Number(item.attempts) || 0 })),
+          readingTime: daily.map((item) => ({ date: item.date, value: Math.round((Number(item.seconds) || 0) / 60) })),
+          aiUsage: [...aiByDate].map(([date, count]) => ({ date, count })),
+          registrations: (Array.isArray(metrics.registrations_daily) ? metrics.registrations_daily : []).map((item) => ({ date: item.date, count: Number(item.registrations) || 0 })),
+          questionTypes: (Array.isArray(metrics.question_types) ? metrics.question_types : []).map((item) => ({
+            type: item.question_type,
+            count: Number(item.exposures) || 0,
+            accuracy: Number(item.accuracy_percent) || 0,
+          })),
+        });
+      } catch (error) {
+        console.error('Error loading analytics:', error);
+        if (active) setMetricsUnavailable(true);
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    }
     loadAnalytics();
+    return () => { active = false; };
   }, []);
 
-  async function loadAnalytics() {
-    try {
-      setLoadError('');
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-
-      const [dailyUsers, readingFinished, aiUsage, registrationTrend, questionAnswered, allEvents] = await Promise.all([
-        supabase
-          .from('analytics_events')
-          .select('created_at, user_id')
-          .gte('created_at', thirtyDaysAgo),
-        supabase
-          .from('analytics_events')
-          .select('created_at, event_data')
-          .eq('event_type', 'reading_finished')
-          .gte('created_at', thirtyDaysAgo),
-        supabase
-          .from('analytics_events')
-          .select('created_at')
-          .eq('event_type', 'ai_message_sent')
-          .gte('created_at', thirtyDaysAgo),
-        supabase
-          .from('analytics_events')
-          .select('created_at')
-          .eq('event_type', 'user_registered')
-          .gte('created_at', thirtyDaysAgo),
-        supabase
-          .from('analytics_events')
-          .select('event_data')
-          .eq('event_type', 'question_answered'),
-        supabase
-          .from('analytics_events')
-          .select('device_info')
-          .gte('created_at', thirtyDaysAgo),
-      ]);
-
-      const requestError = [dailyUsers, readingFinished, aiUsage, registrationTrend, questionAnswered, allEvents]
-        .find((result) => result.error)?.error;
-      if (requestError) throw requestError;
-
-      const dailyUsersData = processDailyData(dailyUsers.data || [], 'created_at', 'user_id');
-      const weeklyReadingTimeData = processWeeklyReadingTime(readingFinished.data || []);
-      const aiUsageData = processDailyData(aiUsage.data || []);
-      const registrationData = processDailyData(registrationTrend.data || []);
-      const questionTypesData = processQuestionTypes(questionAnswered.data || []);
-      const deviceTypesData = processDeviceTypes(allEvents.data || []);
-
-      setData({
-        dailyUsers: dailyUsersData,
-        weeklyReadingTime: weeklyReadingTimeData,
-        xpGrowth: [],
-        aiUsage: aiUsageData,
-        registrationTrend: registrationData,
-        questionTypes: questionTypesData,
-        deviceTypes: deviceTypesData,
-      });
-    } catch (error) {
-      console.error('Error loading analytics:', error);
-      setLoadError(error.message || 'Analytics data could not be loaded.');
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  function processDailyData(events, dateField = 'created_at', uniqueField = null) {
-    const dailyMap = new Map();
-    const uniqueValuesByDate = new Map();
-    
-    events.forEach((event) => {
-      const timestamp = new Date(event[dateField]);
-      if (Number.isNaN(timestamp.getTime())) return;
-
-      const date = timestamp.toISOString().split('T')[0];
-      if (uniqueField) {
-        const uniqueValue = event[uniqueField];
-        if (!uniqueValue) return;
-        const uniqueValues = uniqueValuesByDate.get(date) || new Set();
-        uniqueValues.add(uniqueValue);
-        uniqueValuesByDate.set(date, uniqueValues);
-        dailyMap.set(date, uniqueValues.size);
-        return;
-      }
-      dailyMap.set(date, (dailyMap.get(date) || 0) + 1);
-    });
-
-    return Array.from(dailyMap.entries())
-      .map(([date, count]) => ({ date, count }))
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }
-
-  function processWeeklyReadingTime(sessions) {
-    const weeklyMap = new Map();
-    
-    sessions.forEach((session) => {
-      const date = new Date(session.created_at);
-      if (Number.isNaN(date.getTime())) return;
-
-      const weekStart = new Date(date);
-      weekStart.setDate(date.getDate() - date.getDay());
-      const weekKey = weekStart.toISOString().split('T')[0];
-      const minutes = (session.event_data?.timeSpent || 0) / 60;
-      weeklyMap.set(weekKey, (weeklyMap.get(weekKey) || 0) + minutes);
-    });
-
-    return Array.from(weeklyMap.entries())
-      .map(([week, minutes]) => ({ week, minutes: Math.round(minutes) }))
-      .sort((a, b) => new Date(a.week).getTime() - new Date(b.week).getTime());
-  }
-
-  function processQuestionTypes(questions) {
-    const typeMap = new Map();
-    
-    questions.forEach((q) => {
-      const type = q.event_data?.questionId?.split('_')[0] || 'unknown';
-      typeMap.set(type, (typeMap.get(type) || 0) + 1);
-    });
-
-    return Array.from(typeMap.entries())
-      .map(([type, count]) => ({ type, count }))
-      .sort((a, b) => b.count - a.count);
-  }
-
-  function processDeviceTypes(events) {
-    const deviceMap = new Map();
-    
-    events.forEach((event) => {
-      const deviceInfo = event.device_info;
-      const device = ['mobile', 'tablet', 'desktop'].includes(deviceInfo?.category)
-        ? deviceInfo.category
-        : 'desktop';
-      deviceMap.set(device, (deviceMap.get(device) || 0) + 1);
-    });
-
-    return Array.from(deviceMap.entries())
-      .map(([device, count]) => ({ device, count }))
-      .sort((a, b) => b.count - a.count);
-  }
-
-  if (isLoading) {
-    return <AdminPageLoading label="Loading analytics" />;
-  }
-
-  if (loadError) {
-    return <AdminPageError message={loadError} onRetry={() => window.location.reload()} />;
-  }
+  if (isLoading) return <AdminPageLoading label="Loading analytics" />;
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-white mb-8">Analytics</h1>
-
+      <h1 className="mb-3 text-3xl font-bold text-white">Analytics</h1>
+      <p className="mb-8 text-sm text-slate-400">Reading and registration dates use Asia/Tashkent. Analytics events are used only for AI usage here.</p>
+      {metricsUnavailable && <p role="status" className="mb-6 rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-100">Reading metrics unavailable. Check the database migration and try again.</p>}
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="border border-white/10 rounded-xl p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Users className="text-brand-400" size={20} />
-            <h2 className="text-lg font-semibold text-white">Daily Active Users</h2>
-          </div>
-          <SimpleChart data={data.dailyUsers} color="brand" />
-        </div>
-
-        <div className="border border-white/10 rounded-xl p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Clock className="text-green-400" size={20} />
-            <h2 className="text-lg font-semibold text-white">Weekly Reading Time (minutes)</h2>
-          </div>
-          <SimpleChart data={data.weeklyReadingTime.map((d) => ({ ...d, value: d.minutes }))} color="green" />
-        </div>
-
-        <div className="border border-white/10 rounded-xl p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <MessageSquare className="text-purple-400" size={20} />
-            <h2 className="text-lg font-semibold text-white">AI Usage</h2>
-          </div>
-          <SimpleChart data={data.aiUsage} color="purple" />
-        </div>
-
-        <div className="border border-white/10 rounded-xl p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Calendar className="text-blue-400" size={20} />
-            <h2 className="text-lg font-semibold text-white">New Registrations</h2>
-          </div>
-          <SimpleChart data={data.registrationTrend} color="blue" />
-        </div>
-
-        <div className="border border-white/10 rounded-xl p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Award className="text-yellow-400" size={20} />
-            <h2 className="text-lg font-semibold text-white">Question Types</h2>
-          </div>
-          <SimpleChart data={data.questionTypes.map((d) => ({ ...d, value: d.count }))} color="yellow" />
-        </div>
-
-        <div className="border border-white/10 rounded-xl p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="text-orange-400" size={20} />
-            <h2 className="text-lg font-semibold text-white">Device Types</h2>
-          </div>
-          <SimpleChart data={data.deviceTypes.map((d) => ({ ...d, value: d.count }))} color="orange" />
-        </div>
+        <ChartPanel icon={TrendingUp} title="Attempts per Tashkent Day" color="brand"><SimpleChart data={data.attempts} color="brand" /></ChartPanel>
+        <ChartPanel icon={Clock} title="Reading Time per Tashkent Day (minutes)" color="green"><SimpleChart data={data.readingTime} color="green" /></ChartPanel>
+        <ChartPanel icon={MessageSquare} title="AI Usage" color="purple"><SimpleChart data={data.aiUsage} color="purple" /></ChartPanel>
+        <ChartPanel icon={Calendar} title="New Registrations per Tashkent Day" color="blue"><SimpleChart data={data.registrations} color="blue" /></ChartPanel>
+        <ChartPanel icon={Award} title="Question Type Exposures and Accuracy" color="yellow">
+          <SimpleChart data={data.questionTypes.map((item) => ({ ...item, type: `${item.type} (${item.accuracy}%)` }))} color="yellow" />
+        </ChartPanel>
       </div>
     </div>
   );
 }
 
-function SimpleChart({ data, color }) {
-  const maxValue = Math.max(...data.map((d) => d.count || d.value || 0), 1);
-  const colorClasses = {
-    brand: 'bg-brand-500',
-    green: 'bg-green-500',
-    purple: 'bg-purple-500',
-    blue: 'bg-blue-500',
-    yellow: 'bg-yellow-500',
-    orange: 'bg-orange-500',
-  };
+function ChartPanel({ icon: Icon, title, children }) {
+  return <section className="rounded-xl border border-white/10 p-6"><div className="mb-4 flex items-center gap-2"><Icon className="text-brand-400" size={20} /><h2 className="text-lg font-semibold text-white">{title}</h2></div>{children}</section>;
+}
 
+function SimpleChart({ data, color }) {
+  const maxValue = Math.max(...data.map((item) => item.count ?? item.value ?? 0), 1);
+  const colors = { brand: 'bg-brand-500', green: 'bg-green-500', purple: 'bg-purple-500', blue: 'bg-blue-500', yellow: 'bg-yellow-500' };
   return (
     <div className="space-y-2">
       {data.slice(-7).map((item, index) => {
-        const value = item.count || item.value || 0;
-        const height = (value / maxValue) * 100;
-        const dateValue = item.date || item.week;
-        const date = dateValue ? new Date(dateValue) : null;
-        const label =
-          date && !Number.isNaN(date.getTime())
-            ? `${item.week ? 'Week of ' : ''}${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
-            : item.type || item.device || 'Unknown';
-
-        return (
-          <div key={index} className="flex items-center gap-2">
-            <span className="text-xs text-slate-400 w-20 truncate" title={label}>
-              {label}
-            </span>
-            <div className="flex-1 h-8 bg-white/5 rounded overflow-hidden">
-              <div
-                className={`h-full ${colorClasses[color]} transition-all duration-500`}
-                style={{ width: `${height}%` }}
-              />
-            </div>
-            <span className="text-xs text-slate-300 w-8 text-right">{value}</span>
-          </div>
-        );
+        const value = item.count ?? item.value ?? 0;
+        const date = item.date ? new Date(`${item.date}T00:00:00Z`) : null;
+        const label = date && !Number.isNaN(date.getTime())
+          ? date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
+          : item.type || 'Unknown';
+        return <div key={`${label}-${index}`} className="flex items-center gap-2">
+          <span className="w-24 truncate text-xs text-slate-400" title={label}>{label}</span>
+          <div className="h-8 flex-1 overflow-hidden rounded bg-white/5"><div className={`h-full ${colors[color]} transition-all`} style={{ width: `${(value / maxValue) * 100}%` }} /></div>
+          <span className="w-12 text-right text-xs text-slate-300">{value}</span>
+        </div>;
       })}
+      {!data.length && <p className="text-sm text-slate-500">No data for this period.</p>}
     </div>
   );
 }
