@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpenText, Moon, Sun, LogOut, User, ChevronDown, Settings, BarChart3, Menu, X, MessageSquare } from "lucide-react";
+import { BookOpenText, Moon, Sun, LogOut, User, ChevronDown, Settings, BarChart3, Menu, X, MessageSquare, LifeBuoy } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { requestHelpDialog } from "@/lib/help-dialog";
 
 export default function Navbar() {
   const { user, profile, signOut, isLoading } = useAuth();
@@ -138,6 +139,7 @@ export default function Navbar() {
         </button>
 
         <nav className="hidden lg:flex items-center gap-3 text-sm font-medium text-slate-300 sm:gap-6">
+          <button type="button" onClick={(event) => requestHelpDialog(event.currentTarget)} className="rounded-full px-3 py-2 transition-all hover:bg-white/10 hover:text-white">Help</button>
           <Link
             href="/reading"
             className="rounded-full px-3 py-2 transition-all hover:bg-white/10 hover:text-white"
@@ -213,6 +215,9 @@ export default function Navbar() {
                   <Link href="/my-feedback" className="flex items-center gap-2 px-4 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10 hover:text-white" onClick={() => setIsProfileDropdownOpen(false)}>
                     <MessageSquare size={16} /> My feedback
                   </Link>
+                  <button type="button" onClick={(event) => { setIsProfileDropdownOpen(false); requestHelpDialog(event.currentTarget); }} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-300 transition-colors hover:bg-white/10 hover:text-white">
+                    <LifeBuoy size={16} /> Help
+                  </button>
                   <button
                     onClick={handleSignOut}
                     className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
@@ -273,6 +278,9 @@ export default function Navbar() {
             >
               Roadmap
             </Link>
+            <button type="button" onClick={(event) => { closeMobileMenu(); requestHelpDialog(event.currentTarget); }} className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-white hover:bg-white/10 transition-colors">
+              <LifeBuoy size={18} /> Help
+            </button>
 
             {isLoading ? (
               <div className="h-10 w-10 animate-pulse rounded-full bg-white/10" />

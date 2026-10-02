@@ -6,6 +6,7 @@ import Link from "next/link";
 import { LifeBuoy, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ticketsRepository, validateTicketInput } from "@/lib/supabase/repositories/tickets.repository";
+import { OPEN_HELP_EVENT } from "@/lib/help-dialog";
 
 const PENDING_KEY = "support-ticket-pending-v1";
 const blankForm = () => ({ category: "bug", severity: "medium", subject: "", body: "", reproduction_steps: "", expected_behavior: "", actual_behavior: "", page_url: "" });
@@ -28,6 +29,11 @@ export default function ReportIssueButton() {
   const ticketKey = useRef(null);
   const messageKey = useRef(null);
   const restoredForUser = useRef(null);
+  const floatingButtonRef = useRef(null);
+  const returnFocusRef = useRef(null);
+
+  const isReadingPage = pathname?.startsWith("/reading/") || pathname === "/reading";
+  const showFloatingHelp = !isReadingPage && !pathname?.startsWith("/admin");
 
   const restorePending = useCallback((userId, showDialog = true) => {
     const saved = readPending();
@@ -69,17 +75,34 @@ export default function ReportIssueButton() {
     restorePending(user.id, true);
   }, [isLoading, user, restorePending]);
 
-  if (pathname?.startsWith("/admin")) return null;
+  useEffect(() => {
+    const mainContent = document.getElementById("main-content");
+    if (!mainContent) return;
+    mainContent.classList.toggle("pb-24", showFloatingHelp);
+    return () => mainContent.classList.remove("pb-24");
+  }, [showFloatingHelp]);
+
   const update = (event) => setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
 
-  const start = () => {
+  const start = useCallback((trigger = floatingButtonRef.current) => {
+    returnFocusRef.current = trigger || document.activeElement;
     if (!user || user.is_anonymous) { setGuestPrompt(true); return; }
     if (restorePending(user.id, true)) return;
     setForm(blankForm()); setError(""); setPending(null);
     ticketKey.current = crypto.randomUUID();
     messageKey.current = crypto.randomUUID();
     setOpen(true);
-  };
+  }, [restorePending, user]);
+
+  useEffect(() => {
+    const openHelp = (event) => {
+      returnFocusRef.current = event.detail?.trigger || document.activeElement;
+      if (!user || user.is_anonymous) setGuestPrompt(true);
+      else start(event.detail?.trigger);
+    };
+    window.addEventListener(OPEN_HELP_EVENT, openHelp);
+    return () => window.removeEventListener(OPEN_HELP_EVENT, openHelp);
+  }, [user, start]);
 
   function discardPendingDraft() {
     if (!pending || pending.ticketId !== null || busy) return;
@@ -136,8 +159,9 @@ export default function ReportIssueButton() {
   }
 
   const loginUrl = `/login?next=${encodeURIComponent(pathname || "/")}`;
+  if (pathname?.startsWith("/admin")) return null;
   return <>
-    <button type="button" onClick={start} className="fixed bottom-6 right-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-brand-500 text-white shadow-xl hover:bg-brand-600 sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-3" aria-label="Get help or report an issue" title="Help"><LifeBuoy size={20} /><span className="hidden sm:inline">Help</span></button>
+    {showFloatingHelp && <button ref={floatingButtonRef} type="button" onClick={() => start()} className="fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-brand-500 text-white shadow-xl hover:bg-brand-600 sm:bottom-6 sm:right-6 sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-3" aria-label="Get help or report an issue" title="Help"><LifeBuoy size={20} aria-hidden="true" /><span className="hidden sm:inline">Help</span></button>}
     {guestPrompt && <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setGuestPrompt(false); }}><section role="dialog" aria-modal="true" aria-labelledby="guest-help-title" className="w-full max-w-sm rounded-2xl border border-white/10 bg-surface p-5 text-white shadow-2xl"><div className="flex items-start justify-between gap-3"><h2 id="guest-help-title" className="text-lg font-semibold">Please sign up or sign in to send feedback</h2><button type="button" onClick={() => setGuestPrompt(false)} aria-label="Close" className="rounded-lg p-1 text-slate-400 hover:bg-white/10"><X size={18} /></button></div><p className="mt-2 text-sm text-slate-400">Your request and replies are saved to your account.</p><Link href={loginUrl} onClick={() => setGuestPrompt(false)} className="mt-5 block rounded-lg bg-brand-500 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-brand-600">Sign in or sign up</Link></section></div>}
     {open && <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) setOpen(false); }}>
       <section role="dialog" aria-modal="true" aria-labelledby="help-title" className="max-h-[94vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-white/10 bg-surface p-5 text-slate-100 shadow-2xl sm:p-7">

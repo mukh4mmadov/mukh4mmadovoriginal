@@ -1,4 +1,7 @@
-import { Send } from "lucide-react";
+"use client";
+
+import { LifeBuoy, Send } from "lucide-react";
+import { requestHelpDialog } from "@/lib/help-dialog";
 
 export default function Footer() {
   return (
@@ -6,6 +9,14 @@ export default function Footer() {
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center justify-center gap-6">
           <div className="flex items-center gap-6">
+            <button
+              type="button"
+              onClick={(event) => requestHelpDialog(event.currentTarget)}
+              className="flex items-center gap-2 text-slate-400 transition-colors hover:text-white"
+            >
+              <LifeBuoy size={20} aria-hidden="true" />
+              <span className="text-sm">Help</span>
+            </button>
             <a
               href="https://t.me/mukh4mmadov"
               target="_blank"
