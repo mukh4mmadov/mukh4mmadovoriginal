@@ -363,6 +363,7 @@ SELECT set_config('request.jwt.claim.sub', current_setting('app.reading_test_a')
 SELECT set_config('request.jwt.claims', jsonb_build_object('sub',current_setting('app.reading_test_a'),'role','authenticated')::text, true);
 DO $learner_a$
 DECLARE v_attempt_id uuid; replay_id uuid; key_id uuid := gen_random_uuid(); duration_id uuid; payload jsonb := '[{"question_id":"dry-run-q1","question_type":"multiple-choice","selected_answer":"A","is_correct":true},{"question_id":"dry-run-q2","question_type":"matching-headings","selected_answer":null,"is_correct":false}]'::jsonb;
+  v_one jsonb := '[{"question_id":"q","question_type":"multiple-choice","selected_answer":null,"is_correct":false}]'::jsonb;
   future_id uuid; old_id uuid; null_id uuid; past_id uuid; limit_id uuid;
 BEGIN
   v_attempt_id := public.submit_reading_attempt(key_id,'dry-run-passage',60,payload);
@@ -374,21 +375,21 @@ BEGIN
   IF (SELECT count(*) FROM public.reading_attempt_answers aa WHERE aa.attempt_id=v_attempt_id)<>2 THEN RAISE EXCEPTION 'FAIL: learner cannot read own answers'; END IF;
   INSERT INTO public.reading_history(user_id,passage_id,score,time_spent_seconds) VALUES(auth.uid(),'dry-run-legacy-flow',1,1);
   IF NOT EXISTS (SELECT 1 FROM public.reading_history WHERE user_id=auth.uid() AND passage_id='dry-run-legacy-flow') THEN RAISE EXCEPTION 'FAIL: basic reading_history insert/select flow broke'; END IF;
-  duration_id := public.submit_reading_attempt(gen_random_uuid(),'dry-run-clamp',99999,'[{"question_id":"q","question_type":"multiple-choice","selected_answer":null,"is_correct":false}]'::jsonb);
+  duration_id := public.submit_reading_attempt(gen_random_uuid(),'dry-run-clamp',99999,v_one);
   IF (SELECT time_spent_seconds FROM public.reading_history WHERE id=duration_id)<>7200 THEN RAISE EXCEPTION 'FAIL: duration was not clamped'; END IF;
-  future_id := public.submit_reading_attempt(gen_random_uuid(),'dry-run-future-time',1,'[{"question_id":"q","question_type":"multiple-choice","selected_answer":null,"is_correct":false}]'::jsonb,now()+interval '3 days');
+  future_id := public.submit_reading_attempt(gen_random_uuid(),'dry-run-future-time',1,v_one,now()+interval '3 days');
   IF (SELECT completed_at > now()+interval '1 second' FROM public.reading_history WHERE id=future_id) THEN RAISE EXCEPTION 'FAIL: future completion timestamp was not clamped'; END IF;
-  old_id := public.submit_reading_attempt(gen_random_uuid(),'dry-run-old-time',1,'[{"question_id":"q","question_type":"multiple-choice","selected_answer":null,"is_correct":false}]'::jsonb,now()-interval '3 years');
+  old_id := public.submit_reading_attempt(gen_random_uuid(),'dry-run-old-time',1,v_one,now()-interval '3 years');
   IF abs(extract(epoch FROM ((SELECT completed_at FROM public.reading_history WHERE id=old_id) - (now()-interval '400 days'))))>2 THEN RAISE EXCEPTION 'FAIL: old completion timestamp was not clamped to 400 days'; END IF;
-  null_id := public.submit_reading_attempt(gen_random_uuid(),'dry-run-null-time',1,'[{"question_id":"q","question_type":"multiple-choice","selected_answer":null,"is_correct":false}]'::jsonb,NULL);
+  null_id := public.submit_reading_attempt(gen_random_uuid(),'dry-run-null-time',1,v_one,NULL);
   IF abs(extract(epoch FROM ((SELECT completed_at FROM public.reading_history WHERE id=null_id)-now())))>2 THEN RAISE EXCEPTION 'FAIL: NULL completion timestamp did not use now()'; END IF;
-  past_id := public.submit_reading_attempt(gen_random_uuid(),'dry-run-past-time',1,'[{"question_id":"q","question_type":"multiple-choice","selected_answer":null,"is_correct":false}]'::jsonb,now()-interval '5 seconds');
+  past_id := public.submit_reading_attempt(gen_random_uuid(),'dry-run-past-time',1,v_one,now()-interval '5 seconds');
   PERFORM set_config('app.reading_test_past_attempt',past_id::text,true);
   IF abs(extract(epoch FROM ((SELECT completed_at FROM public.reading_history WHERE id=past_id)-(now()-interval '5 seconds'))))>2 THEN RAISE EXCEPTION 'FAIL: in-range past completion timestamp changed'; END IF;
   RAISE NOTICE 'PASS: learner A insert, idempotent retry, own reads, legacy insert/select, duration clamp, and completion timestamp clamps';
   BEGIN PERFORM public.submit_reading_attempt(gen_random_uuid(),'dry-run-passage',0,'[]'::jsonb); RAISE EXCEPTION 'FAIL: empty answers accepted'; EXCEPTION WHEN raise_exception THEN IF SQLERRM='FAIL: empty answers accepted' THEN RAISE; END IF; RAISE NOTICE 'PASS: empty answers rejected'; END;
   BEGIN PERFORM public.submit_reading_attempt(gen_random_uuid(),'dry-run-passage',0,(SELECT jsonb_agg(jsonb_build_object('question_id','q'||n,'question_type','multiple-choice','selected_answer',null,'is_correct',false)) FROM generate_series(1,201)n)); RAISE EXCEPTION 'FAIL: 201 answers accepted'; EXCEPTION WHEN raise_exception THEN IF SQLERRM='FAIL: 201 answers accepted' THEN RAISE; END IF; RAISE NOTICE 'PASS: 201 answers rejected'; END;
-  BEGIN PERFORM public.submit_reading_attempt(gen_random_uuid(),repeat('p',201),1,'[{"question_id":"q","question_type":"multiple-choice","selected_answer":null,"is_correct":false}]'::jsonb); RAISE EXCEPTION 'FAIL: oversized passage id accepted'; EXCEPTION WHEN raise_exception THEN IF SQLERRM='FAIL: oversized passage id accepted' THEN RAISE; END IF; RAISE NOTICE 'PASS: passage id over 200 characters rejected'; END;
+  BEGIN PERFORM public.submit_reading_attempt(gen_random_uuid(),repeat('p',201),1,v_one); RAISE EXCEPTION 'FAIL: oversized passage id accepted'; EXCEPTION WHEN raise_exception THEN IF SQLERRM='FAIL: oversized passage id accepted' THEN RAISE; END IF; RAISE NOTICE 'PASS: passage id over 200 characters rejected'; END;
   BEGIN PERFORM public.submit_reading_attempt(gen_random_uuid(),'dry-run-limit-qid',1,jsonb_build_array(jsonb_build_object('question_id',repeat('q',101),'question_type','multiple-choice','selected_answer',null,'is_correct',false))); RAISE EXCEPTION 'FAIL: oversized question id accepted'; EXCEPTION WHEN raise_exception THEN IF SQLERRM='FAIL: oversized question id accepted' THEN RAISE; END IF; RAISE NOTICE 'PASS: question id over 100 characters rejected'; END;
   BEGIN PERFORM public.submit_reading_attempt(gen_random_uuid(),'dry-run-limit-type',1,jsonb_build_array(jsonb_build_object('question_id','q','question_type',repeat('t',51),'selected_answer',null,'is_correct',false))); RAISE EXCEPTION 'FAIL: oversized question type accepted'; EXCEPTION WHEN raise_exception THEN IF SQLERRM='FAIL: oversized question type accepted' THEN RAISE; END IF; RAISE NOTICE 'PASS: question type over 50 characters rejected'; END;
   limit_id := public.submit_reading_attempt(gen_random_uuid(),'dry-run-limit-answer',1,jsonb_build_array(jsonb_build_object('question_id','q','question_type','multiple-choice','selected_answer',repeat('a',501),'is_correct',false)));
