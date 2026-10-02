@@ -1,7 +1,7 @@
 import readingTestsModule from "@/data/readingTests_new";
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://mukh4mmadovoriginal.vercel.app").replace(/\/$/, "");
-const staticRoutes = ["", "/reading", "/roadmap", "/changelog"];
+const staticRoutes = ["", "/reading", "/roadmap", "/changelog", "/privacy", "/terms", "/contact"];
 
 export default function sitemap() {
   const staticPages = staticRoutes.map((route) => ({

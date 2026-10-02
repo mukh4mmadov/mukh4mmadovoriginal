@@ -13,6 +13,7 @@ export default function SignUpPage() {
   const { signInWithGoogle, user, isLoading: authLoading } = useAuth();
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasAcceptedLegal, setHasAcceptedLegal] = useState(false);
   const [toast, setToast] = useState(null);
   const redirect = typeof window === "undefined"
     ? null
@@ -47,6 +48,10 @@ export default function SignUpPage() {
   }
 
   const handleGoogleSignIn = async () => {
+    if (!hasAcceptedLegal) {
+      setError("Please review and accept the Privacy Policy and Terms of Use first.");
+      return;
+    }
     setError("");
     setIsSubmitting(true);
 
@@ -160,6 +165,8 @@ export default function SignUpPage() {
               <AuthCard
                 error={error}
                 isLoading={isSubmitting}
+                hasAcceptedLegal={hasAcceptedLegal}
+                onLegalAcceptanceChange={setHasAcceptedLegal}
                 redirect={redirect}
                 onGoogleSignIn={handleGoogleSignIn}
               />
@@ -179,7 +186,7 @@ export default function SignUpPage() {
   );
 }
 
-function AuthCard({ error, isLoading, redirect, onGoogleSignIn }) {
+function AuthCard({ error, isLoading, hasAcceptedLegal, onLegalAcceptanceChange, redirect, onGoogleSignIn }) {
   return (
     <div className="w-full max-w-md">
       <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
@@ -196,9 +203,21 @@ function AuthCard({ error, isLoading, redirect, onGoogleSignIn }) {
         )}
 
         <div className="space-y-3">
+          <label className="flex items-start gap-3 text-sm leading-6 text-slate-300">
+            <input
+              type="checkbox"
+              checked={hasAcceptedLegal}
+              onChange={(event) => onLegalAcceptanceChange(event.target.checked)}
+              disabled={isLoading}
+              className="mt-1 h-4 w-4 shrink-0 accent-blue-500"
+            />
+            <span>
+              I have read and agree to the <Link href="/privacy" className="text-blue-300 underline hover:text-blue-200">Privacy Policy</Link> and <Link href="/terms" className="text-blue-300 underline hover:text-blue-200">Terms of Use</Link>. If I am under 18, my parent or legal guardian has reviewed them and given permission.
+            </span>
+          </label>
           <button
             onClick={onGoogleSignIn}
-            disabled={isLoading}
+            disabled={isLoading || !hasAcceptedLegal}
             className="w-full py-3 px-4 bg-white/5 border border-white/10 text-white font-medium rounded-lg hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
           >
             {isLoading ? (

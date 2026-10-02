@@ -1,6 +1,7 @@
 "use client";
 
 import { LifeBuoy, Send } from "lucide-react";
+import Link from "next/link";
 import { requestHelpDialog } from "@/lib/help-dialog";
 
 export default function Footer() {
@@ -28,6 +29,11 @@ export default function Footer() {
               <span className="text-sm">Telegram</span>
             </a>
           </div>
+          <nav aria-label="Huquqiy ma’lumotlar" className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm text-slate-400">
+            <Link href="/privacy" className="hover:text-white">Maxfiylik siyosati</Link>
+            <Link href="/terms" className="hover:text-white">Foydalanish shartlari</Link>
+            <Link href="/contact" className="hover:text-white">Aloqa</Link>
+          </nav>
           <p className="text-xs text-slate-400 text-center">
             © {new Date().getFullYear()} Muhammadov IELTS Reading. All rights reserved.
           </p>
