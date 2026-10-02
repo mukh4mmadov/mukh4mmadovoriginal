@@ -192,8 +192,8 @@ export default function StatisticsPage() {
   const shareProgress = async () => {
     const report = [
       'My IELTS Reading progress',
-      `Completed passages: ${stats?.total_passages_completed || 0}`,
-      `Questions in completed passages: ${stats?.total_questions_answered || 0}`,
+      `Tests completed: ${stats?.total_passages_completed || 0}`,
+      `Question exposures: ${stats?.total_questions_answered || 0}`,
       `Accuracy: ${stats?.total_questions_answered ? `${stats.accuracy_rate}%` : 'Not enough completed results yet'}`,
       `Answers submitted: ${stats?.question_attempts || 0}`,
       `Correct responses across attempts: ${stats?.correct_responses || 0}`,
@@ -412,7 +412,7 @@ export default function StatisticsPage() {
             </h3>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-slate-400">Questions in Completed Passages</span>
+                <span className="text-slate-400">Question Exposures</span>
                 <span className="text-white font-medium">{stats?.total_questions_answered || 0}</span>
               </div>
               <div className="flex justify-between items-center">

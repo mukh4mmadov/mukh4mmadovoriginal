@@ -5,10 +5,10 @@ import { TrendingUp, Clock, Award, MessageSquare, Calendar } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client';
 import { AdminPageLoading } from '@/components/admin/AdminPageStatus';
 
-const TASHKENT_DATE = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent', year: 'numeric', month: '2-digit', day: '2-digit' });
-
 function eventDateInTashkent(value) {
-  return TASHKENT_DATE.format(new Date(value));
+  const parts = new Map(new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Tashkent', year: 'numeric', month: '2-digit', day: '2-digit' })
+    .formatToParts(new Date(value)).map((part) => [part.type, part.value]));
+  return `${parts.get('year')}-${parts.get('month')}-${parts.get('day')}`;
 }
 
 export default function AdminAnalytics() {
@@ -90,7 +90,7 @@ function SimpleChart({ data, color }) {
   const colors = { brand: 'bg-brand-500', green: 'bg-green-500', purple: 'bg-purple-500', blue: 'bg-blue-500', yellow: 'bg-yellow-500' };
   return (
     <div className="space-y-2">
-      {data.slice(-7).map((item, index) => {
+      {data.map((item, index) => {
         const value = item.count ?? item.value ?? 0;
         const date = item.date ? new Date(`${item.date}T00:00:00Z`) : null;
         const label = date && !Number.isNaN(date.getTime())

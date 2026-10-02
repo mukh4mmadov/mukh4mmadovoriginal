@@ -290,6 +290,9 @@ BEGIN
      OR has_table_privilege('anon','public.reading_attempt_answers','DELETE') THEN
     RAISE EXCEPTION 'Verification failed: anon has privileges on reading_attempt_answers';
   END IF;
+  IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid='public.reading_attempt_answers'::regclass) THEN
+    RAISE EXCEPTION 'Verification failed: RLS is not enabled on reading_attempt_answers';
+  END IF;
   IF has_function_privilege('anon','public.submit_reading_attempt(uuid,text,integer,jsonb)','EXECUTE')
      OR has_function_privilege('anon','public.get_my_reading_metrics(timestamp with time zone,timestamp with time zone)','EXECUTE')
      OR has_function_privilege('anon','public.get_admin_reading_metrics(integer)','EXECUTE') THEN

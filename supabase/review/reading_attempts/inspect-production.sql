@@ -3,7 +3,7 @@
 select table_name, column_name, data_type, is_nullable, column_default
 from information_schema.columns
 where table_schema = 'public'
-  and table_name in ('reading_history', 'reading_progress', 'highlights', 'profiles')
+  and table_name in ('reading_history', 'reading_progress', 'highlights', 'profiles', 'reading_attempt_answers')
 order by table_name, ordinal_position;
 
 select c.relname as table_name, con.conname, con.contype,
@@ -20,13 +20,13 @@ order by indexname;
 
 select schemaname, tablename, policyname, permissive, roles, cmd, qual, with_check
 from pg_policies
-where schemaname = 'public' and tablename in ('reading_history', 'reading_progress', 'highlights', 'profiles')
+where schemaname = 'public' and tablename in ('reading_history', 'reading_progress', 'highlights', 'profiles', 'reading_attempt_answers')
 order by tablename, policyname;
 
 select table_name, grantee, privilege_type
 from information_schema.role_table_grants
 where table_schema = 'public'
-  and table_name in ('reading_history', 'reading_progress', 'highlights', 'profiles')
+  and table_name in ('reading_history', 'reading_progress', 'highlights', 'profiles', 'reading_attempt_answers')
   and grantee in ('anon', 'authenticated')
 order by table_name, grantee, privilege_type;
 
@@ -63,3 +63,7 @@ exists (
   select 1 from information_schema.columns
   where table_schema = 'public' and table_name = 'reading_history' and column_name = 'attempt_key'
 ) as reading_history_attempt_key_exists;
+
+select c.relname as table_name, c.relrowsecurity as rls_enabled, c.relforcerowsecurity as rls_forced
+from pg_class c join pg_namespace n on n.oid=c.relnamespace
+where n.nspname='public' and c.relname in ('reading_history','reading_attempt_answers');

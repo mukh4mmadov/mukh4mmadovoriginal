@@ -1,5 +1,17 @@
 -- Self-contained transactional verification copy of migration.sql.
 BEGIN;
+DO $baseline$
+BEGIN
+  PERFORM set_config('app.baseline_reading_history', (SELECT count(*)::text FROM public.reading_history), true);
+  PERFORM set_config('app.baseline_reading_progress', (SELECT count(*)::text FROM public.reading_progress), true);
+  PERFORM set_config('app.baseline_highlights', (SELECT count(*)::text FROM public.highlights), true);
+  PERFORM set_config('app.baseline_profiles', (SELECT count(*)::text FROM public.profiles), true);
+  RAISE NOTICE 'BASELINE rows: reading_history %, reading_progress %, highlights %, profiles %',
+    current_setting('app.baseline_reading_history'), current_setting('app.baseline_reading_progress'),
+    current_setting('app.baseline_highlights'), current_setting('app.baseline_profiles');
+END
+$baseline$;
+SAVEPOINT migration_sandbox;
 DO $preconditions$
 BEGIN
   IF to_regclass('public.reading_history') IS NULL THEN
@@ -289,6 +301,9 @@ BEGIN
      OR has_table_privilege('anon','public.reading_attempt_answers','DELETE') THEN
     RAISE EXCEPTION 'Verification failed: anon has privileges on reading_attempt_answers';
   END IF;
+  IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid='public.reading_attempt_answers'::regclass) THEN
+    RAISE EXCEPTION 'Verification failed: RLS is not enabled on reading_attempt_answers';
+  END IF;
   IF has_function_privilege('anon','public.submit_reading_attempt(uuid,text,integer,jsonb)','EXECUTE')
      OR has_function_privilege('anon','public.get_my_reading_metrics(timestamp with time zone,timestamp with time zone)','EXECUTE')
      OR has_function_privilege('anon','public.get_admin_reading_metrics(integer)','EXECUTE') THEN
@@ -389,4 +404,20 @@ END
 $non_admin_test$;
 RESET ROLE;
 
+ROLLBACK TO SAVEPOINT migration_sandbox;
+DO $rollback_assertions$
+BEGIN
+  IF (SELECT count(*)::text FROM public.reading_history) <> current_setting('app.baseline_reading_history')
+     OR (SELECT count(*)::text FROM public.reading_progress) <> current_setting('app.baseline_reading_progress')
+     OR (SELECT count(*)::text FROM public.highlights) <> current_setting('app.baseline_highlights')
+     OR (SELECT count(*)::text FROM public.profiles) <> current_setting('app.baseline_profiles') THEN
+    RAISE EXCEPTION 'FAIL: row counts differ from pre-test baseline';
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='reading_history' AND column_name IN ('attempt_key','question_count','answered_count','correct_count'))
+     OR to_regclass('public.reading_attempt_answers') IS NOT NULL THEN
+    RAISE EXCEPTION 'FAIL: migration objects survived savepoint rollback';
+  END IF;
+  RAISE NOTICE 'PASS: savepoint rollback restored schema and row counts to the printed baseline';
+END
+$rollback_assertions$;
 ROLLBACK;
