@@ -1,13 +1,11 @@
 "use client";
 
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   CheckCircle2,
   XCircle,
   Lightbulb,
   ArrowLeft,
-  Trophy,
-  Sparkles,
   Clock,
   Target,
   RotateCcw,
@@ -47,8 +45,6 @@ export default function ReadingTestResults({
   const [expandedExplanation, setExpandedExplanation] = useState(
     null,
   );
-  const [showCelebration, setShowCelebration] = useState(false);
-  const celebrationTimeoutRef = useRef(null);
   const [animateIndex, setAnimateIndex] = useState(0);
   const [reviewMode, setReviewMode] = useState(
     "all",
@@ -69,7 +65,10 @@ export default function ReadingTestResults({
   ).length;
   const skippedCount = questions.filter((q) => !answers[q.id]).length;
   const missedCount = incorrectCount + skippedCount;
-  const percentage = (correctCount / questions.length) * 100;
+  const percentage = questions.length > 0
+    ? (correctCount / questions.length) * 100
+    : 0;
+  const resultSummary = `You answered ${correctCount} of ${questions.length} questions correctly${skippedCount > 0 ? ` and skipped ${skippedCount}` : ""}.`;
 
   useEffect(() => {
     setReviewQueueCount(getReviewQueue(userId).length);
@@ -127,20 +126,6 @@ export default function ReadingTestResults({
     };
   };
 
-  const getMotivationalMessage = () => {
-    if (percentage >= 90)
-      return "Outstanding! You are clearly building strong IELTS Reading instincts.";
-    if (percentage >= 80)
-      return "Excellent work! You are ready for more challenge.";
-    if (percentage >= 70)
-      return "Great job! You are showing strong control of the passage and question logic.";
-    if (percentage >= 60)
-      return "Good effort! Focus on evidence-based reading and your weak question types.";
-    if (percentage >= 50)
-      return "Keep practicing! Review the explanations carefully and build your accuracy.";
-    return "Keep going! Each mistake is a lesson, and your next attempt will be stronger.";
-  };
-
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -179,28 +164,6 @@ export default function ReadingTestResults({
   };
 
   useEffect(() => {
-    if (percentage < 70) {
-      setShowCelebration(false);
-      return;
-    }
-
-    setShowCelebration(true);
-    if (celebrationTimeoutRef.current) {
-      window.clearTimeout(celebrationTimeoutRef.current);
-    }
-
-    celebrationTimeoutRef.current = window.setTimeout(() => {
-      setShowCelebration(false);
-    }, 3000);
-
-    return () => {
-      if (celebrationTimeoutRef.current) {
-        window.clearTimeout(celebrationTimeoutRef.current);
-      }
-    };
-  }, [percentage]);
-
-  useEffect(() => {
     const timer = setInterval(() => {
       setAnimateIndex((prev) => {
         if (prev < questions.length - 1) return prev + 1;
@@ -231,14 +194,12 @@ export default function ReadingTestResults({
 
   const shareResult = async () => {
     const report = [
-      "My IELTS Reading practice result",
       `Passage: ${passage.title}`,
       `Date: ${new Date().toLocaleDateString()}`,
       `Score: ${correctCount}/${questions.length} correct`,
       `Skipped: ${skippedCount}`,
       `Percentage: ${percentage.toFixed(0)}%`,
       `Time: ${formatTime(timeSpent)}`,
-      `Review status: ${missedCount === 0 ? "No missed questions" : `${missedCount} missed or skipped question${missedCount === 1 ? "" : "s"}; ${missedQuestionsSaved ? "saved to review queue" : "not yet saved to review queue"}`}`,
     ].join("\n");
 
     try {
@@ -272,29 +233,6 @@ export default function ReadingTestResults({
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
-      {showCelebration && (
-        <div className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center">
-          <div className="animate-bounce">
-            <Trophy className="text-yellow-400" size={64} />
-          </div>
-          <Sparkles
-            className="text-brand-400 absolute animate-pulse"
-            size={48}
-            style={{ top: "20%", left: "30%" }}
-          />
-          <Sparkles
-            className="text-accent-400 absolute animate-pulse"
-            size={32}
-            style={{ top: "30%", right: "25%" }}
-          />
-          <Sparkles
-            className="text-emerald-400 absolute animate-pulse"
-            size={40}
-            style={{ bottom: "25%", left: "25%" }}
-          />
-        </div>
-      )}
-
       <div className="mb-6">
         <DailyInspiration compact />
       </div>
@@ -337,7 +275,7 @@ export default function ReadingTestResults({
               Premium Results
             </p>
             <h2 className="premium-text-primary font-display text-3xl font-semibold">
-              You completed the reading test with focus and precision.
+              Your results
             </h2>
           </div>
         </div>
@@ -386,9 +324,7 @@ export default function ReadingTestResults({
             <p className="premium-text-primary mt-3 text-4xl font-semibold">
               {percentage.toFixed(0)}%
             </p>
-            <p className="premium-text-muted mt-2 text-sm">
-              {getMotivationalMessage()}
-            </p>
+            <p className="premium-text-muted mt-2 text-sm">{resultSummary}</p>
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
             <div className="premium-text-brand flex items-center gap-2">
@@ -397,9 +333,6 @@ export default function ReadingTestResults({
             </div>
             <p className="premium-text-primary mt-3 text-4xl font-semibold">
               {formatTime(timeSpent)}
-            </p>
-            <p className="premium-text-muted mt-2 text-sm">
-              {correctCount >= 30 ? "Excellent pacing" : "Keep building speed"}
             </p>
           </div>
         </div>
