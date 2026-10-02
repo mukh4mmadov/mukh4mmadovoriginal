@@ -260,6 +260,18 @@ BEGIN
       ORDER BY s.activity_date) AS value
     FROM day_series s LEFT JOIN per_day d USING (activity_date)
   ),
+  ai_usage AS (
+    SELECT jsonb_agg(jsonb_build_object('date', s.activity_date, 'count', coalesce(a.total,0))
+      ORDER BY s.activity_date) AS value
+    FROM day_series s LEFT JOIN (
+      SELECT (e.created_at AT TIME ZONE 'Asia/Tashkent')::date AS activity_date, count(*) AS total
+      FROM public.analytics_events e
+      WHERE e.event_type='ai_message_sent'
+        AND e.created_at >= ((v_today - (v_days - 1))::timestamp AT TIME ZONE 'Asia/Tashkent')
+        AND e.created_at < ((v_today + 1)::timestamp AT TIME ZONE 'Asia/Tashkent')
+      GROUP BY 1
+    ) a USING (activity_date)
+  ),
   registrations AS (
     SELECT jsonb_agg(jsonb_build_object('date', s.activity_date, 'registrations', coalesce(r.total,0))
       ORDER BY s.activity_date) AS value
@@ -308,9 +320,10 @@ BEGIN
     'accuracy_percent', CASE WHEN o.exposures=0 THEN 0 ELSE round(100.0*o.correct/o.exposures) END,
     'avg_seconds_per_attempt', CASE WHEN o.timed_attempts=0 THEN 0 ELSE round(o.positive_seconds::numeric/o.timed_attempts) END,
     'active_learners_today', o.active_today, 'attempts_today', o.attempts_today,
-    'daily', d.value, 'registrations_daily', r.value, 'question_types', t.value
+    'daily', d.value, 'ai_usage_daily', ai.value,
+    'registrations_daily', r.value, 'question_types', t.value
   ) INTO v_result
-  FROM profile_counts pc CROSS JOIN overall o CROSS JOIN daily d CROSS JOIN registrations r CROSS JOIN types t;
+  FROM profile_counts pc CROSS JOIN overall o CROSS JOIN daily d CROSS JOIN ai_usage ai CROSS JOIN registrations r CROSS JOIN types t;
   RETURN v_result;
 END
 $function$;
@@ -464,8 +477,13 @@ BEGIN
   IF NOT public.is_admin_user((select auth.uid())) THEN RAISE EXCEPTION 'Selected admin fixture is not an admin'; END IF;
   IF NOT EXISTS (SELECT 1 FROM public.reading_history WHERE id=current_setting('app.reading_test_attempt')::uuid) THEN RAISE EXCEPTION 'FAIL: admin cannot read all attempts'; END IF;
   IF NOT EXISTS (SELECT 1 FROM public.reading_attempt_answers WHERE attempt_id=current_setting('app.reading_test_attempt')::uuid) THEN RAISE EXCEPTION 'FAIL: admin cannot read all answer rows'; END IF;
+  INSERT INTO public.analytics_events(user_id,event_type,event_data)
+    VALUES (auth.uid(),'ai_message_sent','{}'::jsonb);
   metrics := public.get_admin_reading_metrics(7);
   IF metrics IS NULL THEN RAISE EXCEPTION 'FAIL: admin metrics returned null'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM jsonb_array_elements(metrics->'ai_usage_daily') d
+      WHERE d->>'date'=(now() AT TIME ZONE 'Asia/Tashkent')::date::text AND (d->>'count')::integer>0)
+  THEN RAISE EXCEPTION 'FAIL: server-side AI event aggregation did not include today'; END IF;
   IF NOT EXISTS (SELECT 1 FROM jsonb_array_elements(metrics->'daily') d WHERE d->>'date'=(now() AT TIME ZONE 'Asia/Tashkent')::date::text AND (d->>'attempts')::integer>0) THEN RAISE EXCEPTION 'FAIL: recent completion did not appear on the Tashkent day'; END IF;
   SELECT CASE WHEN count(*) FILTER (WHERE time_spent_seconds>0)=0 THEN 0 ELSE round(avg(time_spent_seconds) FILTER (WHERE time_spent_seconds>0)) END
     INTO expected_average FROM public.reading_history WHERE attempt_key IS NOT NULL;

@@ -5,12 +5,7 @@ import { TrendingUp, Clock, Award, MessageSquare, Calendar } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client';
 import { AdminPageLoading } from '@/components/admin/AdminPageStatus';
 import { formatAggregateTime } from '@/lib/reading/metrics.mjs';
-
-function eventDateInTashkent(value) {
-  const parts = new Map(new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Tashkent', year: 'numeric', month: '2-digit', day: '2-digit' })
-    .formatToParts(new Date(value)).map((part) => [part.type, part.value]));
-  return `${parts.get('year')}-${parts.get('month')}-${parts.get('day')}`;
-}
+import { mapAdminReadingMetrics } from '@/lib/reading/admin-analytics.mjs';
 
 export default function AdminAnalytics() {
   const [data, setData] = useState({ attempts: [], readingTime: [], aiUsage: [], registrations: [], questionTypes: [] });
@@ -21,11 +16,7 @@ export default function AdminAnalytics() {
     let active = true;
     async function loadAnalytics() {
       try {
-        const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-        const [metricsResult, aiResult] = await Promise.all([
-          supabase?.rpc('get_admin_reading_metrics', { p_days: 30 }) || Promise.resolve({ data: null, error: true }),
-          supabase?.from('analytics_events').select('created_at').eq('event_type', 'ai_message_sent').gte('created_at', since) || Promise.resolve({ data: [] }),
-        ]);
+        const metricsResult = await supabase?.rpc('get_admin_reading_metrics', { p_days: 30 }) || { data: null, error: true };
         if (!active) return;
         const metrics = Array.isArray(metricsResult.data) ? metricsResult.data[0] : metricsResult.data;
         if (metricsResult.error || !metrics) {
@@ -33,24 +24,7 @@ export default function AdminAnalytics() {
           setData({ attempts: [], readingTime: [], aiUsage: [], registrations: [], questionTypes: [] });
           return;
         }
-        const daily = Array.isArray(metrics.daily) ? metrics.daily : [];
-        const aiByDate = new Map();
-        daily.forEach((item) => aiByDate.set(item.date, 0));
-        (aiResult.data || []).forEach((event) => {
-          const date = eventDateInTashkent(event.created_at);
-          if (aiByDate.has(date)) aiByDate.set(date, aiByDate.get(date) + 1);
-        });
-        setData({
-          attempts: daily.map((item) => ({ date: item.date, count: Number(item.attempts) || 0 })),
-          readingTime: daily.map((item) => ({ date: item.date, value: Number(item.seconds) || 0, timeValue: true })),
-          aiUsage: [...aiByDate].map(([date, count]) => ({ date, count })),
-          registrations: (Array.isArray(metrics.registrations_daily) ? metrics.registrations_daily : []).map((item) => ({ date: item.date, count: Number(item.registrations) || 0 })),
-          questionTypes: (Array.isArray(metrics.question_types) ? metrics.question_types : []).map((item) => ({
-            type: item.question_type,
-            count: Number(item.exposures) || 0,
-            accuracy: Number(item.accuracy_percent) || 0,
-          })),
-        });
+        setData(mapAdminReadingMetrics(metrics));
       } catch (error) {
         console.error('Error loading analytics:', error);
         if (active) setMetricsUnavailable(true);

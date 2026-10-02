@@ -249,6 +249,18 @@ BEGIN
       ORDER BY s.activity_date) AS value
     FROM day_series s LEFT JOIN per_day d USING (activity_date)
   ),
+  ai_usage AS (
+    SELECT jsonb_agg(jsonb_build_object('date', s.activity_date, 'count', coalesce(a.total,0))
+      ORDER BY s.activity_date) AS value
+    FROM day_series s LEFT JOIN (
+      SELECT (e.created_at AT TIME ZONE 'Asia/Tashkent')::date AS activity_date, count(*) AS total
+      FROM public.analytics_events e
+      WHERE e.event_type='ai_message_sent'
+        AND e.created_at >= ((v_today - (v_days - 1))::timestamp AT TIME ZONE 'Asia/Tashkent')
+        AND e.created_at < ((v_today + 1)::timestamp AT TIME ZONE 'Asia/Tashkent')
+      GROUP BY 1
+    ) a USING (activity_date)
+  ),
   registrations AS (
     SELECT jsonb_agg(jsonb_build_object('date', s.activity_date, 'registrations', coalesce(r.total,0))
       ORDER BY s.activity_date) AS value
@@ -297,9 +309,10 @@ BEGIN
     'accuracy_percent', CASE WHEN o.exposures=0 THEN 0 ELSE round(100.0*o.correct/o.exposures) END,
     'avg_seconds_per_attempt', CASE WHEN o.timed_attempts=0 THEN 0 ELSE round(o.positive_seconds::numeric/o.timed_attempts) END,
     'active_learners_today', o.active_today, 'attempts_today', o.attempts_today,
-    'daily', d.value, 'registrations_daily', r.value, 'question_types', t.value
+    'daily', d.value, 'ai_usage_daily', ai.value,
+    'registrations_daily', r.value, 'question_types', t.value
   ) INTO v_result
-  FROM profile_counts pc CROSS JOIN overall o CROSS JOIN daily d CROSS JOIN registrations r CROSS JOIN types t;
+  FROM profile_counts pc CROSS JOIN overall o CROSS JOIN daily d CROSS JOIN ai_usage ai CROSS JOIN registrations r CROSS JOIN types t;
   RETURN v_result;
 END
 $function$;

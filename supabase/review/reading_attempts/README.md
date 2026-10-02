@@ -23,6 +23,12 @@ These files are for review and manual use in the Supabase SQL Editor. No SQL has
 - `rollback-proof.sql`: post-dry-run check that new objects are absent and displays existing row counts.
 - `exact-attempt-update-hardening.sql`: follow-up transaction for databases that applied the earlier migration before the immutable-attempt trigger was added.
 - `exact-attempt-update-hardening-dry-run.sql`: transactional test of the follow-up trigger, exact-row immutability, legacy-row compatibility, and helper-function grants.
+- `admin-ai-metrics-followup.sql`: updates the existing admin metrics RPC to return its AI usage chart as a server aggregate, avoiding browser downloads of `analytics_events` rows.
+- `admin-ai-metrics-followup-dry-run.sql`: transactional verification of the follow-up RPC, including zero-activity days and a test AI event that is rolled back.
+
+## Admin AI usage series follow-up
+
+For databases that installed the earlier admin metrics function, run `admin-ai-metrics-followup-dry-run.sql` first. It replaces the function inside a transaction, checks the admin-only AI series and zero-activity days, then ends with `ROLLBACK`. If it finishes without an error, run `admin-ai-metrics-followup.sql` to commit the function update, followed by `NOTIFY pgrst, 'reload schema';`. Fresh installs receive this function from `migration.sql`.
 
 ## Existing local storage
 

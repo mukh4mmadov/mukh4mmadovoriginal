@@ -13,6 +13,15 @@ function extractDdl(path) {
   return source.slice(start, end + endMarker.length);
 }
 
+function extractAdminMetricsFunction(path) {
+  const source = readFileSync(path, 'utf8');
+  const startMarker = 'CREATE OR REPLACE FUNCTION public.get_admin_reading_metrics(p_days integer DEFAULT 30)';
+  const start = source.indexOf(startMarker);
+  const end = source.indexOf('$function$;', start);
+  if (start < 0 || end < 0) throw new Error(`Could not find admin metrics function in ${path}`);
+  return source.slice(start, end + '$function$;'.length);
+}
+
 const migrationDdl = extractDdl(migrationPath);
 const dryRunDdl = extractDdl(dryRunPath);
 if (migrationDdl !== dryRunDdl) {
@@ -33,4 +42,21 @@ if (migrationDdl !== dryRunDdl) {
   console.log('+++ dry-run DDL');
   console.log('(empty)');
   console.log('PASS: migration.sql and dry-run.sql DDL are identical.');
+}
+
+const adminSources = [
+  ['migration.sql', extractAdminMetricsFunction(migrationPath)],
+  ['dry-run.sql', extractAdminMetricsFunction(dryRunPath)],
+  ['admin-ai-metrics-followup.sql', extractAdminMetricsFunction('supabase/review/reading_attempts/admin-ai-metrics-followup.sql')],
+  ['admin-ai-metrics-followup-dry-run.sql', extractAdminMetricsFunction('supabase/review/reading_attempts/admin-ai-metrics-followup-dry-run.sql')],
+];
+const reference = adminSources[0][1];
+for (const [name, functionDdl] of adminSources.slice(1)) {
+  if (functionDdl !== reference) {
+    console.error(`FAIL: get_admin_reading_metrics DDL differs in ${name}.`);
+    process.exitCode = 1;
+  }
+}
+if (process.exitCode !== 1) {
+  console.log('PASS: admin metrics function matches in migration, dry-run, and both follow-up SQL files.');
 }
