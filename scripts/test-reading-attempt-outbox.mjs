@@ -11,13 +11,15 @@ class MemoryStorage {
   get length() { return this.values.size; }
 }
 
-const attempt = { attemptKey: 'stable-key', passageId: 'sample', durationSeconds: 30, answers: [{ question_id: 'q1' }] };
+const attempt = { attemptKey: 'stable-key', passageId: 'sample', durationSeconds: 30, completedAt: '2026-10-02T09:00:00.000Z', answers: [{ question_id: 'q1' }] };
 
 {
   const storage = new MemoryStorage();
   enqueueReadingAttempt(storage, 'u1', attempt);
-  const result = await flushReadingAttemptOutbox(storage, 'u1', { rpc: async () => ({ data: 'id-1', error: null }) });
+  let rpcArgs;
+  const result = await flushReadingAttemptOutbox(storage, 'u1', { rpc: async (_name, args) => { rpcArgs = args; return { data: 'id-1', error: null }; } });
   assert.deepEqual(result, { confirmed: 1, pending: 0 });
+  assert.equal(rpcArgs.p_completed_at, attempt.completedAt);
 }
 {
   const storage = new MemoryStorage();

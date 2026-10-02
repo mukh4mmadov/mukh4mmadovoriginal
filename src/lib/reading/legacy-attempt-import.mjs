@@ -19,8 +19,12 @@ export function collectLegacyAttempts(storage) {
           notImportable += 1;
           continue;
         }
+        const completedAt = Number.isFinite(new Date(attempt.timestamp).getTime())
+          ? new Date(attempt.timestamp).toISOString()
+          : undefined;
         importable.push({
           attemptKey: attempt.id,
+          ...(completedAt ? { completedAt } : {}),
           passageId: slug,
           durationSeconds: Math.max(0, Math.min(7200, Number.isFinite(Number(attempt.durationSeconds ?? attempt.timeSpentSeconds)) ? Number(attempt.durationSeconds ?? attempt.timeSpentSeconds) : 0)),
           answers: rows.map((row) => ({

@@ -7,7 +7,7 @@ BEGIN
   IF to_regclass('public.reading_attempt_answers') IS NOT NULL THEN
     RAISE EXCEPTION 'FAIL: dry-run left reading_attempt_answers behind';
   END IF;
-  IF to_regprocedure('public.submit_reading_attempt(uuid,text,integer,jsonb)') IS NOT NULL
+  IF to_regprocedure('public.submit_reading_attempt(uuid,text,integer,jsonb,timestamp with time zone)') IS NOT NULL
      OR to_regprocedure('public.get_my_reading_metrics(timestamp with time zone,timestamp with time zone)') IS NOT NULL
      OR to_regprocedure('public.get_admin_reading_metrics(integer)') IS NOT NULL THEN
     RAISE EXCEPTION 'FAIL: dry-run left a function behind';

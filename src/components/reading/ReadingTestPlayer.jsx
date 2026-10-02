@@ -514,6 +514,7 @@ export default function ReadingTestPlayer({ passage }) {
     const localAttempt = {
       id: attemptId,
       timestamp: attemptTimestamp,
+      completedAt: new Date(attemptTimestamp).toISOString(),
       passageId: passage.slug,
       durationSeconds: finalTime,
       questionResults,
@@ -538,6 +539,7 @@ export default function ReadingTestPlayer({ passage }) {
       if (user?.id) {
         enqueueReadingAttempt(window.localStorage, user.id, {
           attemptKey: attemptId,
+          completedAt: new Date(attemptTimestamp).toISOString(),
           passageId: passage.slug,
           durationSeconds: finalTime,
           answers: questionPayload,

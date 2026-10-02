@@ -35,6 +35,7 @@ export async function flushReadingAttemptOutbox(storage, userId, client) {
         p_passage_id: attempt.passageId,
         p_duration_seconds: attempt.durationSeconds,
         p_answers: attempt.answers,
+        ...(attempt.completedAt ? { p_completed_at: attempt.completedAt } : {}),
       });
       if (error || !data) break;
       const current = readReadingAttemptOutbox(storage, userId).filter((item) => item.attemptKey !== attempt.attemptKey);

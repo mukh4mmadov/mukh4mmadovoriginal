@@ -106,8 +106,10 @@ BEGIN
 END
 $answer_policies$;
 
+DROP FUNCTION IF EXISTS public.submit_reading_attempt(uuid, text, integer, jsonb);
 CREATE OR REPLACE FUNCTION public.submit_reading_attempt(
-  p_attempt_key uuid, p_passage_id text, p_duration_seconds integer, p_answers jsonb
+  p_attempt_key uuid, p_passage_id text, p_duration_seconds integer, p_answers jsonb,
+  p_completed_at timestamptz DEFAULT NULL
 ) RETURNS uuid
 LANGUAGE plpgsql SECURITY INVOKER
 SET search_path = public, pg_temp
@@ -150,7 +152,9 @@ BEGIN
     (user_id, passage_id, score, time_spent_seconds, completed_at, question_breakdown,
      attempt_key, question_count, answered_count, correct_count)
   VALUES
-    (v_user_id, p_passage_id, v_correct_count, v_duration, now(),
+    (v_user_id, p_passage_id, v_correct_count, v_duration,
+     CASE WHEN p_completed_at IS NULL THEN now()
+          ELSE least(now(), greatest(p_completed_at, now() - interval '400 days')) END,
      jsonb_build_object('question_count', v_question_count, 'answered_count', v_answered_count, 'correct_count', v_correct_count),
      p_attempt_key, v_question_count, v_answered_count, v_correct_count)
   ON CONFLICT (user_id, attempt_key) WHERE attempt_key IS NOT NULL DO NOTHING
@@ -278,10 +282,10 @@ BEGIN
 END
 $function$;
 
-REVOKE ALL ON FUNCTION public.submit_reading_attempt(uuid,text,integer,jsonb) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.submit_reading_attempt(uuid,text,integer,jsonb,timestamptz) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.get_my_reading_metrics(timestamptz,timestamptz) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.get_admin_reading_metrics(integer) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.submit_reading_attempt(uuid,text,integer,jsonb) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.submit_reading_attempt(uuid,text,integer,jsonb,timestamptz) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_my_reading_metrics(timestamptz,timestamptz) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_admin_reading_metrics(integer) TO authenticated;
 
@@ -299,7 +303,7 @@ BEGIN
   IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid='public.reading_attempt_answers'::regclass) THEN
     RAISE EXCEPTION 'Verification failed: RLS is not enabled on reading_attempt_answers';
   END IF;
-  IF has_function_privilege('anon','public.submit_reading_attempt(uuid,text,integer,jsonb)','EXECUTE')
+  IF has_function_privilege('anon','public.submit_reading_attempt(uuid,text,integer,jsonb,timestamp with time zone)','EXECUTE')
      OR has_function_privilege('anon','public.get_my_reading_metrics(timestamp with time zone,timestamp with time zone)','EXECUTE')
      OR has_function_privilege('anon','public.get_admin_reading_metrics(integer)','EXECUTE') THEN
     RAISE EXCEPTION 'Verification failed: anon can execute a new reading-attempt function';
