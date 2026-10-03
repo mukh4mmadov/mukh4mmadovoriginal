@@ -1,5 +1,19 @@
-const CACHE_NAME = "muhammadov-ielts-offline-v3";
+const CACHE_NAME = "muhammadov-ielts-offline-v4";
 const OFFLINE_PAGE = "/offline.html";
+const OFFLINE_STATUS = "/__offline-status__";
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type !== "NETWORK_STATUS") return;
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    if (event.data.online === false) {
+      await cache.put(OFFLINE_STATUS, new Response("offline"));
+    } else {
+      await cache.delete(OFFLINE_STATUS);
+    }
+    event.ports?.[0]?.postMessage({ ok: true });
+  })());
+});
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -40,7 +54,9 @@ self.addEventListener("fetch", (event) => {
       );
     };
 
-    if (!self.navigator.onLine) return offlinePage();
+    const cache = await caches.open(CACHE_NAME);
+    const forcedOffline = await cache.match(OFFLINE_STATUS);
+    if (forcedOffline || !self.navigator.onLine) return offlinePage();
 
     try {
       return await fetch(event.request, { cache: "no-store" });

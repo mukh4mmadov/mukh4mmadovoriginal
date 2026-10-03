@@ -133,32 +133,58 @@ try {
   await waitFor('caches.match("/offline.html").then(Boolean)', 'the offline fallback to be cached');
 
   await command('Network.setCacheDisabled', { cacheDisabled: true });
-  await command('Network.emulateNetworkConditions', {
+  const emulateOffline = () => command('Network.emulateNetworkConditions', {
     offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0,
   });
-  await waitFor('navigator.onLine === false', 'the browser offline state');
-  await stopServer();
-  await command('Page.reload', { ignoreCache: true });
-  await waitFor('document.body?.innerText?.includes("You are offline")', 'the home route offline fallback');
+  const emulateOnline = () => command('Network.emulateNetworkConditions', {
+    offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1,
+  });
+  const waitForOfflineMarker = () => waitFor(
+    'caches.match("/__offline-status__").then(Boolean)',
+    'the durable offline marker',
+  );
 
-  await startServer();
+  // Check the cached fallback itself under browser offline emulation.
+  await emulateOffline();
+  await waitFor('navigator.onLine === false', 'the browser offline state');
+  await waitForOfflineMarker();
+  await command('Page.navigate', { url: `${baseUrl}/offline.html` });
+  await waitFor('document.body?.innerText?.includes("You are offline")', 'the offline fallback page under browser emulation');
+
+  await emulateOnline();
+  await waitFor('navigator.onLine === true', 'network recovery');
+  await waitFor('document.readyState === "complete" && document.body?.innerText?.includes("All passages")', 'home recovery after browser emulation');
+  await waitFor('caches.match("/__offline-status__").then((marker) => !marker)', 'offline marker cleanup after recovery');
+
+  await emulateOffline();
+  await waitFor('navigator.onLine === false', 'offline state before Contact navigation');
+  await waitForOfflineMarker();
+  await evaluate("document.querySelector('a[href=\"/contact\"]')?.click()");
+  await waitFor('document.body?.innerText?.includes("You are offline")', 'the Contact route fallback under browser emulation');
+
+  await emulateOnline();
+  await waitFor('navigator.onLine === true', 'network recovery after Contact fallback');
+  await waitFor('document.readyState === "complete" && document.body?.innerText?.includes("All passages")', 'home recovery after Contact fallback');
+  await waitFor('caches.match("/__offline-status__").then((marker) => !marker)', 'offline marker cleanup after Contact recovery');
+
+  // Also cover a true origin outage, independent of DevTools emulation.
   await command('Network.emulateNetworkConditions', {
     offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1,
   });
-  await waitFor('navigator.onLine === true', 'network recovery');
+  await waitFor('navigator.onLine === true', 'online state before origin outage');
+  await command('Page.navigate', { url: baseUrl });
+  await waitFor('navigator.serviceWorker.controller !== null', 'service worker control before origin outage');
+  await stopServer();
+  await command('Page.reload', { ignoreCache: true });
+  await waitFor('document.body?.innerText?.includes("You are offline")', 'the home route fallback during origin outage');
+
+  await startServer();
+  await waitFor('navigator.onLine === true', 'online state after origin recovery');
   await command('Page.navigate', { url: baseUrl });
   await waitFor('document.readyState === "complete" && document.body?.innerText?.includes("All passages")', 'home page recovery');
   await waitFor('navigator.serviceWorker.controller !== null', 'service worker control after recovery');
 
-  await command('Network.emulateNetworkConditions', {
-    offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0,
-  });
-  await waitFor('navigator.onLine === false', 'offline state before route navigation');
-  await stopServer();
-  await evaluate('document.querySelector("a[href=\\\"/contact\\\"]")?.click()');
-  await waitFor('document.body?.innerText?.includes("You are offline")', 'the Contact route offline fallback');
-
-  console.log('PASS: the offline fallback appears on home reload and Contact navigation during an actual local server outage; the site recovers when the server returns.');
+  console.log('PASS: the cached fallback page and Contact navigation work under browser offline emulation; recovery clears the marker and returns Home. A Home reload during a true origin outage shows the fallback and recovers.');
 } finally {
   if (socket && socket.readyState < WebSocket.CLOSING) socket.close();
   browser.kill();

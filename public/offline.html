@@ -22,7 +22,29 @@
       <div class="mark">Muhammadov IELTS Reading</div>
       <h1>You are offline</h1>
       <p>This page could not load because your device has no internet connection. Reconnect, then retry to continue your reading practice.</p>
-      <button type="button" onclick="window.location.reload()">Try again</button>
+      <button type="button" id="retry">Try again</button>
     </main>
+    <script>
+      (() => {
+        let recovering = false;
+        const retry = async () => {
+          if (recovering) return;
+          recovering = true;
+          const worker = navigator.serviceWorker?.controller;
+          if (navigator.onLine && worker && "MessageChannel" in window) {
+            await new Promise((resolve) => {
+              const channel = new MessageChannel();
+              const timeout = setTimeout(resolve, 1000);
+              channel.port1.onmessage = () => { clearTimeout(timeout); resolve(); };
+              worker.postMessage({ type: "NETWORK_STATUS", online: true }, [channel.port2]);
+            });
+          }
+          if (navigator.onLine) window.location.replace("/");
+          else window.location.reload();
+        };
+        document.getElementById("retry").addEventListener("click", retry);
+        window.addEventListener("online", retry);
+      })();
+    </script>
   </body>
 </html>

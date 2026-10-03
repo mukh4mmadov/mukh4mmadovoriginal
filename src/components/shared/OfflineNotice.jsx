@@ -7,11 +7,37 @@ export default function OfflineNotice() {
   const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
+    let registration = null;
+    const syncWorkerNetworkState = (forceOnline = false) => {
+      if (navigator.onLine && !forceOnline) return;
+      const worker = navigator.serviceWorker?.controller || registration?.active;
+      if (!worker) return;
+      const channel = new MessageChannel();
+      worker.postMessage(
+        { type: "NETWORK_STATUS", online: navigator.onLine },
+        [channel.port2],
+      );
+      channel.port1.close();
+    };
+
     if (process.env.NODE_ENV === "production" && "serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/service-worker.js").catch(() => {});
+      navigator.serviceWorker.register("/service-worker.js")
+        .then((registered) => {
+          registration = registered;
+          syncWorkerNetworkState();
+          return navigator.serviceWorker.ready;
+        })
+        .then(() => syncWorkerNetworkState())
+        .catch(() => {});
     }
 
-    const updateStatus = () => setIsOffline(!navigator.onLine);
+    const updateStatus = (forceOnline = false) => {
+      setIsOffline(!navigator.onLine);
+      syncWorkerNetworkState(forceOnline);
+      if (!navigator.onLine && window.location.pathname !== "/offline.html") {
+        window.location.replace("/offline.html");
+      }
+    };
     const keepCurrentPageOffline = (event) => {
       const link = event.target.closest("a[href]");
       if (!link || navigator.onLine || link.href.startsWith(`${window.location.origin}#`)) {
@@ -20,17 +46,22 @@ export default function OfflineNotice() {
 
       if (new URL(link.href).origin === window.location.origin) {
         event.preventDefault();
-        window.location.assign(link.href);
+        window.location.assign("/offline.html");
       }
     };
 
     updateStatus();
-    window.addEventListener("online", updateStatus);
-    window.addEventListener("offline", updateStatus);
+    const handleOnline = () => updateStatus(true);
+    const handleOffline = () => updateStatus();
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    const handleControllerChange = () => syncWorkerNetworkState();
+    navigator.serviceWorker?.addEventListener("controllerchange", handleControllerChange);
     document.addEventListener("click", keepCurrentPageOffline, true);
     return () => {
-      window.removeEventListener("online", updateStatus);
-      window.removeEventListener("offline", updateStatus);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+      navigator.serviceWorker?.removeEventListener("controllerchange", handleControllerChange);
       document.removeEventListener("click", keepCurrentPageOffline, true);
     };
   }, []);
