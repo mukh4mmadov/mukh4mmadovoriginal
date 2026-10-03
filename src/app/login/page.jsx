@@ -20,7 +20,6 @@ export default function LoginPage() {
         const params = new URLSearchParams(window.location.search);
         return getSafeRedirectPath(params.get("redirect") || params.get("next"));
       })();
-
   const showToast = (message, type) => {
     setToast({ message, type });
   };
@@ -77,7 +76,9 @@ export default function LoginPage() {
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     try {
-      await signInWithGoogle();
+      const forceAccountSelection =
+        new URLSearchParams(window.location.search).get("choose_account") === "1";
+      await signInWithGoogle({ forceAccountSelection });
     } catch (err) {
       setIsSubmitting(false);
       if (
@@ -182,9 +183,9 @@ export default function LoginPage() {
 
             <div className="flex justify-center lg:w-1/2">
               <AuthCard
-                error={error}
-                isLoading={isSubmitting}
-                redirect={redirect}
+              error={error}
+              isLoading={isSubmitting}
+              redirect={redirect}
                 onGoogleSignIn={handleGoogleSignIn}
               />
             </div>

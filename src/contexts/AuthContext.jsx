@@ -98,8 +98,8 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  const signInWithGoogle = async () => {
-    await authService.signInWithGoogle();
+  const signInWithGoogle = async (options) => {
+    await authService.signInWithGoogle(options);
   };
 
   const signOut = async () => {

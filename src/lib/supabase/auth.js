@@ -4,7 +4,7 @@ import { getSafeRedirectPath } from '@/lib/auth/redirect';
 export class AuthService {
   profileRequests = new Map();
 
-  async signInWithGoogle() {
+  async signInWithGoogle({ forceAccountSelection = false } = {}) {
     const currentOrigin = typeof window !== 'undefined' ? window.location.origin : null;
     const redirect = currentOrigin
       ? (() => {
@@ -28,6 +28,9 @@ export class AuthService {
       provider: 'google',
       options: {
         redirectTo: currentOrigin ? `${currentOrigin}/auth/callback` : '/auth/callback',
+        ...(forceAccountSelection
+          ? { queryParams: { prompt: 'select_account' } }
+          : {}),
       },
     });
 
