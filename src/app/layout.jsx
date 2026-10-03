@@ -1,4 +1,5 @@
 import "./globals.css";
+import Script from "next/script";
 import Navbar from "@/components/shared/Navbar";
 import Footer from "@/components/shared/Footer";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -61,14 +62,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: 'if (navigator.onLine === false && location.pathname !== "/offline.html") location.replace("/offline.html");',
-          }}
-        />
-      </head>
       <body>
+        <Script id="offline-navigation-guard" strategy="beforeInteractive">
+          {'if (navigator.onLine === false && location.pathname !== "/offline.html") location.replace("/offline.html");'}
+        </Script>
         <AuthProvider>
           <ReadingAttemptOutboxSync />
           <PushActivityTracker />
