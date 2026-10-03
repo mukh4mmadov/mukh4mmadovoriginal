@@ -14,10 +14,17 @@ import {
 } from "@/lib/highlightConstants";
 import { useTextHighlight } from "@/hooks/useTextHighlight";
 
+const HIGH_CONTRAST_HIGHLIGHTS = {
+  yellow: "#fef08a",
+  green: "#86efac",
+  blue: "#93c5fd",
+};
+
 export default function HighlightablePassage({
   paragraphs,
   fontSize = "medium",
   highlightState,
+  highContrastHighlights = false,
 }) {
   const {
     highlights,
@@ -48,7 +55,7 @@ export default function HighlightablePassage({
                     ? "border-white scale-110"
                     : "border-transparent hover:border-white/50"
                 }`}
-                style={{ backgroundColor: colorValue }}
+                style={{ backgroundColor: highContrastHighlights ? HIGH_CONTRAST_HIGHLIGHTS[colorName] : colorValue }}
                 aria-label={`Select ${colorName} highlight color`}
                 aria-pressed={selectedColor === colorName}
                 title={`Select ${colorName} highlight`}
@@ -81,7 +88,9 @@ export default function HighlightablePassage({
           disabled={totalHighlights === 0}
           className={`flex min-h-11 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
             totalHighlights === 0
-              ? "cursor-not-allowed opacity-40"
+              ? highContrastHighlights
+                ? "cursor-not-allowed border-slate-500 bg-slate-700 text-slate-100"
+                : "cursor-not-allowed opacity-60"
               : "border-white/10 bg-white/5 text-slate-300 hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-300"
           }`}
           title="Clear all highlights"
@@ -171,7 +180,10 @@ export default function HighlightablePassage({
                     style={
                       highlightColor
                         ? {
-                            backgroundColor: HIGHLIGHT_COLORS[highlightColor] || HIGHLIGHT_COLOR,
+                            backgroundColor: highContrastHighlights
+                              ? HIGH_CONTRAST_HIGHLIGHTS[highlightColor] || HIGH_CONTRAST_HIGHLIGHTS.yellow
+                              : HIGHLIGHT_COLORS[highlightColor] || HIGHLIGHT_COLOR,
+                            ...(highContrastHighlights ? { color: "#0f172a" } : {}),
                             borderRadius: 3,
                           }
                         : undefined

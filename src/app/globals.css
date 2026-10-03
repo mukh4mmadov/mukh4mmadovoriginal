@@ -405,3 +405,55 @@
     box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.3) !important;
   }
 }
+
+/* The mock uses an intentionally stable dark reading surface in either site theme.
+   Keep these scoped corrections stronger than the global light-theme utility remaps. */
+.mock-experience {
+  color-scheme: dark;
+  color: #f8fafc !important;
+  background-color: #020617 !important;
+}
+
+html:not(.dark) .mock-experience [class*="bg-slate-950"] {
+  background-color: #020617 !important;
+}
+
+html:not(.dark) .mock-experience [class*="bg-slate-900"] {
+  background-color: #0f172a !important;
+}
+
+html:not(.dark) .mock-experience [class*="bg-white/"] {
+  background-color: rgb(255 255 255 / 0.06) !important;
+}
+
+html:not(.dark) .mock-experience [class*="border-white/"] {
+  border-color: rgb(148 163 184 / 0.32) !important;
+}
+
+html:not(.dark) .mock-experience .text-white,
+html:not(.dark) .mock-experience .text-slate-100 {
+  color: #f8fafc !important;
+}
+
+html:not(.dark) .mock-experience .text-slate-200 {
+  color: #e2e8f0 !important;
+}
+
+html:not(.dark) .mock-experience .text-slate-300 {
+  color: #cbd5e1 !important;
+}
+
+html:not(.dark) .mock-experience .text-slate-400,
+html:not(.dark) .mock-experience .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+.mock-experience [class~="bg-brand-500"] {
+  background-color: #0369a1 !important;
+  color: #ffffff !important;
+}
+
+html:not(.dark) .mock-experience [class~="bg-brand-500"] {
+  background-color: #0369a1 !important;
+  color: #ffffff !important;
+}
