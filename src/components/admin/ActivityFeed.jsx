@@ -10,7 +10,7 @@ export default function ActivityFeed() {
 
   useEffect(() => {
     loadActivities();
-    setupRealtimeSubscription();
+    return setupRealtimeSubscription();
   }, []);
 
   async function loadActivities() {
@@ -126,7 +126,7 @@ export default function ActivityFeed() {
   if (isLoading) {
     return (
       <div className="border border-white/10 rounded-xl p-6">
-        <h2 className="text-lg font-semibold text-white mb-4">Live Activity Feed</h2>
+        <h2 className="text-lg font-semibold text-white mb-4">Recent Site Events</h2>
         <div className="flex items-center justify-center h-32">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500" />
         </div>
@@ -137,10 +137,15 @@ export default function ActivityFeed() {
   return (
     <div className="border border-white/10 rounded-xl p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-white">Live Activity Feed</h2>
+        <div>
+          <h2 className="text-lg font-semibold text-white">Recent Site Events</h2>
+          <p className="mt-1 text-xs text-slate-400">
+            This feed uses analytics events. Saved reading attempts are tracked separately in Analytics.
+          </p>
+        </div>
         <div className="flex items-center gap-2 text-xs text-slate-400">
           <Clock size={14} />
-          <span>Real-time</span>
+          <span>Live updates</span>
         </div>
       </div>
 

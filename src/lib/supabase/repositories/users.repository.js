@@ -2,10 +2,7 @@ import { supabase } from '../client';
 
 export const usersRepository = {
   async getAllUsers() {
-    const { data, error } = await supabase
-      .from('admin_user_statistics')
-      .select('*')
-      .order('last_activity', { ascending: false });
+    const { data, error } = await supabase.rpc('get_admin_user_reading_metrics');
 
     if (error) throw error;
     return data || [];
@@ -20,13 +17,10 @@ export const usersRepository = {
 
     if (profileError) throw profileError;
 
-    const { data: stats, error: statsError } = await supabase
-      .from('admin_user_statistics')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle();
+    const { data: userMetrics, error: statsError } = await supabase.rpc('get_admin_user_reading_metrics');
 
     if (statsError) throw statsError;
+    const stats = (userMetrics || []).find((item) => item.user_id === userId) || null;
 
     const { data: aiSummary, error: aiError } = await supabase
       .from('admin_user_ai_summary')

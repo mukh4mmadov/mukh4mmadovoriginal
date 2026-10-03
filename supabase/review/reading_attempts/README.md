@@ -13,7 +13,8 @@ These files are for review and manual use in the Supabase SQL Editor. No SQL has
    If the SQL Editor does not display `NOTICE` lines, a successful dry-run means the script reached its end without an error; every failed check raises an exception. “Success. No rows returned” means the script completed its checks but its transaction/DO statements return no result rows.
 5. For databases that already ran the earlier migration without the exact-attempt update guard, first run `exact-attempt-update-hardening-dry-run.sql`. It tests the trigger and verifies legacy updates remain available, then rolls back all changes. If it completes without an error, run `exact-attempt-update-hardening.sql` to commit only the trigger/function change; then reload the PostgREST schema cache.
 6. Run `inspect-production.sql` again. Confirm the answer table has RLS, anon has no table grants on it, authenticated has only the intended `SELECT`/`INSERT` grants, the immutable-attempt trigger is enabled, and the RPC signatures and policies match. Do not run `rollback-proof.sql` after the migration; it is only a pre-migration proof.
-7. Only after SQL verification, push the app commit series. Pushing `main` deploys immediately on Vercel. The app still works if the new RPCs are missing or unavailable: local progress is saved, the durable outbox keeps attempts for retry, and aggregate pages fall back to local totals or show “metrics unavailable.”
+7. For databases already running Task 3, run `admin-user-metrics-followup-dry-run.sql`. It temporarily installs the admin-only per-user exact-attempt RPC, checks it against a real attempt and rejects non-admin access, then rolls back. If it completes without error, run `admin-user-metrics-followup.sql`, then `verify-admin-user-metrics.sql`. Fresh installs receive the function from `migration.sql` and `dry-run.sql`.
+8. Only after all SQL verification, push the app commit series. Pushing `main` deploys immediately on Vercel. The app still works if the other attempt RPCs are missing or unavailable: local progress is saved, the durable outbox keeps attempts for retry, and aggregate pages fall back to local totals or show “metrics unavailable.”
 
 ## Existing production RPC repair
 
@@ -33,6 +34,9 @@ The owner-provided production function definition showed that `submit_reading_at
 - `selected-answer-limit-dry-run.sql`: transactional verification of the selected-answer rejection fix against an existing installation; tests 500 and 501 character answers and rolls all changes back.
 - `selected-answer-limit-fix.sql`: narrow production update for installations where the submit RPC truncates selected answers instead of rejecting oversized input.
 - `verify-production-attempts.sql`: read-only production check for attempt counts, submit RPC behavior markers/grants, and admin metric markers.
+- `admin-user-metrics-followup-dry-run.sql`: transactional per-user exact-attempt RPC test using existing admin/learner accounts; checks the returned count, weighted accuracy, duration, last attempt, and non-admin denial, then rolls back.
+- `admin-user-metrics-followup.sql`: narrow production function/grant update for an existing Task 3 installation; does not change user data.
+- `verify-admin-user-metrics.sql`: read-only verification of the per-user RPC definition, admin guard, exact-attempt filter, and grants.
 
 ## Admin AI usage series follow-up
 
@@ -61,4 +65,5 @@ The migration adds rows for every submitted attempt and one row per question, so
 - On an account with old detailed local attempts, accept import and verify stable IDs do not duplicate on retry. Check that active drafts and summary-only records are not imported.
 - Choose “No thanks” and reload. Confirm the consent prompt does not reappear for that account.
 - As learner A, verify own attempt/answers are visible; as learner B, verify A's are hidden; as anon, verify new table and RPC access is denied; as admin, verify the admin aggregate and charts.
+- As admin, verify Admin > Users per-user values come from exact saved attempts and match question-weighted accuracy; legacy/local-only progress is disclosed separately.
 - Confirm dashboard cards say “metrics unavailable” if the admin RPC is absent, and AI usage/activity feed continue using analytics events.

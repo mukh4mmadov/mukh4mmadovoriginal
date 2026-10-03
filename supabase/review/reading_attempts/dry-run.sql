@@ -37,6 +37,8 @@ BEGIN
     RAISE EXCEPTION 'Precondition failed: highlights must have user_id uuid and created_at timestamptz';
   END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='profiles' AND column_name='id' AND data_type='uuid')
+     OR NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='profiles' AND column_name='email' AND data_type='text')
+     OR NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='profiles' AND column_name='full_name' AND data_type='text')
      OR NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='profiles' AND column_name='created_at' AND data_type='timestamp with time zone')
      OR NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='profiles' AND column_name='is_admin' AND data_type='boolean') THEN
     RAISE EXCEPTION 'Precondition failed: profiles must have id uuid, created_at timestamptz, and is_admin boolean';
@@ -329,15 +331,62 @@ BEGIN
 END
 $function$;
 
+CREATE OR REPLACE FUNCTION public.get_admin_user_reading_metrics()
+RETURNS TABLE (
+  user_id uuid, email text, full_name text, username text,
+  passages_completed bigint, average_score numeric, highest_score numeric,
+  total_time_spent bigint, last_activity timestamptz
+)
+LANGUAGE plpgsql SECURITY DEFINER STABLE
+SET search_path = public, pg_temp
+AS $function$
+BEGIN
+  IF NOT COALESCE(public.is_admin_user((select auth.uid())), false) THEN
+    RAISE EXCEPTION 'Admin access required' USING ERRCODE = '42501';
+  END IF;
+
+  RETURN QUERY
+  WITH per_user AS (
+    SELECT h.user_id,
+           count(*)::bigint AS passages_completed,
+           round(100.0 * sum(h.correct_count) / nullif(sum(h.question_count), 0)) AS average_score,
+           max(round(100.0 * h.correct_count / nullif(h.question_count, 0))) AS highest_score,
+           coalesce(sum(greatest(coalesce(h.time_spent_seconds, 0), 0)), 0)::bigint AS total_time_spent,
+           max(h.completed_at) AS last_activity
+    FROM public.reading_history AS h
+    WHERE h.attempt_key IS NOT NULL
+    GROUP BY h.user_id
+  )
+  SELECT p.id, p.email, p.full_name, to_jsonb(p)->>'username',
+         coalesce(r.passages_completed, 0), r.average_score, r.highest_score,
+         coalesce(r.total_time_spent, 0), r.last_activity
+  FROM public.profiles AS p
+  LEFT JOIN per_user AS r ON r.user_id = p.id
+  WHERE coalesce((to_jsonb(p)->>'is_guest')::boolean, false) = false
+  ORDER BY r.last_activity DESC NULLS LAST, p.created_at DESC, p.id;
+END
+$function$;
+
 REVOKE ALL ON FUNCTION public.submit_reading_attempt(uuid,text,integer,jsonb,timestamptz) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.get_my_reading_metrics(timestamptz,timestamptz) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.get_admin_reading_metrics(integer) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.get_admin_user_reading_metrics() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.submit_reading_attempt(uuid,text,integer,jsonb,timestamptz) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_my_reading_metrics(timestamptz,timestamptz) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_admin_reading_metrics(integer) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_admin_user_reading_metrics() TO authenticated;
 
 DO $verify$
+DECLARE user_metrics_definition text;
 BEGIN
+  SELECT pg_get_functiondef('public.get_admin_user_reading_metrics()'::regprocedure)
+    INTO user_metrics_definition;
+  IF NOT (SELECT prosecdef FROM pg_proc WHERE oid='public.get_admin_user_reading_metrics()'::regprocedure)
+     OR user_metrics_definition NOT LIKE '%is_admin_user%'
+     OR user_metrics_definition NOT LIKE '%attempt_key IS NOT NULL%'
+     OR NOT has_function_privilege('authenticated','public.get_admin_user_reading_metrics()','EXECUTE') THEN
+    RAISE EXCEPTION 'Verification failed: per-user admin metrics RPC guard, source, or grant is incorrect';
+  END IF;
   IF has_table_privilege('anon','public.reading_attempt_answers','SELECT')
      OR has_table_privilege('anon','public.reading_attempt_answers','INSERT')
      OR has_table_privilege('anon','public.reading_attempt_answers','UPDATE')
@@ -352,7 +401,8 @@ BEGIN
   END IF;
   IF has_function_privilege('anon','public.submit_reading_attempt(uuid,text,integer,jsonb,timestamp with time zone)','EXECUTE')
      OR has_function_privilege('anon','public.get_my_reading_metrics(timestamp with time zone,timestamp with time zone)','EXECUTE')
-     OR has_function_privilege('anon','public.get_admin_reading_metrics(integer)','EXECUTE') THEN
+     OR has_function_privilege('anon','public.get_admin_reading_metrics(integer)','EXECUTE')
+     OR has_function_privilege('anon','public.get_admin_user_reading_metrics()','EXECUTE') THEN
     RAISE EXCEPTION 'Verification failed: anon can execute a new reading-attempt function';
   END IF;
   IF has_function_privilege('anon','public.guard_reading_history_exact_attempt_update()','EXECUTE')

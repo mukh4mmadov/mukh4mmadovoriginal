@@ -153,20 +153,20 @@ export default function UserDetails({ userId, onClose, returnFocusRef }) {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="bg-white/5 rounded-lg p-4">
                       <BookOpen className="text-brand-400 mb-2" size={20} />
-                      <p className="text-2xl font-bold text-white">{stats.passages_completed || 0}</p>
+                      <p className="text-2xl font-bold text-white">{stats.passages_completed ?? 0}</p>
                       <p className="text-xs text-slate-400">Passages Completed</p>
                     </div>
                     <div className="bg-white/5 rounded-lg p-4">
                       <Target className="text-green-400 mb-2" size={20} />
                       <p className="text-2xl font-bold text-white">
-                        {stats.average_score ? `${Math.round(stats.average_score)}%` : 'N/A'}
+                        {stats.average_score != null ? `${Math.round(stats.average_score)}%` : 'N/A'}
                       </p>
                       <p className="text-xs text-slate-400">Average Score</p>
                     </div>
                     <div className="bg-white/5 rounded-lg p-4">
                       <TrendingUp className="text-orange-400 mb-2" size={20} />
                       <p className="text-2xl font-bold text-white">
-                        {stats.highest_score ? `${Math.round(stats.highest_score)}%` : 'N/A'}
+                        {stats.highest_score != null ? `${Math.round(stats.highest_score)}%` : 'N/A'}
                       </p>
                       <p className="text-xs text-slate-400">Highest Score</p>
                     </div>
@@ -210,7 +210,7 @@ export default function UserDetails({ userId, onClose, returnFocusRef }) {
               {stats?.last_activity && (
                 <div className="bg-white/5 rounded-lg p-4">
                   <p className="text-sm text-slate-400">
-                    Last Activity: {new Date(stats.last_activity).toLocaleString()}
+                    Last Activity: {stats.last_activity ? new Date(stats.last_activity).toLocaleString() : 'Never'}
                   </p>
                 </div>
               )}

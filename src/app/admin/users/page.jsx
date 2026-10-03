@@ -50,7 +50,7 @@ export default function AdminUsers() {
         <h1 className="text-3xl font-bold text-white">Users</h1>
       </div>
       <p className="-mt-6 mb-6 text-sm text-slate-400">
-        This list uses activity summary records and may not include every account. The dashboard total counts all profiles.
+        These figures use exact saved attempts. Older progress without question-level attempt records is not included.
         Showing {filteredUsers.length} matching {filteredUsers.length === 1 ? 'record' : 'records'}.
       </p>
 
@@ -73,9 +73,9 @@ export default function AdminUsers() {
             <tr className="border-b border-white/10">
               <th className="text-left p-4 text-sm font-medium text-slate-400">User</th>
               <th className="text-left p-4 text-sm font-medium text-slate-400">Email</th>
-              <th className="text-center p-4 text-sm font-medium text-slate-400">Passages</th>
-              <th className="text-center p-4 text-sm font-medium text-slate-400">Avg Score</th>
-              <th className="text-center p-4 text-sm font-medium text-slate-400">Last Activity</th>
+              <th className="text-center p-4 text-sm font-medium text-slate-400">Saved Attempts</th>
+              <th className="text-center p-4 text-sm font-medium text-slate-400">Accuracy</th>
+              <th className="text-center p-4 text-sm font-medium text-slate-400">Last Saved Attempt</th>
               <th className="text-center p-4 text-sm font-medium text-slate-400">Actions</th>
             </tr>
           </thead>
@@ -103,9 +103,9 @@ export default function AdminUsers() {
                     </div>
                   </td>
                   <td className="p-4 text-sm text-slate-300">{user.email}</td>
-                  <td className="p-4 text-center text-sm text-white">{user.passages_completed || 0}</td>
+                  <td className="p-4 text-center text-sm text-white">{user.passages_completed ?? 0}</td>
                   <td className="p-4 text-center text-sm text-white">
-                    {user.average_score ? `${Math.round(user.average_score)}%` : 'N/A'}
+                    {user.average_score != null ? `${Math.round(user.average_score)}%` : 'N/A'}
                   </td>
                   <td className="p-4 text-center text-sm text-slate-400">
                     {user.last_activity ? new Date(user.last_activity).toLocaleDateString() : 'Never'}
