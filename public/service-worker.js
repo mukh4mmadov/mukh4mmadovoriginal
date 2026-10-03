@@ -31,12 +31,23 @@ self.addEventListener("fetch", (event) => {
   const requestUrl = new URL(event.request.url);
   if (requestUrl.origin !== self.location.origin) return;
 
-  event.respondWith(
-    fetch(event.request).catch(async () => {
-      const offlinePage = await caches.match(OFFLINE_PAGE);
-      return offlinePage || Response.error();
-    }),
-  );
+  event.respondWith((async () => {
+    const offlinePage = async () => {
+      const cachedPage = await caches.match(OFFLINE_PAGE);
+      return cachedPage || new Response(
+        "You are offline. Reconnect, then retry to continue your reading practice.",
+        { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } },
+      );
+    };
+
+    if (!self.navigator.onLine) return offlinePage();
+
+    try {
+      return await fetch(event.request, { cache: "no-store" });
+    } catch {
+      return offlinePage();
+    }
+  })());
 });
 
 self.addEventListener("push", (event) => {

@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "qa:public": "node scripts/qa-public-ui.mjs",
+    "qa:offline": "node scripts/test-offline-fallback.mjs",
     "lint": "next lint"
   },
   "dependencies": {
