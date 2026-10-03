@@ -37,6 +37,7 @@ The owner-provided production function definition showed that `submit_reading_at
 - `admin-user-metrics-followup-dry-run.sql`: transactional per-user exact-attempt RPC test using existing admin/learner accounts; checks the returned count, weighted accuracy, duration, last attempt, and non-admin denial, then rolls back.
 - `admin-user-metrics-followup.sql`: narrow production function/grant update for an existing Task 3 installation; does not change user data.
 - `verify-admin-user-metrics.sql`: read-only verification of the per-user RPC definition, admin guard, exact-attempt filter, and grants.
+- `verify-learner-isolation.sql`: read-only transaction that checks whether an authenticated non-admin profile can see another profile's exact attempts or answer rows; uses existing profiles if available, otherwise returns `SKIP`, and rolls back all temporary role/claim state.
 
 ## Admin AI usage series follow-up
 
