@@ -126,17 +126,27 @@ export default function Navbar() {
           <span className="gradient-text">Mukh4mmadov IELTS</span>
         </Link>
 
-        <button
-          ref={mobileMenuButtonRef}
-          type="button"
-          onClick={toggleMobileMenu}
-          className="lg:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
-          aria-label={isMobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
-          aria-expanded={isMobileMenuOpen}
-          aria-controls="mobile-navigation"
-        >
-          {isMobileMenuOpen ? <X size={24} className="text-white" /> : <Menu size={24} className="text-white" />}
-        </button>
+        <div className="flex items-center gap-2 lg:hidden">
+          {!isLoading && !user && (
+            <Link
+              href="/login"
+              className="rounded-full bg-brand-500 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-brand-600"
+            >
+              Login
+            </Link>
+          )}
+          <button
+            ref={mobileMenuButtonRef}
+            type="button"
+            onClick={toggleMobileMenu}
+            className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+            aria-label={isMobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="mobile-navigation"
+          >
+            {isMobileMenuOpen ? <X size={24} className="text-white" /> : <Menu size={24} className="text-white" />}
+          </button>
+        </div>
 
         <nav className="hidden lg:flex items-center gap-3 text-sm font-medium text-slate-300 sm:gap-6">
           <button type="button" onClick={(event) => requestHelpDialog(event.currentTarget)} className="rounded-full px-3 py-2 transition-all hover:bg-white/10 hover:text-white">Help</button>
@@ -234,7 +244,7 @@ export default function Navbar() {
                 href="/login"
                 className="rounded-full bg-brand-500 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-brand-600"
               >
-                Sign in
+                Login
               </Link>
             </div>
           )}
@@ -333,7 +343,7 @@ export default function Navbar() {
                 className="block rounded-lg bg-brand-500 px-4 py-3 text-center text-sm font-medium text-white transition-all hover:bg-brand-600"
                 onClick={closeMobileMenu}
               >
-                Sign in
+                Login
               </Link>
             )}
 
