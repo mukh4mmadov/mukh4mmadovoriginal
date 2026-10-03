@@ -1,8 +1,8 @@
-# Muhammadov IELTS Reading
+# Mukh4mmadov IELTS
 
-IELTS Reading practice platform built with Next.js and Supabase. The app
-includes timed passages, answer checking, statistics, support tickets, admin
-pages, and an AI reading coach that currently defaults to Gemini.
+IELTS preparation platform built with Next.js and Supabase. The current app
+focuses on timed Reading practice, answer checking, statistics, support
+tickets, admin pages, and an AI reading coach that currently defaults to Gemini.
 
 ## Local development
 

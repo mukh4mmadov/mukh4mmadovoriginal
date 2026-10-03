@@ -35,7 +35,7 @@ export default function Footer() {
             <Link href="/contact" className="hover:text-white">Contact</Link>
           </nav>
           <p className="text-xs text-slate-400 text-center">
-            © {new Date().getFullYear()} Muhammadov IELTS Reading. All rights reserved.
+            © {new Date().getFullYear()} Mukh4mmadov IELTS. All rights reserved.
           </p>
         </div>
       </div>

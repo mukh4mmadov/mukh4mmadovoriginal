@@ -2,7 +2,7 @@ import LegalPage from "@/components/shared/LegalPage";
 
 export const metadata = {
   title: "Privacy Policy",
-  description: "How IELTS Reading Pro collects and processes personal data.",
+  description: "How Mukh4mmadov IELTS collects and processes personal data.",
   alternates: { canonical: "/privacy" },
 };
 
@@ -10,7 +10,7 @@ const sections = [
   {
     title: "Service Operator and Contact",
     body: [
-      "IELTS Reading Pro is operated by Muhammadov Ozodbek. You can contact us through the Help form on the website, by email at omuhammadov467@gmail.com, or on Telegram at @mukh4mmadov.",
+      "Mukh4mmadov IELTS is operated by Muhammadov Ozodbek. You can contact us through the Help form on the website, by email at omuhammadov467@gmail.com, or on Telegram at @mukh4mmadov.",
       "The project is operated from Uzbekistan. No postal address is provided on this page; please use the electronic contact methods listed above for written inquiries.",
     ],
   },
@@ -71,7 +71,7 @@ export default function PrivacyPage() {
     <LegalPage
       title="Privacy Policy"
       updatedAt="October 3, 2026"
-      intro="This page explains how IELTS Reading Pro processes information when you use accounts, reading exercises, support, and AI features."
+      intro="This page explains how Mukh4mmadov IELTS processes information when you use accounts, reading exercises, support, and AI features."
       sections={sections}
     />
   );

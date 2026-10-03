@@ -101,7 +101,7 @@ export default function SignUpPage() {
                 <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
                   <BookOpenText className="w-7 h-7 text-white" />
                 </div>
-                <span className="text-2xl font-bold">IELTS Reading Pro</span>
+                <span className="text-2xl font-bold">Mukh4mmadov IELTS</span>
               </div>
 
               <h1 className="text-3xl lg:text-5xl font-bold leading-tight">

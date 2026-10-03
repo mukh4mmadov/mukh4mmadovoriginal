@@ -16,12 +16,12 @@ export const metadata = {
   manifest: "/site.webmanifest",
   icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
   title: {
-    default: "IELTS Reading Practice",
-    template: "%s | Muhammadov IELTS Reading",
+    default: "Mukh4mmadov IELTS | Complete IELTS Practice",
+    template: "%s | Mukh4mmadov IELTS",
   },
   description:
-    "Practice IELTS Reading with exam-format passages, a built-in highlighter, and question-by-question feedback.",
-  keywords: ["IELTS", "reading", "practice", "exam", "study"],
+    "Prepare for IELTS with focused practice, coaching, and progress tracking.",
+  keywords: ["IELTS", "listening", "reading", "writing", "speaking", "practice"],
   robots: {
     index: true,
     follow: true,
@@ -36,17 +36,15 @@ export const metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    siteName: "Muhammadov IELTS Reading",
-    title: "IELTS Reading Practice",
-    description:
-      "Practice IELTS Reading with exam-format passages, a built-in highlighter, and question-by-question feedback.",
+    siteName: "Mukh4mmadov IELTS",
+    title: "Mukh4mmadov IELTS | Complete IELTS Practice",
+    description: "Prepare for IELTS with focused practice, coaching, and progress tracking.",
     images: [{ url: "/og-reading.svg", width: 1200, height: 630, alt: "IELTS Reading Practice" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "IELTS Reading Practice",
-    description:
-      "Practice IELTS Reading with exam-format passages, a built-in highlighter, and question-by-question feedback.",
+    title: "Mukh4mmadov IELTS | Complete IELTS Practice",
+    description: "Prepare for IELTS with focused practice, coaching, and progress tracking.",
     images: ["/og-reading.svg"],
   },
 };

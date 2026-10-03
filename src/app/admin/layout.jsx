@@ -6,7 +6,7 @@ export const metadata = {
   alternates: { canonical: '/admin' },
   robots: { index: false, follow: false },
   openGraph: {
-    title: 'Admin Dashboard | Muhammadov IELTS Reading',
+    title: 'Admin Dashboard | Mukh4mmadov IELTS',
     description: 'Manage users, support, feedback, and platform activity.',
   },
 };

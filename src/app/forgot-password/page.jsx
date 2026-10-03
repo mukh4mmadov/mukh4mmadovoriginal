@@ -45,7 +45,7 @@ export default function ForgotPasswordPage() {
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
                 <BookOpenText className="w-7 h-7 text-white" />
               </div>
-              <span className="text-2xl font-bold text-white">IELTS Reading Pro</span>
+              <span className="text-2xl font-bold text-white">Mukh4mmadov IELTS</span>
             </div>
             <h1 className="text-3xl font-bold text-white mb-2">Email authentication disabled</h1>
             <p className="text-slate-400">Please use Google sign-in</p>

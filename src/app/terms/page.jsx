@@ -2,7 +2,7 @@ import LegalPage from "@/components/shared/LegalPage";
 
 export const metadata = {
   title: "Terms of Use",
-  description: "Terms for using the IELTS Reading Pro service.",
+  description: "Terms for using the Mukh4mmadov IELTS service.",
   alternates: { canonical: "/terms" },
 };
 
@@ -10,7 +10,7 @@ const sections = [
   {
     title: "About the Service",
     body: [
-      "IELTS Reading Pro is an independent service for reading practice and study. It is not an official service of, or affiliated with, the IELTS organization or Cambridge.",
+      "Mukh4mmadov IELTS is an independent service for reading practice and study. It is not an official service of, or affiliated with, the IELTS organization or Cambridge.",
       "Practice results are provided for educational purposes. They are not official IELTS scores or exam results and do not guarantee future results.",
     ],
   },
@@ -61,7 +61,7 @@ export default function TermsPage() {
     <LegalPage
       title="Terms of Use"
       updatedAt="October 3, 2026"
-      intro="By using IELTS Reading Pro, you agree to follow these Terms. If you do not agree, do not create an account or use the service."
+      intro="By using Mukh4mmadov IELTS, you agree to follow these Terms. If you do not agree, do not create an account or use the service."
       sections={sections}
     />
   );

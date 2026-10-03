@@ -3,7 +3,7 @@ import LegalPage from "@/components/shared/LegalPage";
 
 export const metadata = {
   title: "Contact",
-  description: "Contact and support information for IELTS Reading Pro.",
+  description: "Contact and support information for Mukh4mmadov IELTS.",
   alternates: { canonical: "/contact" },
 };
 
@@ -12,7 +12,7 @@ export default function ContactPage() {
     <LegalPage
       title="Contact"
       updatedAt="October 3, 2026"
-      intro="For questions or issues with IELTS Reading Pro, use one of the contact methods below. The service is operated by Muhammadov Ozodbek."
+      intro="For questions or issues with Mukh4mmadov IELTS, use one of the contact methods below. The service is operated by Muhammadov Ozodbek."
       sections={[
         {
           title: "Help and Inquiries",

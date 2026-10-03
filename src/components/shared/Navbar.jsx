@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpenText, Moon, Sun, LogOut, User, ChevronDown, Settings, BarChart3, Menu, X, MessageSquare, LifeBuoy } from "lucide-react";
+import { Moon, Sun, LogOut, User, ChevronDown, Settings, BarChart3, Menu, X, MessageSquare, LifeBuoy } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { requestHelpDialog } from "@/lib/help-dialog";
@@ -122,8 +122,8 @@ export default function Navbar() {
           href="/"
           className="flex items-center gap-2 font-display text-xl font-semibold tracking-tight text-white"
         >
-          <BookOpenText className="text-brand-400" size={22} />
-          <span className="hidden sm:inline">Muhammadov</span> <span className="gradient-text">IELTS Reading</span>
+          <img src="/favicon.svg" alt="" className="h-8 w-8" />
+          <span className="gradient-text">Mukh4mmadov IELTS</span>
         </Link>
 
         <button
