@@ -89,7 +89,7 @@ export default function MigrationPrompt() {
 
   if (!isOpen) {
     return (
-      <div className="fixed bottom-4 right-4 z-50">
+      <div className="z-50 mx-auto flex max-w-7xl justify-end px-4 py-2 sm:px-6">
         <button
           onClick={handleShowPrompt}
           className="bg-brand-500 hover:bg-brand-600 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 transition-colors"

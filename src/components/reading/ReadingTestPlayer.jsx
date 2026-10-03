@@ -103,6 +103,7 @@ export default function ReadingTestPlayer({ passage }) {
       : undefined;
 
     return {
+      assessmentMode: "active",
       passage: {
         title: passage.title,
         paragraphs: passage.paragraphs.map((p) => ({
@@ -124,13 +125,6 @@ export default function ReadingTestPlayer({ passage }) {
                 ? currentQuestion.after
                 : undefined,
             userAnswer: answers[currentQuestion.id],
-            correctAnswer: currentQuestion.answer,
-            explanation: currentQuestion.explanation,
-            evidence: currentQuestion.evidence,
-            paragraphLabel:
-              currentQuestion.type === "matching-headings"
-                ? currentQuestion.paragraphLabel
-                : undefined,
           }
         : undefined,
     };
@@ -634,7 +628,7 @@ export default function ReadingTestPlayer({ passage }) {
             <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.28em] text-brand-400 sm:text-[11px]">
               {passage.subtitle}
             </p>
-            <h1 className="truncate font-display text-base font-semibold sm:text-xl md:text-2xl">
+            <h1 className="break-words font-display text-base font-semibold leading-snug sm:text-xl md:text-2xl">
               {passage.title}
             </h1>
             <p className="mt-1 text-[10px] text-slate-400 sm:text-xs">{passage.provenanceLabel}</p>

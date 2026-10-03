@@ -25,11 +25,14 @@ export default function AdminSupportInbox() {
   const [busy, setBusy] = useState(false);
   const selectedIdRef = useRef(null);
   const initialSelectionHandled = useRef(false);
+  const loadRequestRef = useRef(0);
 
   const load = useCallback(async () => {
+    const requestId = ++loadRequestRef.current;
     setError("");
     try {
       const rows = await ticketsRepository.listAdminTickets({ status, category });
+      if (requestId !== loadRequestRef.current) return;
       setTickets(rows);
       const currentId = selectedIdRef.current;
       let nextId = rows.some((ticket) => ticket.id === currentId) ? currentId : null;
@@ -41,20 +44,24 @@ export default function AdminSupportInbox() {
       if (!nextId) nextId = rows[0]?.id || null;
       selectedIdRef.current = nextId;
       setSelectedId(nextId);
-    } catch (cause) { setError(cause.message || "Support inbox could not be loaded."); }
-    finally { setLoading(false); }
+    } catch (cause) {
+      if (requestId === loadRequestRef.current) setError(cause.message || "Support inbox could not be loaded.");
+    } finally {
+      if (requestId === loadRequestRef.current) setLoading(false);
+    }
   }, [status, category]);
   useEffect(() => { load(); }, [load]);
   useEffect(() => { ticketsRepository.listAdmins().then(setAdmins).catch((cause) => setError(cause.message || "Admin assignees could not be loaded.")); }, []);
 
-  const selected = useMemo(() => tickets.find((ticket) => ticket.id === selectedId) || null, [tickets, selectedId]);
-  const selectedMessages = useMemo(() => [...(selected?.messages || [])].sort((a, b) => new Date(a.created_at) - new Date(b.created_at)), [selected]);
   const filteredTickets = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return tickets;
     return tickets.filter((ticket) => [ticket.subject, ticket.owner?.full_name, ticket.owner?.username, ticket.owner?.email,
-      ...(ticket.messages || []).map((message) => message.body)].some((value) => String(value || "").toLowerCase().includes(query)));
-  }, [tickets, search]);
+      ...(ticket.messages || []).map((message) => message.body)].some((value) => !query || String(value || "").toLowerCase().includes(query))
+      && (status === "all" || ticket.status === status)
+      && (category === "all" || ticket.category === category));
+  }, [tickets, search, status, category]);
+  const selected = useMemo(() => filteredTickets.find((ticket) => ticket.id === selectedId) || null, [filteredTickets, selectedId]);
+  const selectedMessages = useMemo(() => [...(selected?.messages || [])].sort((a, b) => new Date(a.created_at) - new Date(b.created_at)), [selected]);
 
   function selectTicket(ticketId) {
     selectedIdRef.current = ticketId;

@@ -87,7 +87,8 @@ export default function AdminChangelog() {
   }
 
   async function deleteEntry(id) {
-    if (!confirm('Are you sure you want to delete this changelog entry?')) return;
+    const entry = entries.find((item) => item.id === id);
+    if (!confirm(`Delete changelog entry “${entry?.title || 'Untitled entry'}”? This cannot be undone.`)) return;
 
     try {
       const { error } = await supabase.from('changelog').delete().eq('id', id);
@@ -171,12 +172,16 @@ export default function AdminChangelog() {
                     <div className="flex gap-2">
                       <button
                         onClick={(event) => openForm(entry, event)}
+                        aria-label={`Edit changelog entry: ${entry.title}`}
+                        title="Edit changelog entry"
                         className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                       >
                         <Edit size={16} className="text-slate-400" />
                       </button>
                       <button
                         onClick={() => deleteEntry(entry.id)}
+                        aria-label={`Delete changelog entry: ${entry.title}`}
+                        title="Delete changelog entry"
                         className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                       >
                         <Trash2 size={16} className="text-red-400" />

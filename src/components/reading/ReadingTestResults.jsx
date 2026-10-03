@@ -64,6 +64,7 @@ export default function ReadingTestResults({
     (q) => answers[q.id] && !isAnswerCorrect(q, answers[q.id]),
   ).length;
   const skippedCount = questions.filter((q) => !answers[q.id]).length;
+  const answeredCount = correctCount + incorrectCount;
   const missedCount = incorrectCount + skippedCount;
   const percentage = questions.length > 0
     ? (correctCount / questions.length) * 100
@@ -82,22 +83,25 @@ export default function ReadingTestResults({
       if (!typeStats[type]) {
         typeStats[type] = { correct: 0, total: 0, time: 0 };
       }
+      if (!answers[q.id]) return;
       typeStats[type].total++;
       if (isAnswerCorrect(q, answers[q.id])) {
         typeStats[type].correct++;
       }
     });
 
-    return Object.entries(typeStats).map(([type, stats]) => ({
+    return Object.entries(typeStats).filter(([, stats]) => stats.total > 0).map(([type, stats]) => ({
       type,
       accuracy: (stats.correct / stats.total) * 100,
       count: stats.total,
     })).sort((a, b) => b.accuracy - a.accuracy);
   }, [questions, answers]);
 
-  const strongestSkill = analyticsByType[0];
-  const weakestSkill = analyticsByType[analyticsByType.length - 1];
-  const avgTimePerQuestion = questions.length > 0 ? timeSpent / questions.length : 0;
+  const skillsWithUsefulSample = analyticsByType.filter((skill) => skill.count >= 2);
+  const strongestSkill = skillsWithUsefulSample[0];
+  const weakestSkill = skillsWithUsefulSample[skillsWithUsefulSample.length - 1];
+  const avgTimePerQuestion = answeredCount > 0 ? timeSpent / answeredCount : 0;
+  const hasUsefulPaceEstimate = answeredCount >= 3 && skippedCount <= questions.length / 2;
 
   const buildAIContext = () => {
     const currentQuestion = selectedQuestionId ? questions.find(q => q.id === selectedQuestionId) : undefined;
@@ -203,6 +207,7 @@ export default function ReadingTestResults({
       `Skipped: ${skippedCount}`,
       `Percentage: ${percentage.toFixed(0)}%`,
       `Time: ${formatTime(timeSpent)}`,
+      "Practice result only; not an official IELTS score or band.",
     ].join("\n");
 
     try {
@@ -275,11 +280,12 @@ export default function ReadingTestResults({
         <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="premium-text-brand mb-2 text-[11px] font-semibold uppercase tracking-[0.28em]">
-              Premium Results
+              Practice Results
             </p>
             <h2 className="premium-text-primary font-display text-3xl font-semibold">
               Your results
             </h2>
+            <p className="premium-text-muted mt-2 text-sm">Practice result only. This is not an official IELTS score or band.</p>
           </div>
         </div>
 
@@ -352,6 +358,9 @@ export default function ReadingTestResults({
           </div>
           
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {analyticsByType.length === 0 && (
+              <p className="text-sm text-slate-300">Answer some questions to see a question-type breakdown.</p>
+            )}
             {analyticsByType.map((stat) => (
               <div key={stat.type} className="rounded-xl border border-white/10 bg-surface/50 p-4">
                 <div className="flex items-center justify-between mb-2">
@@ -366,7 +375,7 @@ export default function ReadingTestResults({
                     style={{ width: `${stat.accuracy}%` }}
                   />
                 </div>
-                <p className="mt-2 text-xs text-slate-500">
+                <p className="mt-2 text-xs text-slate-300">
                   {stat.count} question{stat.count !== 1 ? 's' : ''}
                 </p>
               </div>
@@ -379,10 +388,10 @@ export default function ReadingTestResults({
                 Strongest Skill
               </p>
               <p className="text-sm font-medium text-white">
-                {strongestSkill?.type.replace(/-/g, ' ') || 'N/A'}
+                {strongestSkill?.type.replace(/-/g, ' ') || 'Not enough answers yet'}
               </p>
               <p className="text-xs text-emerald-300 mt-1">
-                {strongestSkill?.accuracy.toFixed(0)}% accuracy
+                {strongestSkill ? `${strongestSkill.accuracy.toFixed(0)}% accuracy` : 'Answer more questions to see a pattern'}
               </p>
             </div>
             <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-4">
@@ -390,21 +399,23 @@ export default function ReadingTestResults({
                 Weakest Skill
               </p>
               <p className="text-sm font-medium text-white">
-                {weakestSkill?.type.replace(/-/g, ' ') || 'N/A'}
+                {weakestSkill?.type.replace(/-/g, ' ') || 'Not enough answers yet'}
               </p>
               <p className="text-xs text-rose-300 mt-1">
-                {weakestSkill?.accuracy.toFixed(0)}% accuracy
+                {weakestSkill ? `${weakestSkill.accuracy.toFixed(0)}% accuracy` : 'Answer more questions to see a pattern'}
               </p>
             </div>
             <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4">
               <p className="text-xs font-semibold uppercase tracking-wider text-amber-400 mb-1">
-                Avg Time/Question
+                Avg Time/Answered Question
               </p>
               <p className="text-sm font-medium text-white">
-                {Math.round(avgTimePerQuestion)}s
+                {answeredCount ? `${Math.round(avgTimePerQuestion)}s` : '—'}
               </p>
               <p className="text-xs text-amber-300 mt-1">
-                {avgTimePerQuestion < 90 ? 'Good pace' : 'Improve speed'}
+                {hasUsefulPaceEstimate
+                  ? avgTimePerQuestion < 90 ? 'Good pace' : 'Improve speed'
+                  : 'Not enough answers to assess pace'}
               </p>
             </div>
           </div>
@@ -414,7 +425,11 @@ export default function ReadingTestResults({
               💡 Suggested Next Practice
             </p>
             <p className="text-sm text-white">
-              {weakestSkill && weakestSkill.accuracy < 70
+              {skippedCount > questions.length / 2
+                ? 'You skipped most questions, so there is not enough information to recommend a question type. Try answering more questions next time.'
+                : !weakestSkill
+                  ? 'Answer a few questions in each type to get a useful recommendation.'
+                  : weakestSkill.accuracy < 70
                 ? `Focus on ${weakestSkill.type.replace(/-/g, ' ')} questions to improve your reading accuracy.`
                 : "Great job! Try practicing more complex passages to challenge yourself further."}
             </p>
@@ -492,7 +507,7 @@ export default function ReadingTestResults({
                 key={index}
                 className="flex items-center gap-4 rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 transition hover:bg-white/[0.05]"
               >
-                <span className="shrink-0 text-xs font-mono text-slate-500 w-16">
+                <span className="shrink-0 text-xs font-mono text-slate-300 w-16">
                   {formatEventTime(event.timestamp)}
                 </span>
                 <span className="text-sm text-slate-300">

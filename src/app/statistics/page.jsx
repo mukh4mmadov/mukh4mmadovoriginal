@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { BarChart3, ArrowLeft, BookOpen, CalendarDays, Clock, Share2, Target, TrendingUp } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAllProgress } from '@/lib/progressTracker';
@@ -25,19 +26,16 @@ export default function StatisticsPage() {
   const [shareMessage, setShareMessage] = useState('');
 
   useEffect(() => {
-    if (!isLoading && !user) {
-      window.location.replace(`/login?redirect=${encodeURIComponent('/statistics')}`);
-    }
-  }, [user, isLoading]);
+    if (isLoading) return;
+    let isActive = true;
+    setLoading(true);
 
-  useEffect(() => {
-    if (userId) {
-      let isActive = true;
-
-      Promise.all([
-        getAllProgress(userId),
-        getMyReadingMetrics(supabase, '1970-01-01T00:00:00.000Z', new Date().toISOString()),
-      ]).then(([progress, serverMetrics]) => {
+    Promise.all([
+      getAllProgress(userId),
+      userId
+        ? getMyReadingMetrics(supabase, '1970-01-01T00:00:00.000Z', new Date().toISOString())
+        : Promise.resolve(null),
+    ]).then(([progress, serverMetrics]) => {
         if (!isActive) return;
 
         const completedProgress = (progress || []).filter((item) => item.completed);
@@ -89,7 +87,7 @@ export default function StatisticsPage() {
           mastered_questions: [...masteryCounts.values()].filter((correctAttempts) => correctAttempts >= 3).length,
           has_detailed_question_history: questionAttempts.length > 0,
           highlights_count: null,
-          source: 'local',
+          source: userId ? 'local' : 'guest-local',
         };
         const useServerMetrics = serverMetrics && (serverMetrics.attempts > 0 || questionAttempts.length === 0);
         setStats(useServerMetrics ? {
@@ -109,16 +107,21 @@ export default function StatisticsPage() {
         if (!isActive) return;
         setStats(null);
         setLoading(false);
-      });
+    });
 
-      return () => {
-        isActive = false;
-      };
-    }
-  }, [userId]);
+    return () => {
+      isActive = false;
+    };
+  }, [userId, isLoading]);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      setGoal({ target_band: '6.5', exam_date: '', study_days_per_week: 4 });
+      setGoalLoading(false);
+      setInitialGoalLoaded(false);
+      setGoalMessage('');
+      return;
+    }
     if (!supabase) {
       setGoalMessage('Study goals are unavailable because the database is not configured.');
       setGoalLoading(false);
@@ -155,14 +158,6 @@ export default function StatisticsPage() {
       active = false;
     };
   }, [userId]);
-
-  if (!isLoading && !user) {
-    return (
-      <main className="flex min-h-screen items-center justify-center p-6" role="status" aria-live="polite">
-        <p className="text-sm text-slate-300">Taking you to sign in…</p>
-      </main>
-    );
-  }
 
   const saveGoal = async (event) => {
     event.preventDefault();
@@ -263,7 +258,7 @@ export default function StatisticsPage() {
 
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Your Statistics</h1>
-          <p className="text-slate-400">{stats?.source === 'server' ? 'All-time totals from saved reading attempts.' : stats?.source === 'local-older' ? 'Older results are not saved to your account yet.' : 'All-time local summary; server attempt metrics are unavailable.'}</p>
+          <p className="text-slate-400">{stats?.source === 'server' ? 'All-time totals from saved reading attempts.' : stats?.source === 'local-older' ? 'Older results are not saved to your account yet.' : stats?.source === 'guest-local' ? 'Guest progress is stored in this browser and is not synced across devices.' : 'All-time local summary; server attempt metrics are unavailable.'}</p>
           {stats?.source === 'local-older' && <button type="button" onClick={requestOpenMigrationPrompt} className="mt-2 text-sm text-brand-300 underline underline-offset-2 hover:text-white">Save older results to your account</button>}
         </div>
 
@@ -347,7 +342,7 @@ export default function StatisticsPage() {
             </div>
           </div>
 
-          <form onSubmit={saveGoal} className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-end">
+          {userId ? <form onSubmit={saveGoal} className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-end">
             <div>
               <label htmlFor="exam-date" className="mb-2 block text-sm font-medium text-slate-200">Exam date (optional)</label>
               <input
@@ -379,7 +374,7 @@ export default function StatisticsPage() {
             >
               {goalSaving ? 'Saving…' : 'Save study plan'}
             </button>
-          </form>
+          </form> : <p className="mb-6 text-sm text-slate-300">Sign in to save a study plan across sessions. Your local statistics remain available here. <Link href="/login?next=%2Fstatistics" className="font-semibold text-brand-300 underline underline-offset-2 hover:text-white">Login</Link></p>}
 
           {goalMessage && <p role="status" className="mb-4 text-sm text-slate-200">{goalMessage}</p>}
 

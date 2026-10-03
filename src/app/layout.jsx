@@ -74,13 +74,13 @@ export default function RootLayout({
             Skip to content
           </a>
           <Navbar />
+          <MigrationPrompt />
           <div id="main-content" tabIndex={-1} className="min-h-screen outline-none">
             {children}
           </div>
           <OfflineNotice />
           <Footer />
           <AdminAccessNotice />
-          <MigrationPrompt />
           <ReportIssueButton />
         </AuthProvider>
       </body>
