@@ -1,35 +1,35 @@
 -- Read-only production check: an authenticated non-admin profile cannot read
 -- another profile's exact attempt rows or their per-question answers.
--- All fixtures are temporary; role and JWT claim changes are rolled back.
+-- It uses transaction-local settings only; ROLLBACK restores role and claims.
 BEGIN;
 
-CREATE TEMP TABLE reading_attempt_isolation_ids ON COMMIT DROP AS
-WITH attempt_owner AS (
-  SELECT user_id
-  FROM public.reading_history
-  WHERE attempt_key IS NOT NULL
-  ORDER BY completed_at DESC, id
-  LIMIT 1
-)
-SELECT
-  (SELECT user_id FROM attempt_owner) AS owner_id,
-  (
-    SELECT p.id
+SELECT set_config(
+  'app.reading_attempt_isolation_owner_id',
+  COALESCE((
+    SELECT user_id::text
+    FROM public.reading_history
+    WHERE attempt_key IS NOT NULL
+    ORDER BY completed_at DESC, id
+    LIMIT 1
+  ), ''),
+  true
+);
+
+SELECT set_config(
+  'app.reading_attempt_isolation_reader_id',
+  COALESCE((
+    SELECT p.id::text
     FROM public.profiles AS p
-    CROSS JOIN attempt_owner AS attempt_user
-    WHERE p.id <> attempt_user.user_id
+    WHERE p.id <> NULLIF(current_setting('app.reading_attempt_isolation_owner_id', true), '')::uuid
       AND COALESCE((to_jsonb(p)->>'is_guest')::boolean, false) = false
       AND NOT COALESCE(public.is_admin_user(p.id), false)
     ORDER BY p.created_at DESC, p.id
     LIMIT 1
-  ) AS reader_id;
+  ), ''),
+  true
+);
 
-CREATE TEMP TABLE reading_attempt_isolation_result (result text NOT NULL) ON COMMIT DROP;
-INSERT INTO reading_attempt_isolation_result
-VALUES ('SKIP: no qualifying profile pair was available');
-
-GRANT SELECT ON reading_attempt_isolation_ids TO authenticated;
-GRANT UPDATE ON reading_attempt_isolation_result TO authenticated;
+SELECT set_config('app.reading_attempt_isolation_result', 'SKIP: no qualifying profile pair was available', true);
 SET LOCAL ROLE authenticated;
 
 DO $verify$
@@ -40,19 +40,16 @@ DECLARE
   visible_attempts bigint;
   visible_answers bigint;
 BEGIN
-  SELECT ids.owner_id, ids.reader_id
-  INTO owner_id, reader_id
-  FROM pg_temp.reading_attempt_isolation_ids AS ids;
+  owner_id := NULLIF(current_setting('app.reading_attempt_isolation_owner_id', true), '')::uuid;
+  reader_id := NULLIF(current_setting('app.reading_attempt_isolation_reader_id', true), '')::uuid;
 
   IF owner_id IS NULL THEN
-    UPDATE pg_temp.reading_attempt_isolation_result
-    SET result = 'SKIP: no exact saved attempt exists';
+    PERFORM set_config('app.reading_attempt_isolation_result', 'SKIP: no exact saved attempt exists', true);
     RETURN;
   END IF;
 
   IF reader_id IS NULL THEN
-    UPDATE pg_temp.reading_attempt_isolation_result
-    SET result = 'SKIP: no second non-guest, non-admin profile exists';
+    PERFORM set_config('app.reading_attempt_isolation_result', 'SKIP: no second non-guest, non-admin profile exists', true);
     RETURN;
   END IF;
 
@@ -79,11 +76,14 @@ BEGIN
       visible_attempts, visible_answers;
   END IF;
 
-  UPDATE pg_temp.reading_attempt_isolation_result
-  SET result = 'PASS: owner sees own exact attempts; another non-admin profile sees none of those attempts or answers';
+  PERFORM set_config(
+    'app.reading_attempt_isolation_result',
+    'PASS: owner sees own exact attempts; another non-admin profile sees none of those attempts or answers',
+    true
+  );
 END
 $verify$;
 
 RESET ROLE;
-SELECT result FROM pg_temp.reading_attempt_isolation_result;
+SELECT current_setting('app.reading_attempt_isolation_result', true) AS result;
 ROLLBACK;
