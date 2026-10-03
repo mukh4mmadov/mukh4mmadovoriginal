@@ -12,7 +12,8 @@ import {
   LogOut, 
   Menu, 
   X,
-  Users
+  Users,
+  ClipboardList,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { isAdmin } from '@/lib/supabase/auth-admin';
@@ -154,6 +155,7 @@ export default function AdminLayout({ children }) {
   const navigation = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
     { name: 'Users', href: '/admin/users', icon: Users },
+    { name: 'Mock Results', href: '/admin/mock-results', icon: ClipboardList },
     { name: 'Support inbox', href: '/admin/support', icon: MessageSquare },
     { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
     { name: 'Changelog', href: '/admin/changelog', icon: FileText },
