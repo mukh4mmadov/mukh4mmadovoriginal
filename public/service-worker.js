@@ -3,11 +3,13 @@ const OFFLINE_PAGE = "/offline.html";
 const OFFLINE_STATUS = "/__offline-status__";
 
 self.addEventListener("message", (event) => {
-  if (event.data?.type !== "NETWORK_STATUS") return;
+  if (event.data?.type !== "NETWORK_STATUS" && event.data?.type !== "CLEAR_OFFLINE") return;
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
-    if (event.data.online === false) {
-      await cache.put(OFFLINE_STATUS, new Response("offline"));
+    if (event.data.type === "NETWORK_STATUS") {
+      if (event.data.online === false) {
+        await cache.put(OFFLINE_STATUS, new Response("offline"));
+      }
     } else {
       await cache.delete(OFFLINE_STATUS);
     }

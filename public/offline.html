@@ -36,7 +36,7 @@
               const channel = new MessageChannel();
               const timeout = setTimeout(resolve, 1000);
               channel.port1.onmessage = () => { clearTimeout(timeout); resolve(); };
-              worker.postMessage({ type: "NETWORK_STATUS", online: true }, [channel.port2]);
+              worker.postMessage({ type: "CLEAR_OFFLINE" }, [channel.port2]);
             });
           }
           if (navigator.onLine) window.location.replace("/");

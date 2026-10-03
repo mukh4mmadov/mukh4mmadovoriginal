@@ -61,6 +61,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: 'if (navigator.onLine === false && location.pathname !== "/offline.html") location.replace("/offline.html");',
+          }}
+        />
+      </head>
       <body>
         <AuthProvider>
           <ReadingAttemptOutboxSync />

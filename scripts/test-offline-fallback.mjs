@@ -144,12 +144,12 @@ try {
     'the durable offline marker',
   );
 
-  // Check the cached fallback itself under browser offline emulation.
+  // Reproduce Home reload under browser offline emulation while the origin stays reachable.
   await emulateOffline();
   await waitFor('navigator.onLine === false', 'the browser offline state');
   await waitForOfflineMarker();
-  await command('Page.navigate', { url: `${baseUrl}/offline.html` });
-  await waitFor('document.body?.innerText?.includes("You are offline")', 'the offline fallback page under browser emulation');
+  await command('Page.reload', { ignoreCache: true });
+  await waitFor('document.body?.innerText?.includes("You are offline")', 'the Home offline fallback under browser emulation');
 
   await emulateOnline();
   await waitFor('navigator.onLine === true', 'network recovery');
@@ -184,7 +184,7 @@ try {
   await waitFor('document.readyState === "complete" && document.body?.innerText?.includes("All passages")', 'home page recovery');
   await waitFor('navigator.serviceWorker.controller !== null', 'service worker control after recovery');
 
-  console.log('PASS: the cached fallback page and Contact navigation work under browser offline emulation; recovery clears the marker and returns Home. A Home reload during a true origin outage shows the fallback and recovers.');
+  console.log('PASS: Home reload and Contact navigation show the offline fallback under browser offline emulation; recovery clears the marker and returns Home. A true origin outage also shows the fallback and recovers.');
 } finally {
   if (socket && socket.readyState < WebSocket.CLOSING) socket.close();
   browser.kill();
