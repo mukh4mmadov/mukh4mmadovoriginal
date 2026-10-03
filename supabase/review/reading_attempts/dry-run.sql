@@ -374,6 +374,27 @@ BEGIN
 END
 $verify$;
 
+DO $tashkent_boundary_tests$
+DECLARE
+  start_of_october_2 timestamptz := date '2026-10-02'::timestamp AT TIME ZONE 'Asia/Tashkent';
+  start_of_october_3 timestamptz := date '2026-10-03'::timestamp AT TIME ZONE 'Asia/Tashkent';
+  just_before timestamptz := timestamptz '2026-10-01 18:59:59+00';
+  at_midnight timestamptz := timestamptz '2026-10-01 19:00:00+00';
+BEGIN
+  IF start_of_october_2 <> timestamptz '2026-10-01 19:00:00+00'
+     OR start_of_october_3 <> timestamptz '2026-10-02 19:00:00+00' THEN
+    RAISE EXCEPTION 'FAIL: Asia/Tashkent calendar-day boundaries are not UTC+05:00';
+  END IF;
+  IF (just_before AT TIME ZONE 'Asia/Tashkent')::date <> date '2026-10-01'
+     OR (at_midnight AT TIME ZONE 'Asia/Tashkent')::date <> date '2026-10-02'
+     OR just_before >= start_of_october_2
+     OR at_midnight < start_of_october_2 THEN
+    RAISE EXCEPTION 'FAIL: half-open Asia/Tashkent day boundary assigned an attempt to the wrong day';
+  END IF;
+  RAISE NOTICE 'PASS: Tashkent midnight boundary uses a half-open calendar-day range';
+END
+$tashkent_boundary_tests$;
+
 -- Test fixture ids stay transaction-local. No temporary table is used.
 DO $fixtures$
 DECLARE a uuid; b uuid; admin_id uuid; non_admin uuid;

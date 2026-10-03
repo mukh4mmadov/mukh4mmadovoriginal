@@ -16,7 +16,7 @@ export default function LegalPage({ title, updatedAt, intro, sections }) {
           <section key={section.title}>
             <h2 className="text-xl font-semibold text-white">{section.title}</h2>
             <div className="mt-3 space-y-3 leading-7 text-slate-300">
-              {section.body.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+              {section.body.map((paragraph, index) => <p key={`${section.title}-${index}`}>{paragraph}</p>)}
             </div>
           </section>
         ))}

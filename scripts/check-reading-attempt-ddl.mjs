@@ -22,6 +22,15 @@ function extractAdminMetricsFunction(path) {
   return source.slice(start, end + '$function$;'.length);
 }
 
+function extractSubmitAttemptFunction(path) {
+  const source = readFileSync(path, 'utf8');
+  const startMarker = 'CREATE OR REPLACE FUNCTION public.submit_reading_attempt(';
+  const start = source.indexOf(startMarker);
+  const end = source.indexOf('$function$;', start);
+  if (start < 0 || end < 0) throw new Error(`Could not find submit attempt function in ${path}`);
+  return source.slice(start, end + '$function$;'.length);
+}
+
 const migrationDdl = extractDdl(migrationPath);
 const dryRunDdl = extractDdl(dryRunPath);
 if (migrationDdl !== dryRunDdl) {
@@ -59,4 +68,20 @@ for (const [name, functionDdl] of adminSources.slice(1)) {
 }
 if (process.exitCode !== 1) {
   console.log('PASS: admin metrics function matches in migration, dry-run, and both follow-up SQL files.');
+}
+
+const submitSources = [
+  ['migration.sql', extractSubmitAttemptFunction(migrationPath)],
+  ['selected-answer-limit-dry-run.sql', extractSubmitAttemptFunction('supabase/review/reading_attempts/selected-answer-limit-dry-run.sql')],
+  ['selected-answer-limit-fix.sql', extractSubmitAttemptFunction('supabase/review/reading_attempts/selected-answer-limit-fix.sql')],
+];
+const submitReference = submitSources[0][1];
+for (const [name, functionDdl] of submitSources.slice(1)) {
+  if (functionDdl !== submitReference) {
+    console.error(`FAIL: submit_reading_attempt DDL differs in ${name}.`);
+    process.exitCode = 1;
+  }
+}
+if (process.exitCode !== 1) {
+  console.log('PASS: selected-answer repair function matches the canonical migration in its dry-run and apply scripts.');
 }

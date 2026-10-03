@@ -185,7 +185,7 @@ export function useTextHighlight(
         return next;
       });
     },
-    [eraseMode, onHighlight, onHighlightRemove],
+    [eraseMode, onHighlight, onHighlightRemove, selectedColor],
   );
 
   return {

@@ -2,64 +2,66 @@ import LegalPage from "@/components/shared/LegalPage";
 
 export const metadata = {
   title: "Maxfiylik siyosati",
-  description: "IELTS Reading Pro shaxsiy ma’lumotlardan qanday foydalanishi haqida.",
+  description: "IELTS Reading Pro shaxsiy ma’lumotlarni qanday qayta ishlashi haqida.",
   alternates: { canonical: "/privacy" },
 };
 
 const sections = [
   {
-    title: "Mas’ul shaxs va aloqa",
+    title: "Xizmat egasi va bog‘lanish",
     body: [
-      "IELTS Reading Pro loyihasi uchun mas’ul shaxs — Muhammadov Ozodbek. Murojaatni saytdagi Yordam shakli orqali, omuhammadov467@gmail.com manziliga yoki Telegram’dagi @mukh4mmadov hisobiga yuborishingiz mumkin.",
-      "Loyiha O‘zbekistondan yuritiladi. Ushbu sahifada pochta manzili ko‘rsatilmagan; yozma murojaatlar uchun yuqoridagi elektron aloqa yo‘llaridan foydalaning.",
+      "IELTS Reading Pro xizmatini Muhammadov Ozodbek yuritadi. Saytdagi Yordam shakli, omuhammadov467@gmail.com elektron pochtasi yoki Telegram’dagi @mukh4mmadov orqali bog‘lanishingiz mumkin.",
+      "Loyiha O‘zbekistonda yuritiladi. Bu sahifada pochta manzili ko‘rsatilmagan; yozma murojaatlar uchun yuqoridagi elektron aloqa usullaridan foydalaning.",
     ],
   },
   {
-    title: "Qanday ma’lumotlarni olamiz",
+    title: "Yig‘iladigan ma’lumotlar",
     body: [
-      "Hisob ochilganda elektron pochta manzili va profilga kiritilgan ism kabi hisob ma’lumotlari qayta ishlanishi mumkin.",
-      "O‘qish mashqlarida tanlangan javoblar, natijalar, sarflangan vaqt, o‘qish jarayoni va ajratib belgilangan matnlar saqlanishi mumkin. Yordam shaklidan yuborilgan mavzu, murojaat matni, muammoni takrorlash qadamlari, sahifa manzili va javoblar ham yordam tarixida saqlanadi.",
-      "Sayt ayrim ko‘rinish sozlamalari, vaqtinchalik mashq qoralamalari va tahlil roziligi kabi tanlovlarni qurilmangizdagi brauzer xotirasida saqlashi mumkin.",
+      "Hisob yaratganingizda elektron pochta manzilingiz va profilingizga kiritgan ismingiz kabi hisob ma’lumotlari qayta ishlanishi mumkin.",
+      "O‘qish mashqlari tanlangan javoblar, natijalar, sarflangan vaqt, jarayon va matndagi belgilaringizni saqlashi mumkin. Yordam murojaatlarida mavzu, xabar, muammoni takrorlash qadamlari, sahifa manzili va javoblar yordam tarixida saqlanishi mumkin.",
+      "Sun’iy intellekt bilan suhbatlar brauzeringizning local storage xotirasida saqlanadi. Hisobga kirgan bo‘lsangiz, javob olingan suhbatlar Supabase’da hisobingizga ham saqlanadi.",
+      "Sayt ko‘rinish sozlamalari, vaqtinchalik o‘qish qoralamalari va tahlilga rozilik kabi tanlovlarni brauzeringizning local storage xotirasida saqlashi mumkin.",
     ],
   },
   {
     title: "Ma’lumotlardan foydalanish",
     body: [
-      "Ma’lumotlar hisobingizni yuritish, o‘qish natijalari va statistikasini ko‘rsatish, yordam so‘rovlariga xizmat ko‘rsatish, xavfsizlikni saqlash va saytdagi muammolarni bartaraf etish uchun ishlatiladi.",
-      "Foydalanish tahlili ixtiyoriy. Uni Sozlamalar sahifasida yoqish yoki o‘chirish mumkin. Tahlilga rozilik berilmasa, tahlil hodisalari yuborilmaydi. Tahlil hodisalariga savol matni va javoblar kiritilmasligi ko‘zda tutilgan.",
+      "Bu ma’lumotlardan hisobingizni boshqarish, o‘qish natijalari va statistikani ko‘rsatish, yordam murojaatlariga javob berish, xavfsizlikni ta’minlash va saytdagi muammolarni aniqlash uchun foydalanamiz.",
+      "Foydalanish tahlili ixtiyoriy. Uni Sozlamalar bo‘limida yoqish yoki o‘chirish mumkin. Tahlilga rozilik berilmagan bo‘lsa, tahlil hodisalari yuborilmaydi. Tahlil hodisalariga savol matni yoki javoblar kiritilmaydi.",
     ],
   },
   {
-    title: "Sun’iy intellekt xizmati",
+    title: "Sun’iy intellekt yordamchisi",
     body: [
-      "Sun’iy intellekt bilan suhbatdan foydalanganingizda, yozgan xabaringiz, suhbatdagi oldingi xabarlar va shu mashqqa tegishli matn yoki savol konteksti javob yaratish uchun tashqi sun’iy intellekt xizmatiga yuboriladi. Hozir sayt Gemini xizmatidan foydalanadi. Xizmat keyinchalik o‘zgarsa, ushbu siyosat ham yangilanadi.",
-      "Sun’iy intellekt javoblari xato yoki to‘liq bo‘lmasligi mumkin. Shaxsiy yoki maxfiy ma’lumotlarni suhbatga kiritmang.",
+      "Sun’iy intellekt chatidan foydalanganingizda, xabaringiz, suhbatdagi oldingi xabarlar hamda tegishli matn yoki savol konteksti javob yaratish uchun tashqi sun’iy intellekt xizmatiga yuboriladi. Hozirda saytda Gemini ishlatiladi. Xizmat o‘zgarsa, ushbu siyosat yangilanadi.",
+      "Sun’iy intellekt javoblari noto‘g‘ri yoki to‘liq bo‘lmasligi mumkin. Chatga shaxsiy yoki maxfiy ma’lumot kiritmang.",
     ],
   },
   {
-    title: "Xizmat ko‘rsatuvchilar va saqlash hududi",
+    title: "Xizmat ko‘rsatuvchilar va ma’lumotlar joylashuvi",
     body: [
-      "Sayt Supabase’dan hisob va o‘qish ma’lumotlarini saqlash uchun, Vercel’dan esa saytni joylashtirish uchun foydalanadi. Supabase boshqaruv sahifasidagi loyiha hududi Yaponiya, Tokio (ap-northeast-1) deb ko‘rsatilgan. Sun’iy intellekt so‘rovlari hozir Gemini xizmatiga yuboriladi. Shu sabab ayrim ma’lumotlar O‘zbekiston tashqarisida qayta ishlanishi mumkin.",
-      "O‘zbekiston qonunchiligida ma’lumotlarni boshqa davlatda saqlash va qayta ishlashga doir talablar mavjud. Ushbu sahifadagi hudud haqidagi ma’lumot xizmatning hozirgi sozlamasini bildiradi; bunday uzatishga taalluqli talablar alohida tekshirilishi lozim. Qonun talab qilgan holatlar bundan mustasno, shaxsiy ma’lumotlar maxfiy saqlanadi.",
+      "Sayt hisob va o‘qish ma’lumotlarini saqlash uchun Supabase’dan, saytni joylashtirish uchun Vercel’dan foydalanadi. Supabase loyihasi hududi Tokio, Yaponiya (ap-northeast-1) deb ko‘rsatilgan. Sun’iy intellekt so‘rovlari hozir Gemini’ga yuboriladi. Shu sabab ayrim ma’lumotlar O‘zbekiston tashqarisida qayta ishlanishi mumkin.",
+      "O‘zbekistonda ma’lumotlarni boshqa davlatlarda saqlash va qayta ishlashga oid talablar mavjud. Bu yerda ko‘rsatilgan hudud xizmat sozlamasi haqidagi ma’lumot bo‘lib, qonuniy muvofiqlik xulosasi emas; bunday uzatishlarga tegishli talablarni alohida tekshirish kerak. Qonunchilikka muvofiq, shaxsiy ma’lumotlar maxfiy saqlanadi.",
     ],
   },
   {
     title: "Saqlash muddati va o‘chirish so‘rovlari",
     body: [
-      "Hisob va o‘qish ma’lumotlari xizmatni ko‘rsatish va natijalar tarixini saqlash uchun bazada turadi. Yordam murojaatlari uchun mo‘ljallangan saqlash muddati 12 oy; hozir avtomatik o‘chirish yo‘lga qo‘yilmagan, shuning uchun bu muddat amalda kafolatlanmaydi. O‘chirishni so‘rash uchun bizga murojaat qiling.",
-      "Ma’lumotlaringizdan nusxa olish, ularni tuzatish yoki o‘chirish haqida Yordam shakli, elektron pochta yoki Telegram orqali murojaat qilishingiz mumkin. So‘rov amaldagi qonunchilik va saqlash majburiyatlariga muvofiq ko‘rib chiqiladi. Hisobdan chiqishning o‘zi ma’lumotlarni o‘chirish so‘rovi hisoblanmaydi.",
+      "Hisob va o‘qish ma’lumotlari xizmatni ko‘rsatish va natijalar tarixini saqlash uchun bazada turadi. Yordam murojaatlari uchun mo‘ljallangan saqlash muddati 12 oy, ammo avtomatik o‘chirish hozir joriy etilmagan, shuning uchun bu muddat amalda kafolatlanmaydi. O‘chirishni so‘rash uchun bizga murojaat qiling.",
+      "Sun’iy intellekt suhbatlari uchun hozir avtomatik o‘chirish jadvali yo‘q. Brauzerdagi nusxalar o‘chirib tashlanmaguncha yoki ustiga yangisi yozilmaguncha local storage’da qolishi mumkin; chat faqat oxirgi 24 soatdagi suhbatlarni tiklaydi.",
+      "Ma’lumotlaringiz nusxasi, tuzatilishi yoki o‘chirilishini Yordam shakli, elektron pochta yoki Telegram orqali so‘rashingiz mumkin. So‘rovlar amaldagi qonun va saqlash majburiyatlarini hisobga olgan holda ko‘rib chiqiladi. Hisobdan chiqish ma’lumotlarni o‘z-o‘zidan o‘chirmaydi.",
     ],
   },
   {
-    title: "Voyaga yetmaganlar",
+    title: "18 yoshga to‘lmagan foydalanuvchilar",
     body: [
-      "18 yoshga to‘lmagan foydalanuvchi hisob ochishdan oldin ota-onasi yoki qonuniy vakilining roziligini olishi kerak. Qonuniy vakil rozilik bermagan bo‘lsa, hisob ochmang va shaxsiy ma’lumot yubormang.",
+      "Agar 18 yoshga to‘lmagan bo‘lsangiz, hisob yaratishdan oldin ota-onangiz yoki qonuniy vakilingiz roziligini oling. Rozilik bo‘lmasa, hisob yaratmang va shaxsiy ma’lumot yubormang.",
     ],
   },
   {
     title: "Siyosatdagi o‘zgarishlar",
     body: [
-      "Xizmat yoki qonuniy talablar o‘zgarganda ushbu sahifa yangilanishi mumkin. Amaldagi nusxani shu manzildan ko‘rishingiz mumkin.",
+      "Xizmat yoki tegishli talablar o‘zgarganda ushbu sahifa yangilanishi mumkin. Amaldagi nusxasi shu manzilda e’lon qilinadi.",
     ],
   },
 ];
@@ -68,8 +70,8 @@ export default function PrivacyPage() {
   return (
     <LegalPage
       title="Maxfiylik siyosati"
-      updatedAt="2026-yil 2-oktabr"
-      intro="Ushbu sahifada IELTS Reading Pro hisob, o‘qish, yordam va sun’iy intellekt xizmatlaridan foydalanish paytida qanday ma’lumotlarni qayta ishlashi bayon etiladi."
+      updatedAt="2026-yil 3-oktabr"
+      intro="Ushbu sahifada IELTS Reading Pro hisob, o‘qish mashqlari, yordam va sun’iy intellekt xizmatlaridan foydalanilganda ma’lumotlarni qanday qayta ishlashi bayon etiladi."
       sections={sections}
     />
   );

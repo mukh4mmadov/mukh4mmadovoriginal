@@ -1,43 +1,69 @@
 # Muhammadov IELTS Reading
 
-A personal IELTS Reading practice site: timed passages, exam-format
-questions, and a built-in highlighter with question-by-question feedback.
+IELTS Reading practice platform built with Next.js and Supabase. The app
+includes timed passages, answer checking, statistics, support tickets, admin
+pages, and an AI reading coach that currently defaults to Gemini.
 
-## Run it
+## Local development
+
+1. Install dependencies:
 
 ```bash
 npm install
+```
+
+2. Copy `.env.local.example` to `.env.local` and fill in the required
+   environment variables.
+3. Start the dev server:
+
+```bash
 npm run dev
 ```
 
-Then open http://localhost:3000
+4. Open `http://localhost:3000`.
 
-## What's inside
+## Validation
 
-- `/` — landing page
-- `/reading` — list of all passages → `/reading/[slug]` for the test itself
-- `src/data/readingTests.ts` — all passages live here. Add a new object to
-  the array to add a new passage; it appears automatically on the list page
-  and gets its own route. Currently ships with 3 original passages (Day 1–3)
-  as a starting point — add up to 30 or more the same way.
-- `src/components/reading/ReadingTestPlayer.tsx` — split-screen passage +
-  question renderer (True/False/Not Given, Matching Headings, Sentence
-  Completion, Multiple Choice)
-- `src/components/reading/HighlightablePassage.tsx` — the built-in
-  highlighter: click or drag across words to mark them in yellow, green, or
-  pink, with an eraser tool
+```bash
+npm run lint
+npm run build
+```
 
-## Adding your own passages
+`npm run build` also runs the reading-data prebuild check.
 
-Open `src/data/readingTests.ts` and copy one of the existing objects in the
-`readingTests` array as a template — give it a new `slug` (used in the URL),
-`title`, paragraphs, and question groups, matching one of the four
-supported question types.
+For the browser smoke test, keep the app running locally first:
 
-## A note on content
+```bash
+npm run qa:public
+```
 
-Passages here are original compositions written to match the format and
-difficulty of the IELTS Academic Reading test — not copied from Cambridge
-or any other publisher, since that content is copyrighted and can't be
-reproduced here. Add your own licensed or personal material through the
-data file above.
+The QA script expects the site at `http://localhost:3000` unless
+`QA_BASE_URL` is set.
+
+## Main routes
+
+- `/` - landing page
+- `/reading` and `/reading/[slug]` - passage list and reading test player
+- `/review` - saved review queue
+- `/statistics` - learner statistics
+- `/privacy`, `/terms`, `/contact` - public legal and contact pages
+- `/my-feedback` - learner support history
+- `/admin/*` - admin dashboard, analytics, users, changelog, roadmap, support
+
+## Project structure
+
+- `src/app` - App Router pages, layouts, metadata, API routes
+- `src/components` - UI for reading, auth, admin, AI, and shared elements
+- `src/data/readingTests_new.js` - current reading passages and questions
+- `src/lib/reading` - timer, outbox, legacy import, and review helpers
+- `src/lib/supabase` - auth, repositories, services, and server helpers
+- `supabase/migrations` - schema and RLS migrations
+- `supabase/review` - rollout and verification SQL for production changes
+- `scripts/check-reading-data.mjs` - validates passage/question integrity
+- `scripts/qa-public-ui.mjs` - browser-based public route smoke test
+
+## Content note
+
+Do not casually change passage wording, question wording, answer keys, word
+counts, or difficulty labels. Treat reading content as production data unless
+an approved correction is required.

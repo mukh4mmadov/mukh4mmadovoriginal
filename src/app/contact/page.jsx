@@ -3,7 +3,7 @@ import LegalPage from "@/components/shared/LegalPage";
 
 export const metadata = {
   title: "Aloqa",
-  description: "IELTS Reading Pro yordam va aloqa ma’lumotlari.",
+  description: "IELTS Reading Pro bo‘yicha yordam va aloqa ma’lumotlari.",
   alternates: { canonical: "/contact" },
 };
 
@@ -11,13 +11,13 @@ export default function ContactPage() {
   return (
     <LegalPage
       title="Aloqa"
-      updatedAt="2026-yil 2-oktabr"
-      intro="IELTS Reading Pro bo‘yicha savol va muammolar uchun quyidagi aloqa yo‘llaridan foydalaning. Loyiha uchun mas’ul shaxs — Muhammadov Ozodbek."
+      updatedAt="2026-yil 3-oktabr"
+      intro="IELTS Reading Pro bo‘yicha savol yoki muammolar yuzasidan quyidagi aloqa usullaridan foydalaning. Xizmatni Muhammadov Ozodbek yuritadi."
       sections={[
         {
           title: "Yordam va murojaatlar",
           body: [
-            "Odatiy savol yoki muammo uchun saytning Yordam shaklidan foydalaning. Yuborgan so‘rovingiz va unga javoblar yordam tarixida saqlanishi mumkin.",
+            "Oddiy savol va muammolar uchun saytdagi Yordam shaklidan foydalaning. Murojaatingiz va unga berilgan javoblar yordam tarixida saqlanishi mumkin.",
             <>
               Shoshilinch yoki jiddiy masalalarda{" "}
               <a
@@ -28,7 +28,7 @@ export default function ContactPage() {
               >
                 Telegram: @mukh4mmadov
               </a>{" "}
-              orqali bog‘laning. Elektron pochta:{" "}
+              . Elektron pochta:{" "}
               <a
                 className="text-brand-300 underline"
                 href="mailto:omuhammadov467@gmail.com"
@@ -40,18 +40,18 @@ export default function ContactPage() {
           ],
         },
         {
-          title: "Ma’lumot va shartlar",
+          title: "Siyosat va shartlar",
           body: [
             <>
-              Shaxsiy ma’lumotlarga oid ma’lumot uchun{" "}
+              Shaxsiy ma’lumotlar haqida Maxfiylik siyosatida ma’lumot berilgan:{" "}
               <Link className="text-brand-300 underline" href="/privacy">
                 Maxfiylik siyosati
               </Link>
-              ni, xizmat qoidalari uchun{" "}
+              . Xizmat qoidalari bilan bu yerda tanishing:{" "}
               <Link className="text-brand-300 underline" href="/terms">
                 Foydalanish shartlari
               </Link>
-              ni ko‘ring.
+              .
             </>,
           ],
         },

@@ -113,7 +113,7 @@ export async function POST(request) {
       );
     }
 
-    const { messages, context, personality, provider = "openai" } = body;
+    const { messages, context, personality, provider = "gemini" } = body;
 
     const ip =
       request.headers.get("x-forwarded-for")?.split(",")[0] ||

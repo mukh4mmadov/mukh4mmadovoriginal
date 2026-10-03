@@ -58,6 +58,32 @@ const attempt = { attemptKey: 'stable-key', passageId: 'sample', durationSeconds
 }
 {
   const storage = new MemoryStorage();
+  enqueueReadingAttempt(storage, 'http-validation-user', { ...attempt, attemptKey: 'bad-http-payload' });
+  enqueueReadingAttempt(storage, 'http-validation-user', { ...attempt, attemptKey: 'valid-after-http-error' });
+  const sent = [];
+  const result = await flushReadingAttemptOutbox(storage, 'http-validation-user', { rpc: async (_name, args) => {
+    sent.push(args.p_attempt_key);
+    if (args.p_attempt_key === 'bad-http-payload') return { data: null, error: { status: 400, message: 'Invalid question answer exceeds the allowed limit' } };
+    return { data: 'saved', error: null };
+  } });
+  assert.deepEqual(sent, ['bad-http-payload', 'valid-after-http-error']);
+  assert.deepEqual(result, { confirmed: 1, pending: 0 });
+  assert.equal(readFailedReadingAttempts(storage, 'http-validation-user')[0].attemptKey, 'bad-http-payload');
+}
+for (const [userId, error] of [
+  ['generic-http-400-user', { status: 400, message: 'Bad Request' }],
+  ['server-500-user', { status: 500, message: 'Internal Server Error' }],
+  ['unauthorized-user', { status: 401, message: 'Authentication required' }],
+  ['forbidden-user', { status: 403, message: 'Permission denied' }],
+]) {
+  const storage = new MemoryStorage();
+  enqueueReadingAttempt(storage, userId, { ...attempt, attemptKey: userId });
+  const result = await flushReadingAttemptOutbox(storage, userId, { rpc: async () => ({ data: null, error }) });
+  assert.deepEqual(result, { confirmed: 0, pending: 1 }, `error for ${userId} should remain retryable`);
+  assert.equal(readFailedReadingAttempts(storage, userId).length, 0, `error for ${userId} must not be moved to failed queue`);
+}
+{
+  const storage = new MemoryStorage();
   enqueueReadingAttempt(storage, 'locked-user', { ...attempt, attemptKey: 'only-once' });
   let calls = 0;
   let release;
@@ -101,13 +127,19 @@ const attempt = { attemptKey: 'stable-key', passageId: 'sample', durationSeconds
   assert.equal(result.notImportable, 1);
 }
 
-console.log('PASS: validation poison-pill continuation, transient retention, duplicate confirmation, flush locking, and legacy import filtering');
+console.log('PASS: validation poison-pill continuation, HTTP payload classification, transient network/server/auth retention, duplicate confirmation, flush locking, and legacy import filtering');
 assert.equal(formatAggregateTime(59), '59s');
 assert.equal(formatAggregateTime(90), '2m');
 assert.equal(formatAggregateTime(3600), '1h 0m');
 const tashkentRange = getTashkentTodayRange(new Date('2026-10-02T10:00:00.000Z'));
 assert.equal(new Date(tashkentRange.from).toISOString(), '2026-10-01T19:00:00.000Z');
 assert.equal(new Date(tashkentRange.to).toISOString(), '2026-10-02T19:00:00.000Z');
+const beforeTashkentMidnight = getTashkentTodayRange(new Date('2026-10-01T18:59:59.999Z'));
+assert.equal(new Date(beforeTashkentMidnight.from).toISOString(), '2026-09-30T19:00:00.000Z');
+assert.equal(new Date(beforeTashkentMidnight.to).toISOString(), '2026-10-01T19:00:00.000Z');
+const atTashkentMidnight = getTashkentTodayRange(new Date('2026-10-01T19:00:00.000Z'));
+assert.equal(new Date(atTashkentMidnight.from).toISOString(), '2026-10-01T19:00:00.000Z');
+assert.equal(new Date(atTashkentMidnight.to).toISOString(), '2026-10-02T19:00:00.000Z');
 console.log('PASS: aggregate time rounding and Asia/Tashkent day range');
 assert.equal(getHomeMetricsSource({ attempts: 0 }, { attempts: 0 }, true), 'local-older');
 assert.equal(getHomeMetricsSource({ attempts: 0 }, { attempts: 4 }, true), 'server');
