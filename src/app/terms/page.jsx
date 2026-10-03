@@ -1,57 +1,57 @@
 import LegalPage from "@/components/shared/LegalPage";
 
 export const metadata = {
-  title: "Foydalanish shartlari",
-  description: "IELTS Reading Pro xizmatidan foydalanish shartlari.",
+  title: "Terms of Use",
+  description: "Terms for using the IELTS Reading Pro service.",
   alternates: { canonical: "/terms" },
 };
 
 const sections = [
   {
-    title: "Xizmat haqida",
+    title: "About the Service",
     body: [
-      "IELTS Reading Pro mustaqil o‘qish va mashq qilish uchun yaratilgan xizmatdir. U IELTS tashkiloti yoki Cambridge bilan bog‘liq rasmiy xizmat emas.",
-      "Mashq natijalari o‘quv maqsadida ko‘rsatiladi. Ular rasmiy IELTS bahosi, imtihon natijasi yoki kelajakdagi natijaning kafolati hisoblanmaydi.",
+      "IELTS Reading Pro is an independent service for reading practice and study. It is not an official service of, or affiliated with, the IELTS organization or Cambridge.",
+      "Practice results are provided for educational purposes. They are not official IELTS scores or exam results and do not guarantee future results.",
     ],
   },
   {
-    title: "Hisob va rozilik",
+    title: "Accounts and Consent",
     body: [
-      "Hisob ochishda to‘g‘ri ma’lumot bering va hisobga kirish vositalarini ehtiyot qiling. Hisobingiz orqali amalga oshirilgan harakatlar uchun javobgarlik sizda bo‘ladi.",
-      "18 yoshga to‘lmagan bo‘lsangiz, hisob ochish yoki shaxsiy ma’lumot yuborishdan oldin ota-onangiz yoki qonuniy vakilingiz roziligini olishingiz kerak.",
+      "Provide accurate information when creating an account and keep your sign-in credentials secure. You are responsible for activity carried out through your account.",
+      "If you are under 18, you must obtain permission from your parent or legal guardian before creating an account or submitting personal information.",
     ],
   },
   {
-    title: "Sun’iy intellekt javoblari",
+    title: "AI Responses",
     body: [
-      "Sun’iy intellekt javoblari avtomatik yaratiladi; ularda xato yoki noaniqlik bo‘lishi mumkin. Muhim ta’limiy qarorlarni faqat shu javoblarga tayanib qabul qilmang.",
-      "Sun’iy intellektga maxfiy, shaxsiy yoki boshqa birovga tegishli ma’lumotlarni yubormang. Javob tayyorlash uchun suhbat mazmuni tashqi xizmatga uzatilishi mumkin; tafsilotlar Maxfiylik siyosatida berilgan.",
+      "AI responses are generated automatically and may contain errors or inaccuracies. Do not rely on them alone when making important educational decisions.",
+      "Do not send confidential, personal, or another person's information to the AI. Conversation content may be sent to an external service to generate a response; see the Privacy Policy for details.",
     ],
   },
   {
-    title: "Maqbul foydalanish",
+    title: "Acceptable Use",
     body: [
-      "Xizmatdan qonuniy va ta’limiy maqsadlarda foydalaning. Xizmat ishiga xalaqit berish, ruxsatsiz kirishga urinish, zararli dastur yuborish yoki boshqalarning huquqlarini buzish mumkin emas.",
-      "Yuborayotgan matn, xabar yoki murojaatni taqdim etish huquqiga ega ekaningizga ishonch hosil qiling.",
+      "Use the service for lawful and educational purposes. You must not interfere with the service, attempt unauthorized access, submit malicious software, or violate another person's rights.",
+      "Make sure you have the right to submit any text, message, or request you send.",
     ],
   },
   {
-    title: "Bepul xizmat va kelajakdagi pullik imkoniyatlar",
+    title: "Free Service and Potential Paid Features",
     body: [
-      "Hozirgi xizmat bepul. Kelajakda pullik imkoniyatlar qo‘shilishi mumkin. Bunday imkoniyatlar joriy etilsa, xariddan oldin narx va to‘lov shartlari ko‘rsatiladi.",
+      "The service is currently free. Paid features may be added in the future. If they are introduced, pricing and payment terms will be shown before purchase.",
     ],
   },
   {
-    title: "Xizmatdagi o‘zgarishlar",
+    title: "Changes to the Service",
     body: [
-      "Xizmat, uning imkoniyatlari va ushbu shartlar o‘zgarishi mumkin. Yangilangan shartlar shu sahifada e’lon qilinadi. Xizmatdan foydalanishni davom ettirishdan oldin amaldagi matnni ko‘rib chiqing.",
+      "The service, its features, and these Terms may change. Updated Terms will be published on this page. Review the current version before continuing to use the service.",
     ],
   },
   {
-    title: "Aloqa",
+    title: "Contact",
     body: [
-      "Savol, shikoyat yoki yordam so‘rovi uchun saytdagi Yordam shaklidan foydalaning. Shoshilinch masalalarda omuhammadov467@gmail.com elektron pochtasi yoki Telegram’dagi @mukh4mmadov orqali bog‘laning.",
-      "Ushbu shartlarga O‘zbekiston qonunchiligi tatbiq etiladi. Qonun bilan cheklab bo‘lmaydigan huquq va majburiyatlar o‘z kuchida qoladi.",
+      "Use the Help form on the website for questions, complaints, or support requests. For urgent matters, contact us at omuhammadov467@gmail.com or on Telegram at @mukh4mmadov.",
+      "These Terms are governed by the laws of Uzbekistan. Rights and obligations that cannot be limited by law remain in effect.",
     ],
   },
 ];
@@ -59,9 +59,9 @@ const sections = [
 export default function TermsPage() {
   return (
     <LegalPage
-      title="Foydalanish shartlari"
-      updatedAt="2026-yil 3-oktabr"
-      intro="IELTS Reading Pro’dan foydalanish orqali ushbu shartlarga amal qilishga rozilik bildirasiz. Rozi bo‘lmasangiz, hisob ochmang va xizmatdan foydalanmang."
+      title="Terms of Use"
+      updatedAt="October 3, 2026"
+      intro="By using IELTS Reading Pro, you agree to follow these Terms. If you do not agree, do not create an account or use the service."
       sections={sections}
     />
   );

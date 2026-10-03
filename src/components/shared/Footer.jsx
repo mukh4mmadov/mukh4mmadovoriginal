@@ -29,10 +29,10 @@ export default function Footer() {
               <span className="text-sm">Telegram</span>
             </a>
           </div>
-          <nav aria-label="Huquqiy ma’lumotlar" className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm text-slate-400">
-            <Link href="/privacy" className="hover:text-white">Maxfiylik siyosati</Link>
-            <Link href="/terms" className="hover:text-white">Foydalanish shartlari</Link>
-            <Link href="/contact" className="hover:text-white">Aloqa</Link>
+          <nav aria-label="Legal information" className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm text-slate-400">
+            <Link href="/privacy" className="hover:text-white">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-white">Terms of Use</Link>
+            <Link href="/contact" className="hover:text-white">Contact</Link>
           </nav>
           <p className="text-xs text-slate-400 text-center">
             © {new Date().getFullYear()} Muhammadov IELTS Reading. All rights reserved.

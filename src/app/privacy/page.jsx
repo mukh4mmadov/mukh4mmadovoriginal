@@ -1,67 +1,67 @@
 import LegalPage from "@/components/shared/LegalPage";
 
 export const metadata = {
-  title: "Maxfiylik siyosati",
-  description: "IELTS Reading Pro shaxsiy ma’lumotlarni qanday qayta ishlashi haqida.",
+  title: "Privacy Policy",
+  description: "How IELTS Reading Pro collects and processes personal data.",
   alternates: { canonical: "/privacy" },
 };
 
 const sections = [
   {
-    title: "Xizmat egasi va bog‘lanish",
+    title: "Service Operator and Contact",
     body: [
-      "IELTS Reading Pro xizmatini Muhammadov Ozodbek yuritadi. Saytdagi Yordam shakli, omuhammadov467@gmail.com elektron pochtasi yoki Telegram’dagi @mukh4mmadov orqali bog‘lanishingiz mumkin.",
-      "Loyiha O‘zbekistonda yuritiladi. Bu sahifada pochta manzili ko‘rsatilmagan; yozma murojaatlar uchun yuqoridagi elektron aloqa usullaridan foydalaning.",
+      "IELTS Reading Pro is operated by Muhammadov Ozodbek. You can contact us through the Help form on the website, by email at omuhammadov467@gmail.com, or on Telegram at @mukh4mmadov.",
+      "The project is operated from Uzbekistan. No postal address is provided on this page; please use the electronic contact methods listed above for written inquiries.",
     ],
   },
   {
-    title: "Yig‘iladigan ma’lumotlar",
+    title: "Information We Collect",
     body: [
-      "Hisob yaratganingizda elektron pochta manzilingiz va profilingizga kiritgan ismingiz kabi hisob ma’lumotlari qayta ishlanishi mumkin.",
-      "O‘qish mashqlari tanlangan javoblar, natijalar, sarflangan vaqt, jarayon va matndagi belgilaringizni saqlashi mumkin. Yordam murojaatlarida mavzu, xabar, muammoni takrorlash qadamlari, sahifa manzili va javoblar yordam tarixida saqlanishi mumkin.",
-      "Sun’iy intellekt bilan suhbatlar brauzeringizning local storage xotirasida saqlanadi. Hisobga kirgan bo‘lsangiz, javob olingan suhbatlar Supabase’da hisobingizga ham saqlanadi.",
-      "Sayt ko‘rinish sozlamalari, vaqtinchalik o‘qish qoralamalari va tahlilga rozilik kabi tanlovlarni brauzeringizning local storage xotirasida saqlashi mumkin.",
+      "When you create an account, we may process account information such as your email address and the name in your profile.",
+      "Reading exercises may save your selected answers, results, time spent, progress, and text highlights. Support requests and replies may be stored in your support history, including the subject, message, steps to reproduce an issue, page URL, and our responses.",
+      "AI conversations are stored in your browser's local storage. If you are signed in, conversations that received a response are also saved to your account in Supabase.",
+      "The website may store your display preferences, temporary reading drafts, and choices such as analytics consent in your browser's local storage.",
     ],
   },
   {
-    title: "Ma’lumotlardan foydalanish",
+    title: "How We Use Information",
     body: [
-      "Bu ma’lumotlardan hisobingizni boshqarish, o‘qish natijalari va statistikani ko‘rsatish, yordam murojaatlariga javob berish, xavfsizlikni ta’minlash va saytdagi muammolarni aniqlash uchun foydalanamiz.",
-      "Foydalanish tahlili ixtiyoriy. Uni Sozlamalar bo‘limida yoqish yoki o‘chirish mumkin. Tahlilga rozilik berilmagan bo‘lsa, tahlil hodisalari yuborilmaydi. Tahlil hodisalariga savol matni yoki javoblar kiritilmaydi.",
+      "We use this information to manage your account, show reading results and statistics, respond to support requests, maintain security, and identify problems with the website.",
+      "Usage analytics are optional. You can turn them on or off in Settings. Analytics events are not sent unless you have enabled analytics. Analytics events do not include question text or your answers.",
     ],
   },
   {
-    title: "Sun’iy intellekt yordamchisi",
+    title: "AI Coach",
     body: [
-      "Sun’iy intellekt chatidan foydalanganingizda, xabaringiz, suhbatdagi oldingi xabarlar hamda tegishli matn yoki savol konteksti javob yaratish uchun tashqi sun’iy intellekt xizmatiga yuboriladi. Hozirda saytda Gemini ishlatiladi. Xizmat o‘zgarsa, ushbu siyosat yangilanadi.",
-      "Sun’iy intellekt javoblari noto‘g‘ri yoki to‘liq bo‘lmasligi mumkin. Chatga shaxsiy yoki maxfiy ma’lumot kiritmang.",
+      "When you use the AI chat, your message, previous messages in the conversation, and relevant passage or question context are sent to an external AI service to generate a response. The website currently uses Gemini. This policy will be updated if the service changes.",
+      "AI responses may be inaccurate or incomplete. Do not enter personal or confidential information in the chat.",
     ],
   },
   {
-    title: "Xizmat ko‘rsatuvchilar va ma’lumotlar joylashuvi",
+    title: "Service Providers and Data Location",
     body: [
-      "Sayt hisob va o‘qish ma’lumotlarini saqlash uchun Supabase’dan, saytni joylashtirish uchun Vercel’dan foydalanadi. Supabase loyihasi hududi Tokio, Yaponiya (ap-northeast-1) deb ko‘rsatilgan. Sun’iy intellekt so‘rovlari hozir Gemini’ga yuboriladi. Shu sabab ayrim ma’lumotlar O‘zbekiston tashqarisida qayta ishlanishi mumkin.",
-      "O‘zbekistonda ma’lumotlarni boshqa davlatlarda saqlash va qayta ishlashga oid talablar mavjud. Bu yerda ko‘rsatilgan hudud xizmat sozlamasi haqidagi ma’lumot bo‘lib, qonuniy muvofiqlik xulosasi emas; bunday uzatishlarga tegishli talablarni alohida tekshirish kerak. Qonunchilikka muvofiq, shaxsiy ma’lumotlar maxfiy saqlanadi.",
+      "The website uses Supabase to store account and reading data and Vercel to host the website. The Supabase project region is listed as Tokyo, Japan (ap-northeast-1). AI requests are currently sent to Gemini. As a result, some information may be processed outside Uzbekistan.",
+      "Uzbekistan has requirements concerning the storage and processing of data in other countries. The region listed here describes a service configuration and is not a conclusion about legal compliance; applicable requirements for such transfers should be reviewed separately. Personal data is kept confidential as required by applicable law.",
     ],
   },
   {
-    title: "Saqlash muddati va o‘chirish so‘rovlari",
+    title: "Retention and Deletion Requests",
     body: [
-      "Hisob va o‘qish ma’lumotlari xizmatni ko‘rsatish va natijalar tarixini saqlash uchun bazada turadi. Yordam murojaatlari uchun mo‘ljallangan saqlash muddati 12 oy, ammo avtomatik o‘chirish hozir joriy etilmagan, shuning uchun bu muddat amalda kafolatlanmaydi. O‘chirishni so‘rash uchun bizga murojaat qiling.",
-      "Sun’iy intellekt suhbatlari uchun hozir avtomatik o‘chirish jadvali yo‘q. Brauzerdagi nusxalar o‘chirib tashlanmaguncha yoki ustiga yangisi yozilmaguncha local storage’da qolishi mumkin; chat faqat oxirgi 24 soatdagi suhbatlarni tiklaydi.",
-      "Ma’lumotlaringiz nusxasi, tuzatilishi yoki o‘chirilishini Yordam shakli, elektron pochta yoki Telegram orqali so‘rashingiz mumkin. So‘rovlar amaldagi qonun va saqlash majburiyatlarini hisobga olgan holda ko‘rib chiqiladi. Hisobdan chiqish ma’lumotlarni o‘z-o‘zidan o‘chirmaydi.",
+      "Account and reading data remain in the database to provide the service and maintain your results history. Support requests are intended to be retained for 12 months, but automatic deletion has not been implemented, so this period is not currently guaranteed in practice. Contact us to request deletion.",
+      "There is currently no automatic deletion schedule for AI conversations. Copies in your browser may remain in local storage until they are deleted or overwritten; the chat restores only conversations from the last 24 hours.",
+      "You can request a copy, correction, or deletion of your information through the Help form, by email, or on Telegram. Requests are reviewed in light of applicable laws and retention obligations. Signing out does not by itself delete your information.",
     ],
   },
   {
-    title: "18 yoshga to‘lmagan foydalanuvchilar",
+    title: "Users Under 18",
     body: [
-      "Agar 18 yoshga to‘lmagan bo‘lsangiz, hisob yaratishdan oldin ota-onangiz yoki qonuniy vakilingiz roziligini oling. Rozilik bo‘lmasa, hisob yaratmang va shaxsiy ma’lumot yubormang.",
+      "If you are under 18, obtain permission from your parent or legal guardian before creating an account. If you do not have permission, do not create an account or submit personal information.",
     ],
   },
   {
-    title: "Siyosatdagi o‘zgarishlar",
+    title: "Changes to This Policy",
     body: [
-      "Xizmat yoki tegishli talablar o‘zgarganda ushbu sahifa yangilanishi mumkin. Amaldagi nusxasi shu manzilda e’lon qilinadi.",
+      "This page may be updated when the service or applicable requirements change. The current version will be published at this URL.",
     ],
   },
 ];
@@ -69,9 +69,9 @@ const sections = [
 export default function PrivacyPage() {
   return (
     <LegalPage
-      title="Maxfiylik siyosati"
-      updatedAt="2026-yil 3-oktabr"
-      intro="Ushbu sahifada IELTS Reading Pro hisob, o‘qish mashqlari, yordam va sun’iy intellekt xizmatlaridan foydalanilganda ma’lumotlarni qanday qayta ishlashi bayon etiladi."
+      title="Privacy Policy"
+      updatedAt="October 3, 2026"
+      intro="This page explains how IELTS Reading Pro processes information when you use accounts, reading exercises, support, and AI features."
       sections={sections}
     />
   );

@@ -4,10 +4,10 @@ export default function LegalPage({ title, updatedAt, intro, sections }) {
   return (
     <main className="mx-auto min-h-[70vh] max-w-4xl px-4 py-12 text-slate-200 sm:px-6 lg:px-8">
       <Link href="/" className="text-sm text-brand-300 hover:text-brand-200">
-        ← Bosh sahifaga qaytish
+        ← Back to home
       </Link>
       <header className="mt-8 border-b border-white/10 pb-8">
-        <p className="text-sm text-slate-400">Oxirgi yangilanish: {updatedAt}</p>
+        <p className="text-sm text-slate-400">Last updated: {updatedAt}</p>
         <h1 className="mt-3 font-display text-3xl font-bold text-white sm:text-4xl">{title}</h1>
         <p className="mt-4 leading-7 text-slate-300">{intro}</p>
       </header>

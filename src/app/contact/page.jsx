@@ -2,24 +2,24 @@ import Link from "next/link";
 import LegalPage from "@/components/shared/LegalPage";
 
 export const metadata = {
-  title: "Aloqa",
-  description: "IELTS Reading Pro bo‘yicha yordam va aloqa ma’lumotlari.",
+  title: "Contact",
+  description: "Contact and support information for IELTS Reading Pro.",
   alternates: { canonical: "/contact" },
 };
 
 export default function ContactPage() {
   return (
     <LegalPage
-      title="Aloqa"
-      updatedAt="2026-yil 3-oktabr"
-      intro="IELTS Reading Pro bo‘yicha savol yoki muammolar yuzasidan quyidagi aloqa usullaridan foydalaning. Xizmatni Muhammadov Ozodbek yuritadi."
+      title="Contact"
+      updatedAt="October 3, 2026"
+      intro="For questions or issues with IELTS Reading Pro, use one of the contact methods below. The service is operated by Muhammadov Ozodbek."
       sections={[
         {
-          title: "Yordam va murojaatlar",
+          title: "Help and Inquiries",
           body: [
-            "Oddiy savol va muammolar uchun saytdagi Yordam shaklidan foydalaning. Murojaatingiz va unga berilgan javoblar yordam tarixida saqlanishi mumkin.",
+            "For general questions and issues, use the Help form on the website. Your request and our replies may be stored in your support history.",
             <>
-              Shoshilinch yoki jiddiy masalalarda{" "}
+              For urgent or serious matters, contact us on{" "}
               <a
                 className="text-brand-300 underline"
                 href="https://t.me/mukh4mmadov"
@@ -27,8 +27,7 @@ export default function ContactPage() {
                 rel="noopener noreferrer"
               >
                 Telegram: @mukh4mmadov
-              </a>{" "}
-              . Elektron pochta:{" "}
+              </a>. Email: {" "}
               <a
                 className="text-brand-300 underline"
                 href="mailto:omuhammadov467@gmail.com"
@@ -40,16 +39,16 @@ export default function ContactPage() {
           ],
         },
         {
-          title: "Siyosat va shartlar",
+          title: "Policies and Terms",
           body: [
             <>
-              Shaxsiy ma’lumotlar haqida Maxfiylik siyosatida ma’lumot berilgan:{" "}
+              The Privacy Policy explains how personal information is handled:{" "}
               <Link className="text-brand-300 underline" href="/privacy">
-                Maxfiylik siyosati
+                Privacy Policy
               </Link>
-              . Xizmat qoidalari bilan bu yerda tanishing:{" "}
+              . Read the rules for using the service here:{" "}
               <Link className="text-brand-300 underline" href="/terms">
-                Foydalanish shartlari
+                Terms of Use
               </Link>
               .
             </>,
