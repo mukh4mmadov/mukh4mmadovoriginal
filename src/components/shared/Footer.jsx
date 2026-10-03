@@ -6,7 +6,7 @@ import { requestHelpDialog } from "@/lib/help-dialog";
 
 export default function Footer() {
   return (
-    <footer className="border-t border-white/10 bg-surface/50">
+    <footer className="ielts-site-footer border-t border-white/10 bg-surface/50">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center justify-center gap-6">
           <div className="flex items-center gap-6">

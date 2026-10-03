@@ -127,6 +127,16 @@ export default function ReadingTestPlayer({ passage }) {
             userAnswer: answers[currentQuestion.id],
           }
         : undefined,
+      activeTest: {
+        answeredQuestions: questions.filter((question) => answers[question.id] !== undefined && answers[question.id] !== "").map((question) => ({
+          number: questions.findIndex((candidate) => candidate.id === question.id) + 1,
+          id: question.id,
+          prompt: question.prompt || `${question.before || ""} ___ ${question.after || ""}`,
+          type: question.type,
+          selectedAnswer: answers[question.id],
+          correctAnswer: question.answer,
+        })),
+      },
     };
   };
 

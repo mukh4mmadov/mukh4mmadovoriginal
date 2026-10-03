@@ -25,6 +25,9 @@ export default function ReadingListPage() {
   const readingTests = readingTestsModule?.readingTests || [];
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDifficulty, setSelectedDifficulty] = useState("all");
+  const [selectedType, setSelectedType] = useState("all");
+  const [completionFilter, setCompletionFilter] = useState("all");
+  const [sortOrder, setSortOrder] = useState("recommended");
   const [progressData, setProgressData] = useState({});
   const [progressLoaded, setProgressLoaded] = useState(false);
   const [reviewQueueCount, setReviewQueueCount] = useState(0);
@@ -148,15 +151,24 @@ export default function ReadingListPage() {
 
   const filteredTests = useMemo(() => {
     if (!readingTests || readingTests.length === 0) return [];
-    return readingTests.filter((t) => {
+    const filtered = readingTests.filter((t) => {
       const matchesSearch =
         t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         t.subtitle.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesDifficulty =
         selectedDifficulty === "all" || t.difficulty === selectedDifficulty;
-      return matchesSearch && matchesDifficulty;
+      const questions = t.passages.flatMap((passage) => passage.questionGroups.flatMap((group) => group.questions));
+      const matchesType = selectedType === "all" || questions.some((question) => question.type === selectedType);
+      const completed = Boolean(progressData[t.slug]?.completed);
+      const matchesCompletion = completionFilter === "all" || (completionFilter === "completed" ? completed : !completed);
+      return matchesSearch && matchesDifficulty && matchesType && matchesCompletion;
     });
-  }, [searchQuery, selectedDifficulty, readingTests]);
+    if (sortOrder === "title") filtered.sort((a, b) => a.title.localeCompare(b.title));
+    if (sortOrder === "shortest") filtered.sort((a, b) => a.passages[0].wordCount - b.passages[0].wordCount);
+    if (sortOrder === "questions") filtered.sort((a, b) => a.passages[0].questionGroups.flatMap((g) => g.questions).length - b.passages[0].questionGroups.flatMap((g) => g.questions).length);
+    return filtered;
+  }, [searchQuery, selectedDifficulty, selectedType, completionFilter, sortOrder, progressData, readingTests]);
+  const availableQuestionTypes = useMemo(() => [...new Set(readingTests.flatMap((test) => test.passages.flatMap((passage) => passage.questionGroups.flatMap((group) => group.questions.map((question) => question.type)))))].sort(), [readingTests]);
 
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
@@ -181,6 +193,11 @@ export default function ReadingListPage() {
         Each passage is timed at 20 minutes and mixes question types the way the
         real Academic Reading test does.
       </p>
+
+      <section className="mb-8 flex flex-col justify-between gap-4 rounded-2xl border border-brand-400/20 bg-brand-500/10 p-5 sm:flex-row sm:items-center" aria-labelledby="mock-test-promo">
+        <div><p className="text-xs font-bold uppercase tracking-wider text-brand-300">Full exam simulation</p><h2 id="mock-test-promo" className="mt-1 text-lg font-bold text-white">Three passages · 40 questions · 60 minutes</h2><p className="mt-1 text-sm text-slate-300">Practice in a focused, full-screen test layout with a complete result review.</p></div>
+        <Link href="/mock" className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-brand-500 px-5 font-semibold text-white">Open full mock</Link>
+      </section>
 
       {reviewQueueCount > 0 && (
         <Link href="/review" className="mb-8 inline-flex min-h-11 items-center gap-2 rounded-xl border border-amber-400/20 bg-amber-400/10 px-4 py-2 text-sm font-semibold text-amber-200 transition hover:bg-amber-400/20">
@@ -275,7 +292,13 @@ export default function ReadingListPage() {
         </div>
       </div>
 
-      {(searchQuery || selectedDifficulty !== "all") && (
+      <div className="mb-6 flex flex-wrap gap-3">
+        <label className="sr-only" htmlFor="type-filter">Filter by question type</label><select id="type-filter" value={selectedType} onChange={(event)=>setSelectedType(event.target.value)} className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-white"><option value="all">All question types</option>{availableQuestionTypes.map((type)=><option key={type} value={type}>{type.replace(/-/g," ")}</option>)}</select>
+        <label className="sr-only" htmlFor="completion-filter">Filter by completion</label><select id="completion-filter" value={completionFilter} onChange={(event)=>setCompletionFilter(event.target.value)} className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-white"><option value="all">All progress</option><option value="not-started">Not completed</option><option value="completed">Completed</option></select>
+        <label className="sr-only" htmlFor="sort-order">Sort passages</label><select id="sort-order" value={sortOrder} onChange={(event)=>setSortOrder(event.target.value)} className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-white"><option value="recommended">Recommended order</option><option value="title">Title A–Z</option><option value="shortest">Shortest passage</option><option value="questions">Fewest questions</option></select>
+      </div>
+
+      {(searchQuery || selectedDifficulty !== "all" || selectedType !== "all" || completionFilter !== "all" || sortOrder !== "recommended") && (
         <div className="mb-6 flex items-center gap-2 text-sm text-slate-400">
           <span>Showing filtered results</span>
           <button
@@ -283,6 +306,7 @@ export default function ReadingListPage() {
             onClick={() => {
               setSearchQuery("");
               setSelectedDifficulty("all");
+              setSelectedType("all"); setCompletionFilter("all"); setSortOrder("recommended");
             }}
             className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm font-medium text-slate-300 transition hover:bg-white/10"
           >

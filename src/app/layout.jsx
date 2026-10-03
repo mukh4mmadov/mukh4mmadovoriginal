@@ -64,6 +64,9 @@ export default function RootLayout({
         <Script id="offline-navigation-guard" strategy="beforeInteractive">
           {'if (navigator.onLine === false && location.pathname !== "/offline.html") location.replace("/offline.html");'}
         </Script>
+        <Script id="theme-preference" strategy="beforeInteractive">
+          {'try { var p=localStorage.getItem("themePreference"); var d=p==="dark"||(p==="system"?matchMedia("(prefers-color-scheme: dark)").matches:p===null&&(localStorage.getItem("darkMode")==="true"||matchMedia("(prefers-color-scheme: dark)").matches)); document.documentElement.classList.toggle("dark",d); document.documentElement.style.colorScheme=d?"dark":"light"; } catch(e) {}'}
+        </Script>
         <AuthProvider>
           <ReadingAttemptOutboxSync />
           <PushActivityTracker />

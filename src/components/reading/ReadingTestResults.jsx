@@ -272,7 +272,7 @@ export default function ReadingTestResults({
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand-400">
             {passage.subtitle}
           </p>
-          <h1 className="font-display text-3xl font-bold">{passage.title}</h1>
+          <h1 className="min-w-0 break-words font-display text-2xl font-bold [overflow-wrap:anywhere] sm:text-3xl">{passage.title}</h1>
         </div>
       </div>
 

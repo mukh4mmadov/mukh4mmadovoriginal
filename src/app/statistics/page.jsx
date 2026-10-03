@@ -18,6 +18,8 @@ export default function StatisticsPage() {
   const userId = user?.id;
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [goal, setGoal] = useState({ target_band: '6.5', exam_date: '', study_days_per_week: 4 });
   const [goalLoading, setGoalLoading] = useState(true);
   const [initialGoalLoaded, setInitialGoalLoaded] = useState(false);
@@ -29,13 +31,20 @@ export default function StatisticsPage() {
     if (isLoading) return;
     let isActive = true;
     setLoading(true);
+    setLoadError("");
 
-    Promise.all([
+    let timeoutId;
+    const metricsRequest = Promise.all([
       getAllProgress(userId),
       userId
         ? getMyReadingMetrics(supabase, '1970-01-01T00:00:00.000Z', new Date().toISOString())
         : Promise.resolve(null),
-    ]).then(([progress, serverMetrics]) => {
+    ]);
+    const timeoutRequest = new Promise((_, reject) => {
+      timeoutId = window.setTimeout(() => reject(new Error("Statistics took too long to load.")), 12000);
+    });
+
+    Promise.race([metricsRequest, timeoutRequest]).then(([progress, serverMetrics]) => {
         if (!isActive) return;
 
         const completedProgress = (progress || []).filter((item) => item.completed);
@@ -106,13 +115,17 @@ export default function StatisticsPage() {
       }).catch(() => {
         if (!isActive) return;
         setStats(null);
+        setLoadError("Your statistics could not be loaded. Check your connection and retry.");
         setLoading(false);
+    }).finally(() => {
+      window.clearTimeout(timeoutId);
     });
 
     return () => {
       isActive = false;
+      window.clearTimeout(timeoutId);
     };
-  }, [userId, isLoading]);
+  }, [userId, isLoading, loadAttempt]);
 
   useEffect(() => {
     if (!userId) {
@@ -233,6 +246,10 @@ export default function StatisticsPage() {
         </div>
       </main>
     );
+  }
+
+  if (loadError) {
+    return <main className="mx-auto min-h-[70vh] max-w-2xl px-4 py-16 text-center"><h1 className="text-3xl font-bold text-white">Statistics are unavailable</h1><p role="alert" className="mt-3 text-slate-300">{loadError}</p><button type="button" onClick={() => setLoadAttempt((attempt) => attempt + 1)} className="mt-6 min-h-11 rounded-lg bg-brand-500 px-5 font-semibold text-white">Retry</button></main>;
   }
 
   const daysUntilExam = (() => {

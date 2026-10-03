@@ -186,8 +186,8 @@ export default function AdminLayout({ children }) {
             <button
               onClick={() => setIsSidebarOpen(false)}
               className="lg:hidden text-slate-400 hover:text-white"
-              aria-label="Close admin navigation"
-              title="Close admin navigation"
+              aria-label={isSidebarOpen ? 'Close admin navigation' : 'Open admin navigation'}
+              title={isSidebarOpen ? 'Close admin navigation' : 'Open admin navigation'}
             >
               <X size={20} />
             </button>
@@ -231,14 +231,14 @@ export default function AdminLayout({ children }) {
         <header className="sticky top-0 z-30 border-b border-white/10 bg-surface/80 backdrop-blur-xl">
           <div className="flex items-center justify-between px-4 py-4">
             <button
-              onClick={() => setIsSidebarOpen(true)}
+              onClick={() => setIsSidebarOpen((open) => !open)}
               className="lg:hidden text-slate-400 hover:text-white"
-              aria-label="Open admin navigation"
-              title="Open admin navigation"
+              aria-label={isSidebarOpen ? 'Close admin navigation' : 'Open admin navigation'}
+              title={isSidebarOpen ? 'Close admin navigation' : 'Open admin navigation'}
               aria-expanded={isSidebarOpen}
               aria-controls="admin-navigation"
             >
-              <Menu size={24} />
+              {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
             <div className="flex items-center gap-4">
               <div className="text-sm text-slate-400">
