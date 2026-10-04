@@ -1,6 +1,20 @@
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  async redirects() {
+    return [
+      {
+        source: "/mock",
+        destination: "/readingmock",
+        permanent: true,
+      },
+      {
+        source: "/admin/mock-results",
+        destination: "/admin/readingmock-results",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

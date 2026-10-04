@@ -156,7 +156,7 @@ export default function AdminLayout({ children }) {
   const navigation = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
     { name: 'Users', href: '/admin/users', icon: Users },
-    { name: 'Mock Results', href: '/admin/mock-results', icon: ClipboardList },
+    { name: 'Reading Mock Results', href: '/admin/readingmock-results', icon: ClipboardList },
     { name: 'Support inbox', href: '/admin/support', icon: MessageSquare },
     { name: 'Donation inbox', href: '/admin/donations', icon: HeartHandshake },
     { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
