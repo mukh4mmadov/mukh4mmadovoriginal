@@ -14,6 +14,7 @@ import {
   X,
   Users,
   ClipboardList,
+  HeartHandshake,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { isAdmin } from '@/lib/supabase/auth-admin';
@@ -157,6 +158,7 @@ export default function AdminLayout({ children }) {
     { name: 'Users', href: '/admin/users', icon: Users },
     { name: 'Mock Results', href: '/admin/mock-results', icon: ClipboardList },
     { name: 'Support inbox', href: '/admin/support', icon: MessageSquare },
+    { name: 'Donation inbox', href: '/admin/donations', icon: HeartHandshake },
     { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
     { name: 'Changelog', href: '/admin/changelog', icon: FileText },
     { name: 'Roadmap', href: '/admin/roadmap', icon: Map },

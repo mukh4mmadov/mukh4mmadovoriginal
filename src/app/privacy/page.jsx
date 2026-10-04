@@ -19,6 +19,7 @@ const sections = [
     body: [
       "When you create an account, we may process account information such as your email address and the name in your profile.",
       "Reading exercises may save your selected answers, results, time spent, progress, and text highlights. Support requests and replies may be stored in your support history, including the subject, message, steps to reproduce an issue, page URL, and our responses.",
+      "If you submit a donation screenshot, the image and messages in its separate donation review chat are stored in Supabase. The submitting account and site administrators can view them. Please hide unrelated personal or card details before uploading.",
       "AI conversations are stored in your browser's local storage. If you are signed in, conversations that received a response are also saved to your account in Supabase.",
       "The website may store your display preferences, temporary reading drafts, and choices such as analytics consent in your browser's local storage.",
     ],
@@ -48,6 +49,7 @@ const sections = [
     title: "Retention and Deletion Requests",
     body: [
       "Account and reading data remain in the database to provide the service and maintain your results history. Support requests are intended to be retained for 12 months, but automatic deletion has not been implemented, so this period is not currently guaranteed in practice. Contact us to request deletion.",
+      "Donation screenshots and donation chat messages have no automatic deletion schedule. Contact us to request deletion.",
       "There is currently no automatic deletion schedule for AI conversations. Copies in your browser may remain in local storage until they are deleted or overwritten; the chat restores only conversations from the last 24 hours.",
       "You can request a copy, correction, or deletion of your information through the Help form, by email, or on Telegram. Requests are reviewed in light of applicable laws and retention obligations. Signing out does not by itself delete your information.",
     ],

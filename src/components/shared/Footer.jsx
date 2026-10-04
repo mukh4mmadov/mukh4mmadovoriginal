@@ -33,6 +33,7 @@ export default function Footer() {
             <Link href="/privacy" className="hover:text-white">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-white">Terms of Use</Link>
             <Link href="/contact" className="hover:text-white">Contact</Link>
+            <Link href="/support" className="hover:text-white">Support the project</Link>
           </nav>
           <p className="text-xs text-slate-400 text-center">
             © {new Date().getFullYear()} Mukh4mmadov IELTS. All rights reserved.
