@@ -16,6 +16,7 @@ import HighlightableText from "@/components/reading/HighlightableText";
 import { useTextHighlight } from "@/hooks/useTextHighlight";
 import ReadingTestResults from "@/components/reading/ReadingTestResults";
 import FullscreenToggle from "@/components/shared/FullscreenToggle";
+import ReportPassageIssueButton from "@/components/shared/ReportPassageIssueButton";
 import AIChatPanel from "@/components/ai/AIChatPanel";
 import { saveAttemptLocally, saveProgress } from "@/lib/progressTracker";
 import { useAuth } from "@/contexts/AuthContext";
@@ -634,8 +635,8 @@ export default function ReadingTestPlayer({ passage }) {
   return (
     <main className="flex h-screen min-h-[100dvh] flex-col bg-surface text-slate-100">
       <div className="flex-shrink-0 border-b border-white/10 bg-surface/95 px-3 py-2 backdrop-blur-sm md:px-6 md:py-3">
-        <div className="mx-auto flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-          <div className="w-full min-w-0 sm:flex-1">
+        <div className="mx-auto flex flex-col items-stretch gap-2 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
+          <div className="w-full min-w-0 lg:flex-1">
             <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.28em] text-brand-400 sm:text-[11px]">
               {passage.subtitle}
             </p>
@@ -645,7 +646,7 @@ export default function ReadingTestPlayer({ passage }) {
             <p className="mt-1 text-[10px] text-slate-400 sm:text-xs">{passage.provenanceLabel}</p>
             {draftRestored && draftSaveStatus && <p role="status" className="mt-1 text-[10px] text-slate-500 sm:text-xs">{draftSaveStatus}</p>}
           </div>
-          <div className="flex w-full flex-wrap items-center justify-between gap-1 sm:w-auto sm:flex-shrink-0 sm:justify-end sm:gap-2 md:gap-3">
+          <div className="flex w-full flex-wrap items-center justify-between gap-1 lg:w-auto lg:flex-shrink-0 lg:justify-end lg:gap-2 xl:gap-3">
             <div className="hidden sm:flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-1">
               <Type size={14} className="text-slate-400" />
               {["small", "medium", "large"].map((size) => (
@@ -682,6 +683,7 @@ export default function ReadingTestPlayer({ passage }) {
               <span className="hidden sm:inline">AI Coach</span>
             </button>
             <FullscreenToggle className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-slate-200 transition hover:bg-white/10" />
+            <ReportPassageIssueButton passageTitle={passage.title} />
             <button
               type="button"
               className="btn-primary text-sm sm:text-base"

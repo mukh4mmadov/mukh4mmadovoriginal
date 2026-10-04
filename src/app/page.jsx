@@ -133,7 +133,7 @@ export default function Home() {
             <h2 className="text-lg font-semibold text-white">Today's Study</h2>
           </div>
           <div className="mb-3 text-sm text-slate-400">
-            {todayStats.source === 'server' ? 'Today in Asia/Tashkent, from saved reading attempts.' : todayStats.source === 'local-older' ? 'Older results are not saved to your account yet.' : 'Today from local passage progress while server metrics are unavailable.'}
+            {todayStats.source === 'server' ? 'Today in Asia/Tashkent, from saved reading attempts.' : todayStats.source === 'local-older' ? 'Older results are stored in this browser and are not saved to your account yet.' : 'Today from this browser only; progress is not synced to your account. Server metrics are unavailable.'}
             {todayStats.source === 'local-older' && <button type="button" onClick={requestOpenMigrationPrompt} className="ml-2 underline underline-offset-2 hover:text-white">Save older results</button>}
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -260,7 +260,7 @@ export default function Home() {
           <div className="flex items-center gap-4">
             <BookOpen className="text-brand-400" size={28} aria-hidden="true" />
             <div>
-              <h3 className="font-display text-xl font-bold">All passages</h3>
+              <h3 className="font-display text-xl font-bold">Reading</h3>
               <p className="text-sm text-slate-400">
                 Pick any passage to start.
               </p>

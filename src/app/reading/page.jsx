@@ -196,7 +196,7 @@ export default function ReadingListPage() {
 
       <section className="mb-8 flex flex-col justify-between gap-4 rounded-2xl border border-brand-400/20 bg-brand-500/10 p-5 sm:flex-row sm:items-center" aria-labelledby="mock-test-promo">
         <div><p className="text-xs font-bold uppercase tracking-wider text-brand-300">Full exam simulation</p><h2 id="mock-test-promo" className="mt-1 text-lg font-bold text-white">Three passages · 40 questions · 60 minutes</h2><p className="mt-1 text-sm text-slate-300">Practice in a focused, full-screen test layout with a complete result review.</p></div>
-        <Link href="/mock" className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-brand-500 px-5 font-semibold text-white">Open full mock</Link>
+        <Link href="/mock" className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-brand-500 px-5 font-semibold text-white">Open reading full mock</Link>
       </section>
 
       {reviewQueueCount > 0 && (

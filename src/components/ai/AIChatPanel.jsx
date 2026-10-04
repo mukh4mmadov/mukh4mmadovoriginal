@@ -17,6 +17,8 @@ import { analyticsService } from "@/lib/analytics/analytics.service";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import { aiConversationsRepository } from "@/lib/supabase/repositories/ai-conversations.repository";
 
+const AI_DATA_CONSENT_KEY = "ai-data-sharing-consent-v1";
+
 const SUGGESTED_PROMPTS = [
   { icon: "💡", label: "Hint", prompt: "Give me a hint for this question." },
   {
@@ -99,12 +101,23 @@ export default function AIChatPanel({
   const [panelWidth, setPanelWidth] = useState(370);
   const [isResizing, setIsResizing] = useState(false);
   const [copiedMessageId, setCopiedMessageId] = useState(null);
+  const [showAIDataConsent, setShowAIDataConsent] = useState(false);
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const aiConsentAcceptedRef = useRef(false);
+  const pendingConsentPromptRef = useRef("");
   const modalRef = useModalAccessibility(isOpen, onClose, inputRef);
   const isLoadingRef = useRef(false);
   const conversationKey = `ai-conversation-${context.passage.title}`;
+
+  useEffect(() => {
+    try {
+      aiConsentAcceptedRef.current = localStorage.getItem(AI_DATA_CONSENT_KEY) === "accepted";
+    } catch {
+      aiConsentAcceptedRef.current = false;
+    }
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -196,6 +209,12 @@ export default function AIChatPanel({
 
   const handleSend = async (prompt) => {
     if (!prompt.trim() || isLoadingRef.current) return;
+
+    if (!aiConsentAcceptedRef.current) {
+      pendingConsentPromptRef.current = prompt.trim();
+      setShowAIDataConsent(true);
+      return;
+    }
 
     isLoadingRef.current = true;
 
@@ -408,6 +427,22 @@ export default function AIChatPanel({
       setError(null);
       handleSend(lastFailedPrompt);
     }
+  };
+
+  const acceptAIDataConsent = () => {
+    aiConsentAcceptedRef.current = true;
+    try {
+      localStorage.setItem(AI_DATA_CONSENT_KEY, "accepted");
+    } catch {}
+    const pendingPrompt = pendingConsentPromptRef.current;
+    pendingConsentPromptRef.current = "";
+    setShowAIDataConsent(false);
+    if (pendingPrompt) void handleSend(pendingPrompt);
+  };
+
+  const declineAIDataConsent = () => {
+    pendingConsentPromptRef.current = "";
+    setShowAIDataConsent(false);
   };
 
   if (!isOpen) return null;
@@ -906,6 +941,19 @@ export default function AIChatPanel({
           </div>
         </div>
       </div>
+      {showAIDataConsent && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/75 p-4" role="presentation">
+          <section role="dialog" aria-modal="true" aria-labelledby="ai-data-consent-title" className="w-full max-w-lg rounded-2xl border border-white/15 bg-slate-900 p-6 text-slate-100 shadow-2xl">
+            <h2 id="ai-data-consent-title" className="text-xl font-bold text-white">Before using the AI Coach</h2>
+            <p className="mt-3 text-sm leading-6 text-slate-300">If you continue, your message, this conversation, the relevant passage and question, and answer context from an active test may be sent to Google Gemini to prepare a reply. Successful conversations are also saved in this browser and, when you are signed in, to your account. We do not automatically delete saved AI conversations.</p>
+            <p className="mt-3 text-sm text-slate-300">This choice is saved in this browser. You can reset it in Settings. Read the <a href="/privacy" className="text-brand-300 underline">Privacy Policy</a>.</p>
+            <div className="mt-6 flex flex-wrap justify-end gap-3">
+              <button type="button" onClick={declineAIDataConsent} className="min-h-11 rounded-lg border border-white/20 px-4 text-sm font-semibold text-slate-200 hover:bg-white/5">Not now</button>
+              <button type="button" onClick={acceptAIDataConsent} className="min-h-11 rounded-lg bg-brand-500 px-4 text-sm font-bold text-white hover:bg-brand-400">I understand and continue</button>
+            </div>
+          </section>
+        </div>
+      )}
     </>
   );
 }

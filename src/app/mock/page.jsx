@@ -10,6 +10,7 @@ import { readingMockAttemptsRepository } from "@/lib/supabase/repositories/readi
 import HighlightablePassage from "@/components/reading/HighlightablePassage";
 import FullMockPicker from "@/components/reading/FullMockPicker";
 import FullscreenToggle from "@/components/shared/FullscreenToggle";
+import ReportPassageIssueButton from "@/components/shared/ReportPassageIssueButton";
 import { useTextHighlight } from "@/hooks/useTextHighlight";
 import { ArrowLeft, Type } from "lucide-react";
 
@@ -376,6 +377,7 @@ export default function FullMockPage() {
           {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}
         </div>
         <FullscreenToggle className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-slate-500 bg-slate-900 text-slate-100 transition hover:bg-slate-800" />
+        {selectedPassage && <ReportPassageIssueButton passageTitle={selectedPassage.title} className="border-slate-500 bg-slate-900 text-slate-100 hover:bg-slate-800" />}
         <button type="button" onClick={() => setShowSubmit(true)} className="min-h-10 rounded-lg bg-sky-500 px-3 text-sm font-bold text-slate-950 hover:bg-sky-400 sm:px-4">Submit</button>
       </div>
     </header>

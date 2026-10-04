@@ -19,8 +19,8 @@ const sections = [
     body: [
       "When you create an account, we may process account information such as your email address and the name in your profile.",
       "Reading exercises may save your selected answers, results, time spent, progress, and text highlights. Support requests and replies may be stored in your support history, including the subject, message, steps to reproduce an issue, page URL, and our responses.",
-      "If you submit a donation screenshot, the image and messages in its separate donation review chat are stored in Supabase. The submitting account and site administrators can view them. Please hide unrelated personal or card details before uploading.",
-      "AI conversations are stored in your browser's local storage. If you are signed in, conversations that received a response are also saved to your account in Supabase.",
+      "If you submit a donation screenshot, the image and messages in its separate donation review chat are stored in Supabase. The submitting account and site administrators can view them. After the review is marked confirmed or not confirmed, the screenshot is scheduled for automatic deletion after 3 months. Please hide unrelated personal or card details before uploading.",
+      "AI conversations are stored in your browser's local storage. If you are signed in, conversations that received a response are also saved to your account in Supabase. Before your first AI request in each browser, the site asks you to acknowledge what is sent and how it is stored; you can reset that choice in Settings.",
       "The website may store your display preferences, temporary reading drafts, and choices such as analytics consent in your browser's local storage.",
     ],
   },
@@ -34,7 +34,7 @@ const sections = [
   {
     title: "AI Coach",
     body: [
-      "When you use the AI chat, your message, previous messages in the conversation, and relevant passage or question context are sent to an external AI service to generate a response. The website currently uses Gemini. This policy will be updated if the service changes.",
+      "When you use the AI chat, your message, previous messages in the conversation, relevant passage and question context, and answer context from an active test may be sent to Google Gemini to generate a response. Successful conversations are saved in your browser and, if you are signed in, to your account. This policy will be updated if the service changes.",
       "AI responses may be inaccurate or incomplete. Do not enter personal or confidential information in the chat.",
     ],
   },
@@ -48,10 +48,9 @@ const sections = [
   {
     title: "Retention and Deletion Requests",
     body: [
-      "Account and reading data remain in the database to provide the service and maintain your results history. Support requests are intended to be retained for 12 months, but automatic deletion has not been implemented, so this period is not currently guaranteed in practice. Contact us to request deletion.",
-      "Donation screenshots and donation chat messages have no automatic deletion schedule. Contact us to request deletion.",
-      "There is currently no automatic deletion schedule for AI conversations. Copies in your browser may remain in local storage until they are deleted or overwritten; the chat restores only conversations from the last 24 hours.",
-      "You can request a copy, correction, or deletion of your information through the Help form, by email, or on Telegram. Requests are reviewed in light of applicable laws and retention obligations. Signing out does not by itself delete your information.",
+      "Account and reading history are kept while your account is active. Analytics events are scheduled for deletion after 12 months. Resolved support requests are scheduled for deletion 12 months after closure; older support chats are scheduled for deletion after 12 months without activity. Donation screenshots are scheduled for deletion 3 months after the review is marked confirmed or not confirmed. Donation chat messages have no automatic deletion schedule and can be removed by request. These automatic schedules run once a day after they are enabled on the service.",
+      "Account-stored AI conversations are scheduled for deletion after 12 months without activity. Copies in your browser may remain in local storage until you delete them or they are overwritten; the chat restores only conversations from the last 24 hours.",
+      "You can request a copy, correction, or deletion of your information through the Help form, by email, or on Telegram. Requests are handled manually. For an account request, sign in and use the Help form, or contact us from the email address on the account so we can verify it. Requests are reviewed in light of applicable requirements. Signing out does not by itself delete your information.",
     ],
   },
   {
@@ -72,7 +71,7 @@ export default function PrivacyPage() {
   return (
     <LegalPage
       title="Privacy Policy"
-      updatedAt="October 3, 2026"
+      updatedAt="October 4, 2026"
       intro="This page explains how Mukh4mmadov IELTS processes information when you use accounts, reading exercises, support, and AI features."
       sections={sections}
     />

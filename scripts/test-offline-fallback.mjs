@@ -153,7 +153,7 @@ try {
 
   await emulateOnline();
   await waitFor('navigator.onLine === true', 'network recovery');
-  await waitFor('document.readyState === "complete" && document.body?.innerText?.includes("All passages")', 'home recovery after browser emulation');
+  await waitFor('document.readyState === "complete" && document.body?.innerText?.includes("Reading")', 'home recovery after browser emulation');
   await waitFor('caches.match("/__offline-status__").then((marker) => !marker)', 'offline marker cleanup after recovery');
 
   await emulateOffline();
@@ -164,7 +164,7 @@ try {
 
   await emulateOnline();
   await waitFor('navigator.onLine === true', 'network recovery after Contact fallback');
-  await waitFor('document.readyState === "complete" && document.body?.innerText?.includes("All passages")', 'home recovery after Contact fallback');
+  await waitFor('document.readyState === "complete" && document.body?.innerText?.includes("Reading")', 'home recovery after Contact fallback');
   await waitFor('caches.match("/__offline-status__").then((marker) => !marker)', 'offline marker cleanup after Contact recovery');
 
   // Also cover a true origin outage, independent of DevTools emulation.
@@ -181,7 +181,7 @@ try {
   await startServer();
   await waitFor('navigator.onLine === true', 'online state after origin recovery');
   await command('Page.navigate', { url: baseUrl });
-  await waitFor('document.readyState === "complete" && document.body?.innerText?.includes("All passages")', 'home page recovery');
+  await waitFor('document.readyState === "complete" && document.body?.innerText?.includes("Reading")', 'home page recovery');
   await waitFor('navigator.serviceWorker.controller !== null', 'service worker control after recovery');
 
   console.log('PASS: Home reload and Contact navigation show the offline fallback under browser offline emulation; recovery clears the marker and returns Home. A true origin outage also shows the fallback and recovers.');

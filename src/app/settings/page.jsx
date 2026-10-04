@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Settings, ArrowLeft, Bell, Moon, Sun, Globe } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
+const AI_DATA_CONSENT_KEY = 'ai-data-sharing-consent-v1';
+
 function decodeApplicationServerKey(base64String) {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
   const base64 = `${base64String}${padding}`.replace(/-/g, '+').replace(/_/g, '/');
@@ -24,6 +26,7 @@ export default function SettingsPage() {
   const [notificationPermission, setNotificationPermission] = useState('default');
   const [localReminderTime, setLocalReminderTime] = useState('');
   const [analyticsConsent, setAnalyticsConsent] = useState(false);
+  const [aiDataConsent, setAiDataConsent] = useState(false);
 
   const [formData, setFormData] = useState({
     theme: 'dark',
@@ -42,6 +45,7 @@ export default function SettingsPage() {
     const savedTheme = window.localStorage.getItem('themePreference');
     if (savedTheme) setFormData((current) => ({ ...current, theme: savedTheme }));
     setAnalyticsConsent(window.localStorage.getItem('analyticsConsent') === 'granted');
+    setAiDataConsent(window.localStorage.getItem(AI_DATA_CONSENT_KEY) === 'accepted');
   }, []);
 
   useEffect(() => {
@@ -262,6 +266,24 @@ export default function SettingsPage() {
                   disabled={isSubmitting}
                   className="h-5 w-5 shrink-0 accent-blue-500"
                 />
+              </div>
+              <div className="mt-3 flex flex-col gap-3 rounded-lg bg-white/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-medium text-white">AI data sharing</p>
+                  <p className="mt-1 max-w-xl text-sm text-slate-400">Your first AI request shows what context is sent to Google Gemini and how conversations are saved. You can reset that choice here.</p>
+                </div>
+                <button
+                  type="button"
+                  disabled={!aiDataConsent}
+                  onClick={() => {
+                    window.localStorage.removeItem(AI_DATA_CONSENT_KEY);
+                    setAiDataConsent(false);
+                    setSuccess('AI data-sharing notice will appear before your next AI request.');
+                  }}
+                  className="min-h-10 shrink-0 rounded-lg border border-white/15 px-3 text-sm font-medium text-slate-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {aiDataConsent ? 'Reset AI consent' : 'Consent not given'}
+                </button>
               </div>
             </div>
 

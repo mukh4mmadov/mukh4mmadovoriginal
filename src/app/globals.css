@@ -414,6 +414,59 @@
   background-color: #020617 !important;
 }
 
+/* Keep the donation page readable when global light-theme utility overrides run. */
+.support-experience {
+  color-scheme: dark;
+  color: #f8fafc !important;
+  background-color: #020617 !important;
+}
+
+html:not(.dark) main.support-experience,
+html:not(.dark) main.mock-experience {
+  color: #f8fafc !important;
+  background-color: #020617 !important;
+}
+
+html:not(.dark) .support-experience [class*="bg-slate-950"] {
+  background-color: #020617 !important;
+}
+
+html:not(.dark) .support-experience [class*="bg-slate-900"] {
+  background-color: #0f172a !important;
+}
+
+html:not(.dark) .support-experience [class*="bg-white/"] {
+  background-color: rgb(255 255 255 / 0.06) !important;
+}
+
+html:not(.dark) .support-experience [class*="border-white/"] {
+  border-color: rgb(148 163 184 / 0.32) !important;
+}
+
+html:not(.dark) .support-experience .text-white,
+html:not(.dark) .support-experience .text-slate-100 {
+  color: #f8fafc !important;
+}
+
+html:not(.dark) .support-experience .text-slate-200 {
+  color: #e2e8f0 !important;
+}
+
+html:not(.dark) .support-experience .text-slate-300 {
+  color: #cbd5e1 !important;
+}
+
+html:not(.dark) .support-experience .text-slate-400,
+html:not(.dark) .support-experience .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+html:not(.dark) .support-experience header {
+  background-color: transparent !important;
+  border-color: rgb(148 163 184 / 0.32) !important;
+  color: #f8fafc !important;
+}
+
 html:not(.dark) .mock-experience [class*="bg-slate-950"] {
   background-color: #020617 !important;
 }
