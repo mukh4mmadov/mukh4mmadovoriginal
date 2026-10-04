@@ -12,6 +12,9 @@ import { getReviewedQuestionCount } from '@/lib/reading/answer-review';
 import { formatAggregateTime, getMyReadingMetrics } from '@/lib/reading/metrics.mjs';
 import { requestOpenMigrationPrompt } from '@/lib/reading/migration-prompt-events.mjs';
 
+const LOCAL_STUDY_GOAL_KEY = 'ielts-reading-study-goal-v1';
+const DEFAULT_STUDY_GOAL = { target_band: '6.5', exam_date: '', study_days_per_week: 4 };
+
 export default function StatisticsPage() {
   const router = useRouter();
   const { user, isLoading } = useAuth();
@@ -129,14 +132,37 @@ export default function StatisticsPage() {
 
   useEffect(() => {
     if (!userId) {
-      setGoal({ target_band: '6.5', exam_date: '', study_days_per_week: 4 });
+      let localGoal = DEFAULT_STUDY_GOAL;
+      try {
+        const storedGoal = window.localStorage.getItem(LOCAL_STUDY_GOAL_KEY);
+        if (storedGoal) {
+          const parsedGoal = JSON.parse(storedGoal);
+          const targetBand = Number(parsedGoal?.target_band);
+          const studyDays = Number(parsedGoal?.study_days_per_week);
+          localGoal = {
+            target_band: Number.isFinite(targetBand) && targetBand >= 4 && targetBand <= 9
+              ? targetBand.toFixed(1)
+              : DEFAULT_STUDY_GOAL.target_band,
+            exam_date: typeof parsedGoal?.exam_date === 'string' ? parsedGoal.exam_date : '',
+            study_days_per_week: Number.isInteger(studyDays) && studyDays >= 2 && studyDays <= 7
+              ? studyDays
+              : DEFAULT_STUDY_GOAL.study_days_per_week,
+          };
+        }
+      } catch {
+        localGoal = DEFAULT_STUDY_GOAL;
+      }
+      setGoal(localGoal);
       setGoalLoading(false);
-      setInitialGoalLoaded(false);
+      setInitialGoalLoaded(true);
       setGoalMessage('');
       return;
     }
+    setGoalLoading(true);
+    setInitialGoalLoaded(false);
     if (!supabase) {
       setGoalMessage('Study goals are unavailable because the database is not configured.');
+      setInitialGoalLoaded(true);
       setGoalLoading(false);
       return;
     }
@@ -157,8 +183,10 @@ export default function StatisticsPage() {
             exam_date: data.exam_date || '',
             study_days_per_week: data.study_days_per_week || 4,
           });
-          setInitialGoalLoaded(true);
+        } else {
+          setGoal(DEFAULT_STUDY_GOAL);
         }
+        setInitialGoalLoaded(true);
         setGoalLoading(false);
       })
       .catch(() => {
@@ -174,10 +202,6 @@ export default function StatisticsPage() {
 
   const saveGoal = async (event) => {
     event.preventDefault();
-    if (!userId || !supabase) {
-      setGoalMessage('Study goals are unavailable because the database is not configured.');
-      return;
-    }
     if (!initialGoalLoaded) {
       setGoalMessage('Please wait for your saved goal to load before saving.');
       return;
@@ -186,6 +210,19 @@ export default function StatisticsPage() {
     setGoalMessage('');
 
     try {
+      if (!userId) {
+        window.localStorage.setItem(LOCAL_STUDY_GOAL_KEY, JSON.stringify({
+          target_band: Number(goal.target_band),
+          exam_date: goal.exam_date || '',
+          study_days_per_week: Number(goal.study_days_per_week),
+        }));
+        setGoalMessage('Your study plan is saved on this device.');
+        return;
+      }
+      if (!supabase) {
+        setGoalMessage('Study goals are unavailable because the database is not configured.');
+        return;
+      }
       const { error } = await supabase.from('study_goals').upsert({
         user_id: userId,
         target_band: Number(goal.target_band),
@@ -355,11 +392,23 @@ export default function StatisticsPage() {
             <CalendarDays className="text-brand-300" size={22} aria-hidden="true" />
             <div>
               <h2 id="study-plan-title" className="text-xl font-bold text-white">Your study plan</h2>
-              <p className="text-sm text-slate-300">Set your goal and get a practical weekly reading routine.</p>
+              <p className="text-sm text-slate-300">Set your target, exam date, and weekly reading routine.</p>
             </div>
           </div>
 
-          {userId ? <form onSubmit={saveGoal} className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-end">
+          <form onSubmit={saveGoal} className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-end">
+            <div>
+              <label htmlFor="target-band" className="mb-2 block text-sm font-medium text-slate-200">Target IELTS band</label>
+              <select
+                id="target-band"
+                value={goal.target_band}
+                onChange={(event) => setGoal((current) => ({ ...current, target_band: event.target.value }))}
+                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-white"
+                disabled={goalLoading || goalSaving}
+              >
+                {Array.from({ length: 11 }, (_, index) => (4 + index * 0.5).toFixed(1)).map((band) => <option key={band} value={band}>{band}</option>)}
+              </select>
+            </div>
             <div>
               <label htmlFor="exam-date" className="mb-2 block text-sm font-medium text-slate-200">Exam date (optional)</label>
               <input
@@ -391,7 +440,11 @@ export default function StatisticsPage() {
             >
               {goalSaving ? 'Saving…' : 'Save study plan'}
             </button>
-          </form> : <p className="mb-6 text-sm text-slate-300">Sign in to save a study plan across sessions. Your local statistics remain available here. <Link href="/login?next=%2Fstatistics" className="font-semibold text-brand-300 underline underline-offset-2 hover:text-white">Login</Link></p>}
+          </form>
+
+          <p className="mb-6 text-xs text-slate-400">
+            {userId ? 'Your plan is saved to your account.' : 'You can use this for free without an account. Your plan stays in this browser on this device.'}
+          </p>
 
           {goalMessage && <p role="status" className="mb-4 text-sm text-slate-200">{goalMessage}</p>}
 
@@ -402,7 +455,7 @@ export default function StatisticsPage() {
           ) : (
             <div className="rounded-xl border border-white/10 bg-slate-950/40 p-4">
               <p className="text-sm leading-6 text-slate-300">
-                Aim for {plannedStudyDays} reading practice {plannedStudyDays === 1 ? 'session' : 'sessions'} each week. For each session, complete one timed passage, then review the answers and explanations. {daysUntilExam !== null ? `Your exam is in ${daysUntilExam} days.` : 'Add an exam date to see your countdown.'}
+                Work toward band {goal.target_band}. Aim for {plannedStudyDays} reading practice {plannedStudyDays === 1 ? 'session' : 'sessions'} each week. For each session, complete one timed passage, then review the answers and explanations. {daysUntilExam !== null ? `Your exam is in ${daysUntilExam} days.` : 'Add an exam date to see your countdown.'}
                 {daysUntilExam !== null && daysUntilExam > 0 && daysUntilExam <= 14 ? ' With less than two weeks left, consider adding practice days if your schedule allows.' : ''}
               </p>
               <div className="mt-5 border-t border-white/10 pt-4">
