@@ -48,10 +48,13 @@ export default function AdminUsers() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-white">Users</h1>
+        <span className="text-sm text-slate-400">
+          Total: {users.length} · Active (with attempts): {filteredUsers.length}
+        </span>
       </div>
       <p className="-mt-6 mb-6 text-sm text-slate-400">
         These figures use exact saved attempts. Older progress without question-level attempt records is not included.
-        Showing {filteredUsers.length} matching {filteredUsers.length === 1 ? 'record' : 'records'}.
+        Showing {filteredUsers.length} active {filteredUsers.length === 1 ? 'record' : 'records'}.
       </p>
 
       <div className="mb-6">
@@ -88,7 +91,7 @@ export default function AdminUsers() {
               </tr>
             ) : (
               filteredUsers.map((user) => (
-                <tr key={user.user_id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
+                <tr key={user.id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
                   <td className="p-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-brand-500/20 rounded-full flex items-center justify-center">
@@ -112,7 +115,7 @@ export default function AdminUsers() {
                   </td>
                   <td className="p-4 text-center">
                     <button
-                      onClick={(event) => { detailsTriggerRef.current = event.currentTarget; setSelectedUserId(user.user_id); }}
+                      onClick={(event) => { detailsTriggerRef.current = event.currentTarget; setSelectedUserId(user.id); }}
                       className="px-3 py-1.5 bg-brand-500 hover:bg-brand-600 text-white text-sm rounded-lg transition-colors"
                     >
                       View Details

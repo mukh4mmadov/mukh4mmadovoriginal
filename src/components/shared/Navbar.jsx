@@ -119,7 +119,7 @@ export default function Navbar() {
     <header className="ielts-site-navbar sticky top-0 z-50 border-b border-white/10 bg-surface/80 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
         <Link
-          href="/"
+          href="/home"
           className="flex items-center gap-2 font-display text-xl font-semibold tracking-tight text-white"
         >
           <img src="/favicon.svg" alt="" className="h-8 w-8" />

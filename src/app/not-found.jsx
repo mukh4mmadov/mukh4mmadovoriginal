@@ -22,7 +22,7 @@ export default function NotFound() {
             <BookOpenText size={18} aria-hidden="true" />
             Browse passages
           </Link>
-          <Link href="/" className="btn-secondary">
+          <Link href="/home" className="btn-secondary">
             <ArrowLeft size={18} aria-hidden="true" />
             Go home
           </Link>

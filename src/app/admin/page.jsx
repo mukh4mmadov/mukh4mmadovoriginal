@@ -12,6 +12,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [metricsUnavailable, setMetricsUnavailable] = useState(false);
+  const [offline, setOffline] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -28,6 +29,7 @@ export default function AdminDashboard() {
         const metrics = Array.isArray(rpc.data) ? rpc.data[0] : rpc.data;
         const unavailable = Boolean(rpc.error || !metrics);
         setMetricsUnavailable(unavailable);
+        setOffline(false);
         setStats({
           users: metrics?.total_profiles ?? null,
           guests: metrics?.guest_profiles ?? null,
@@ -44,6 +46,7 @@ export default function AdminDashboard() {
         console.error('Error loading dashboard metrics:', error);
         if (active) {
           setMetricsUnavailable(true);
+          setOffline(!navigator.onLine);
           setStats({ activityEvents: 0, aiMessages: 0, supportTickets: 0 });
         }
       } finally {
@@ -54,7 +57,40 @@ export default function AdminDashboard() {
     return () => { active = false; };
   }, []);
 
+  useEffect(() => {
+    const handleOnline = () => {
+      setOffline(false);
+      setIsLoading(true);
+      location.reload();
+    };
+    const handleOffline = () => setOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   if (isLoading) return <AdminPageLoading label="Loading dashboard data" />;
+
+  if (offline) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
+        <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mb-4">
+          <span className="text-3xl">📶</span>
+        </div>
+        <h2 className="text-xl font-semibold text-white mb-2">You're offline</h2>
+        <p className="text-slate-400 mb-4">Please check your internet connection and try again.</p>
+        <button
+          onClick={() => location.reload()}
+          className="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   const metricValue = (value) => metricsUnavailable || value == null ? 'metrics unavailable' : value.toLocaleString();
   const statCards = [
@@ -73,7 +109,7 @@ export default function AdminDashboard() {
   return (
     <div>
       <h1 className="mb-2 text-3xl font-bold text-white">Dashboard Overview</h1>
-      <p className="mb-8 text-sm text-slate-400">Attempt totals use exact saved attempts. Activity Events (24h) counts analytics events, not learners.</p>
+      <p className="mb-8 text-sm text-slate-400">Total Users count includes all profiles. Users page shows only users with saved attempts. Activity Events (24h) counts analytics events, not learners.</p>
       <div className="mb-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {statCards.map(([name, value, Icon, color, bgColor, borderColor]) => (
           <div key={name} className={`rounded-xl border ${borderColor} ${bgColor} p-6 transition-all hover:scale-105`}>

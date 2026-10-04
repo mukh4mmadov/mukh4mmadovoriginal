@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function LegalPage({ title, updatedAt, intro, sections }) {
   return (
     <main className="mx-auto min-h-[70vh] max-w-4xl px-4 py-12 text-slate-200 sm:px-6 lg:px-8">
-      <Link href="/" className="text-sm text-brand-300 hover:text-brand-200">
+      <Link href="/home" className="text-sm text-brand-300 hover:text-brand-200">
         ← Back to home
       </Link>
       <header className="mt-8 border-b border-white/10 pb-8">
