@@ -154,7 +154,13 @@ export default function Navbar() {
             href="/reading"
             className="rounded-full px-3 py-2 transition-all hover:bg-white/10 hover:text-white"
           >
-            All passages
+            Reading
+          </Link>
+          <Link
+            href="/listening"
+            className="rounded-full px-3 py-2 transition-all hover:bg-white/10 hover:text-white"
+          >
+            Listening
           </Link>
           <Link
             href="/changelog"
@@ -272,7 +278,14 @@ export default function Navbar() {
               className="block rounded-lg px-4 py-3 text-white hover:bg-white/10 transition-colors"
               onClick={closeMobileMenu}
             >
-              All passages
+             Reading
+            </Link>
+            <Link
+              href="/listening"
+              className="block rounded-lg px-4 py-3 text-white hover:bg-white/10 transition-colors"
+              onClick={closeMobileMenu}
+            >
+              Listening
             </Link>
             <Link
               href="/changelog"
