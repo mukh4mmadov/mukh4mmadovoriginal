@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState, useRef, useEffect } from "react";
 import Timer from "@/components/shared/Timer";
@@ -65,6 +65,7 @@ export default function ReadingTestPlayer({ passage }) {
   const [events, setEvents] = useState([]);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [aiPersonality, setAiPersonality] = useState("friendly");
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const remainingSecondsRef = useRef(TIMER_DURATION_SECONDS);
   const remainingMillisecondsRef = useRef(TIMER_DURATION_MS);
   const timerDeadlineRef = useRef(Date.now() + TIMER_DURATION_MS);
@@ -148,6 +149,13 @@ export default function ReadingTestPlayer({ passage }) {
     updateLayout();
     media.addEventListener("change", updateLayout);
     return () => media.removeEventListener("change", updateLayout);
+  }, []);
+
+  useEffect(() => {
+    const sync = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", sync);
+    sync();
+    return () => document.removeEventListener("fullscreenchange", sync);
   }, []);
 
   useEffect(() => {
@@ -634,7 +642,7 @@ export default function ReadingTestPlayer({ passage }) {
 
   return (
     <main className="flex h-screen min-h-[100dvh] flex-col bg-surface text-slate-100">
-      <div className="flex-shrink-0 border-b border-white/10 bg-surface/95 px-3 py-2 backdrop-blur-sm md:px-6 md:py-3">
+      <div className={`flex-shrink-0 border-b border-white/10 bg-surface/95 px-3 py-2 backdrop-blur-sm md:px-6 md:py-3${isFullscreen ? " hidden" : ""}`}>
         <div className="mx-auto flex flex-col items-stretch gap-2 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
           <div className="w-full min-w-0 lg:flex-1">
             <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.28em] text-brand-400 sm:text-[11px]">
@@ -704,7 +712,7 @@ export default function ReadingTestPlayer({ passage }) {
           style={{ width: isDesktop ? `${panelWidth}%` : "100%" }}
         >
           <div className="mx-auto max-w-3xl">
-            <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm">
+            <div className={`mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm${isFullscreen ? " hidden" : ""}`}>
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
                   Reading passage
