@@ -8,10 +8,12 @@ import { isAnswerCorrect, formatAnswer } from "@/lib/reading/answer-review";
 import { supabase } from "@/lib/supabase/client";
 import { readingMockAttemptsRepository } from "@/lib/supabase/repositories/reading-mock-attempts.repository";
 import HighlightablePassage from "@/components/reading/HighlightablePassage";
+import FullscreenToggle from "@/components/shared/FullscreenToggle";
 import { useTextHighlight } from "@/hooks/useTextHighlight";
 import { ArrowLeft, Type } from "lucide-react";
 
 const DURATION = 60 * 60;
+const MOCK_TEXT_SIZE_CLASSES = { small: "text-sm", medium: "text-base", large: "text-lg" };
 const ANSWER_OPTIONS = {
   "true-false-not-given": ["TRUE", "FALSE", "NOT GIVEN"],
   "yes-no-not-given": ["YES", "NO", "NOT GIVEN"],
@@ -38,6 +40,7 @@ export default function FullMockPage() {
   const [answers, setAnswers] = useState({});
   const [remaining, setRemaining] = useState(DURATION);
   const [fontSize, setFontSize] = useState("medium");
+  const [questionFontSize, setQuestionFontSize] = useState("medium");
   const [result, setResult] = useState(null);
   const [showSubmit, setShowSubmit] = useState(false);
   const [showConsent, setShowConsent] = useState(false);
@@ -355,15 +358,22 @@ export default function FullMockPage() {
         <p className="text-sm font-bold text-sky-200">IELTS Reading Mock</p>
         <p className="text-xs text-slate-300">40 questions · {answeredCount} answered</p>
       </div>
-      <div className="flex items-center gap-2 sm:gap-3">
-        <label className="sr-only" htmlFor="mock-font-size">Passage text size</label>
+      <div className="flex w-full min-w-0 flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end sm:gap-3">
         <Type size={17} aria-hidden="true" />
-        <select id="mock-font-size" value={fontSize} onChange={(event) => setFontSize(event.target.value)} className="min-h-10 rounded-lg border border-slate-500 bg-slate-900 px-2 text-sm text-slate-100">
-          <option value="small">A−</option><option value="medium">A</option><option value="large">A+</option>
-        </select>
+        <label className="flex items-center gap-1 text-xs font-semibold text-slate-300" htmlFor="mock-font-size">Passage
+          <select id="mock-font-size" aria-label="Passage text size" value={fontSize} onChange={(event) => setFontSize(event.target.value)} className="min-h-10 rounded-lg border border-slate-500 bg-slate-900 px-2 text-sm text-slate-100">
+            <option value="small">A−</option><option value="medium">A</option><option value="large">A+</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-1 text-xs font-semibold text-slate-300" htmlFor="mock-question-font-size">Questions
+          <select id="mock-question-font-size" aria-label="Question text size" value={questionFontSize} onChange={(event) => setQuestionFontSize(event.target.value)} className="min-h-10 rounded-lg border border-slate-500 bg-slate-900 px-2 text-sm text-slate-100">
+            <option value="small">A−</option><option value="medium">A</option><option value="large">A+</option>
+          </select>
+        </label>
         <div aria-label={`${Math.floor(remaining / 60)} minutes ${remaining % 60} seconds remaining`} className={`min-w-[5.5rem] rounded-lg px-2 py-2 text-center font-mono text-lg font-bold tabular-nums ${remaining < 300 ? "bg-red-950 text-red-100" : "bg-slate-800 text-white"}`}>
           {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}
         </div>
+        <FullscreenToggle className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-slate-500 bg-slate-900 text-slate-100 transition hover:bg-slate-800" />
         <button type="button" onClick={() => setShowSubmit(true)} className="min-h-10 rounded-lg bg-sky-500 px-3 text-sm font-bold text-slate-950 hover:bg-sky-400 sm:px-4">Submit</button>
       </div>
     </header>
@@ -390,8 +400,8 @@ export default function FullMockPage() {
         <h2 className="sticky -top-3 z-10 -mx-3 -mt-3 mb-3 border-b border-white/10 bg-slate-900 px-3 py-2 text-sm font-bold text-sky-100 sm:-top-4 sm:-mx-4 sm:-mt-4 sm:px-4">Questions {questionRanges[selectedPassageIndex].first}–{questionRanges[selectedPassageIndex].last}</h2>
         <div className="space-y-3">
           {selectedPassage.questionGroups.map((group, groupIndex) => <section key={`${selectedPassage.slug}-group-${groupIndex}`} className="rounded-xl border border-white/15 bg-slate-800 p-3 sm:p-4">
-            <p className="mb-3 text-sm leading-6 text-slate-200">{group.instructions}</p>
-            {group.questions[0]?.type === "matching-headings" && selectedPassage.headingBank && <div className="mb-4 grid gap-1 text-sm text-slate-200 sm:grid-cols-2">{selectedPassage.headingBank.map((heading) => <p key={heading.id}><b>{heading.id}.</b> {heading.text}</p>)}</div>}
+            <p className={`mb-3 ${MOCK_TEXT_SIZE_CLASSES[questionFontSize]} leading-7 text-slate-200`}>{group.instructions}</p>
+            {group.questions[0]?.type === "matching-headings" && selectedPassage.headingBank && <div className={`mb-4 grid gap-1 ${MOCK_TEXT_SIZE_CLASSES[questionFontSize]} text-slate-200 sm:grid-cols-2`}>{selectedPassage.headingBank.map((heading) => <p key={heading.id}><b>{heading.id}.</b> {heading.text}</p>)}</div>}
             <div className="space-y-2">
               {group.questions.map((question) => {
                 const key = answerKey(selectedPassage, question);
@@ -399,8 +409,8 @@ export default function FullMockPage() {
                 const number = questions.findIndex((item) => item.key === key) + 1;
                 const set = (next) => setAnswer(key, next);
                 return <div key={key} id={`mock-q-${number}`} onFocusCapture={() => setActiveQuestionNumber(number)} className="scroll-m-4 rounded-lg border border-white/15 bg-slate-900 p-3">
-                  <p className="mb-3 text-sm leading-6 text-slate-100"><b className="mr-2 text-sky-200">{number}.</b>{question.type === "sentence-completion" ? <>{question.before} <input aria-label={`Answer for question ${number}, maximum ${question.maxWords || 1} words`} maxLength={120} className="mx-1 w-32 border-b border-sky-300 bg-slate-950 px-1 text-slate-100" value={value} onChange={(event) => { const next = event.target.value; if (next.trim().split(/\s+/).filter(Boolean).length <= (question.maxWords || 1)) set(next); }} /> {question.after}</> : question.type === "matching-headings" ? question.paragraphLabel : question.prompt}</p>
-                  {ANSWER_OPTIONS[question.type] ? <div className="flex flex-wrap gap-2">{ANSWER_OPTIONS[question.type].map((option) => <button type="button" key={option} onClick={() => set(option)} aria-pressed={value === option} className={`min-h-10 rounded-lg border px-3 py-2 text-sm ${value === option ? "border-sky-300 bg-sky-950 text-white" : "border-slate-500 bg-slate-700 text-slate-100 hover:bg-slate-600"}`}>{option}</button>)}</div> : question.type === "multiple-choice" ? <div className="grid gap-2">{question.options.map((option) => <button type="button" key={option.key} onClick={() => set(option.key)} aria-pressed={value === option.key} className={`min-h-10 rounded-lg border px-3 py-2 text-left text-sm ${value === option.key ? "border-sky-300 bg-sky-950 text-white" : "border-slate-500 bg-slate-700 text-slate-100 hover:bg-slate-600"}`}>{option.key}. {option.text}</button>)}</div> : question.type === "matching-headings" ? <select aria-label={`Choose a heading for question ${number}`} value={value} onChange={(event) => set(event.target.value)} className="min-h-10 max-w-full rounded-lg border border-slate-500 bg-slate-950 px-3 py-2 text-sm text-slate-100"><option value="">Choose a heading</option>{selectedPassage.headingBank?.map((heading) => <option key={heading.id} value={heading.id}>{heading.id}. {heading.text}</option>)}</select> : <input aria-label={`Answer for question ${number}`} value={value} onChange={(event) => set(event.target.value)} className="min-h-10 w-full rounded-lg border border-slate-500 bg-slate-950 px-3 py-2 text-slate-100" />}
+                  <p className={`mb-3 ${MOCK_TEXT_SIZE_CLASSES[questionFontSize]} leading-7 text-slate-100`}><b className="mr-2 text-sky-200">{number}.</b>{question.type === "sentence-completion" ? <>{question.before} <input aria-label={`Answer for question ${number}, maximum ${question.maxWords || 1} words`} maxLength={120} className={`mx-1 w-32 border-b border-sky-300 bg-slate-950 px-1 text-slate-100 ${MOCK_TEXT_SIZE_CLASSES[questionFontSize]}`} value={value} onChange={(event) => { const next = event.target.value; if (next.trim().split(/\s+/).filter(Boolean).length <= (question.maxWords || 1)) set(next); }} /> {question.after}</> : question.type === "matching-headings" ? question.paragraphLabel : question.prompt}</p>
+                  {ANSWER_OPTIONS[question.type] ? <div className="flex flex-wrap gap-2">{ANSWER_OPTIONS[question.type].map((option) => <button type="button" key={option} onClick={() => set(option)} aria-pressed={value === option} className={`min-h-10 rounded-lg border px-3 py-2 ${MOCK_TEXT_SIZE_CLASSES[questionFontSize]} ${value === option ? "border-sky-300 bg-sky-950 text-white" : "border-slate-500 bg-slate-700 text-slate-100 hover:bg-slate-600"}`}>{option}</button>)}</div> : question.type === "multiple-choice" ? <div className="grid gap-2">{question.options.map((option) => <button type="button" key={option.key} onClick={() => set(option.key)} aria-pressed={value === option.key} className={`min-h-10 rounded-lg border px-3 py-2 text-left ${MOCK_TEXT_SIZE_CLASSES[questionFontSize]} ${value === option.key ? "border-sky-300 bg-sky-950 text-white" : "border-slate-500 bg-slate-700 text-slate-100 hover:bg-slate-600"}`}>{option.key}. {option.text}</button>)}</div> : question.type === "matching-headings" ? <select aria-label={`Choose a heading for question ${number}`} value={value} onChange={(event) => set(event.target.value)} className={`min-h-10 max-w-full rounded-lg border border-slate-500 bg-slate-950 px-3 py-2 ${MOCK_TEXT_SIZE_CLASSES[questionFontSize]} text-slate-100`}><option value="">Choose a heading</option>{selectedPassage.headingBank?.map((heading) => <option key={heading.id} value={heading.id}>{heading.id}. {heading.text}</option>)}</select> : <input aria-label={`Answer for question ${number}`} value={value} onChange={(event) => set(event.target.value)} className={`min-h-10 w-full rounded-lg border border-slate-500 bg-slate-950 px-3 py-2 ${MOCK_TEXT_SIZE_CLASSES[questionFontSize]} text-slate-100`} />}
                 </div>;
               })}
             </div>

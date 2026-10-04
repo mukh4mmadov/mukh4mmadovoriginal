@@ -457,3 +457,21 @@ html:not(.dark) .mock-experience [class~="bg-brand-500"] {
   background-color: #0369a1 !important;
   color: #ffffff !important;
 }
+
+@layer base {
+  html:not(.dark) .mock-experience [class*="bg-slate-950"] {
+    background-color: #020617 !important;
+  }
+
+  html:not(.dark) .mock-experience [class*="bg-slate-900"] {
+    background-color: #0f172a !important;
+  }
+
+  html:not(.dark) .mock-experience [class*="bg-white/"] {
+    background-color: rgb(255 255 255 / 0.06) !important;
+  }
+
+  html:not(.dark) .mock-experience [class*="border-white/"] {
+    border-color: rgb(148 163 184 / 0.32) !important;
+  }
+}

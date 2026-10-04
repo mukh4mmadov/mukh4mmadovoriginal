@@ -15,6 +15,7 @@ import HighlightablePassage from "@/components/reading/HighlightablePassage";
 import HighlightableText from "@/components/reading/HighlightableText";
 import { useTextHighlight } from "@/hooks/useTextHighlight";
 import ReadingTestResults from "@/components/reading/ReadingTestResults";
+import FullscreenToggle from "@/components/shared/FullscreenToggle";
 import AIChatPanel from "@/components/ai/AIChatPanel";
 import { saveAttemptLocally, saveProgress } from "@/lib/progressTracker";
 import { useAuth } from "@/contexts/AuthContext";
@@ -680,6 +681,7 @@ export default function ReadingTestPlayer({ passage }) {
               <Bot size={16} />
               <span className="hidden sm:inline">AI Coach</span>
             </button>
+            <FullscreenToggle className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-slate-200 transition hover:bg-white/10" />
             <button
               type="button"
               className="btn-primary text-sm sm:text-base"
