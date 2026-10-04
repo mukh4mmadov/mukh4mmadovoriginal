@@ -868,6 +868,19 @@ export const newPassages = [
           },
         ],
       },
+      {
+        instructions: "Do the following statements agree with the information given in the passage? Write TRUE if the statement agrees with the information, FALSE if the statement contradicts the information, or NOT GIVEN if there is no information on this.",
+        questions: [
+          {
+            id: "caral-q14",
+            number: 14,
+            type: "true-false-not-given",
+            prompt: "Shady concluded that Caral's trade leverage depended on storing surplus maize.",
+            answer: "FALSE",
+            explanation: "Paragraph F says Shady found no traces of maize and concluded that Caral's trade leverage was not based on stockpiling food supplies.",
+          },
+        ],
+      },
     ],
   },
 

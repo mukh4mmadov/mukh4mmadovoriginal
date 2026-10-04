@@ -356,6 +356,19 @@ const passages = [
           },
         ],
       },
+      {
+        instructions: "Do the following statements agree with the information given in the passage? Write TRUE if the statement agrees with the information, FALSE if the statement contradicts the information, or NOT GIVEN if there is no information on this.",
+        questions: [
+          {
+            id: "ai-ethics-q28",
+            number: 28,
+            type: "true-false-not-given",
+            prompt: "Researchers have resolved the tension between high model performance and easy human understanding of AI decisions.",
+            answer: "FALSE",
+            explanation: "Paragraph C says there remains a fundamental tension between the complexity required for high performance and the simplicity needed for human understanding.",
+          },
+        ],
+      },
     ],
   },
   {
@@ -528,6 +541,19 @@ const passages = [
           },
         ],
       },
+      {
+        instructions: "Do the following statements agree with the information given in the passage? Write TRUE if the statement agrees with the information, FALSE if the statement contradicts the information, or NOT GIVEN if there is no information on this.",
+        questions: [
+          {
+            id: "ocean-acidification-q41",
+            number: 41,
+            type: "true-false-not-given",
+            prompt: "Current ocean acidification is happening at least ten times faster than any acidification event in the distant past.",
+            answer: "TRUE",
+            explanation: "Paragraph B states that current changes are occurring at least ten times faster than any historical acidification event.",
+          },
+        ],
+      },
     ],
   },
   {
@@ -697,6 +723,19 @@ const passages = [
             maxWords: 1,
             answer: ["1"],
             explanation: "Paragraph E defines nanoplastics as 'particles smaller than 1 micrometre', making '1' the correct answer.",
+          },
+        ],
+      },
+      {
+        instructions: "Do the following statements agree with the information given in the passage? Write TRUE if the statement agrees with the information, FALSE if the statement contradicts the information, or NOT GIVEN if there is no information on this.",
+        questions: [
+          {
+            id: "microplastics-q54-extra",
+            number: 54,
+            type: "true-false-not-given",
+            prompt: "The long-term health effects of chronic low-level microplastic exposure are well understood.",
+            answer: "FALSE",
+            explanation: "Paragraph D says the health implications of chronic low-level exposure remain poorly understood.",
           },
         ],
       },

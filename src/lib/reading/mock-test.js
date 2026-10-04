@@ -3,36 +3,63 @@ import readingTestsModule from "@/data/readingTests_new";
 export const MOCK_STORAGE_KEY = "ielts-reading-full-mock-v1";
 
 function prepareFortyQuestionSet(tests) {
-  const byDifficulty = Object.fromEntries(["easy", "medium", "hard"].map((level) => [
-    level,
-    tests.filter((test) => test.difficulty === level),
-  ]));
+  const questionCount = (test) => test.passages[0].questionGroups
+    .flatMap((group) => group.questions).length;
+  const sortByLength = (a, b) => (a.passages[0].wordCount || 0) - (b.passages[0].wordCount || 0)
+    || a.slug.localeCompare(b.slug);
+  const thirteenQuestionTests = tests.filter((test) => questionCount(test) === 13).sort(sortByLength);
+  const fourteenQuestionTests = tests.filter((test) => questionCount(test) === 14).sort(sortByLength);
+
+  // A mock needs a unique 14-question middle passage. Pair it with unused
+  // 13-question passages, choosing shorter passages first and longer ones last.
+  const count = Math.min(fourteenQuestionTests.length, Math.floor(thirteenQuestionTests.length / 2));
   const variants = [];
-  const seen = new Set();
-  for (const first of byDifficulty.easy) {
-    for (const second of byDifficulty.medium) {
-      for (const third of byDifficulty.hard) {
-        const passages = [first, second, third].map((test) => test.passages[0]);
-        if (new Set(passages.map((passage) => passage.slug)).size !== 3) continue;
-        const sectionCounts = passages.map((passage) => passage.questionGroups.flatMap((group) => group.questions).length);
-        if (sectionCounts[0] !== 13 || sectionCounts[1] !== 14 || sectionCounts[2] !== 13) continue;
-        const id = passages.map((passage) => passage.slug).join("|");
-        if (seen.has(id)) continue;
-        seen.add(id);
-        variants.push({ id, passages });
-      }
-    }
+  for (let index = 0; index < count; index += 1) {
+    const passages = [
+      thirteenQuestionTests[index].passages[0],
+      fourteenQuestionTests[index].passages[0],
+      thirteenQuestionTests[thirteenQuestionTests.length - 1 - index].passages[0],
+    ];
+    const id = passages.map((passage) => passage.slug).join("|");
+    variants.push({ id, passages });
   }
   return variants;
 }
 
 export function findFullMockVariants(tests = readingTestsModule.readingTests, limit = 10) {
-  const combinations = prepareFortyQuestionSet(tests);
-  if (combinations.length <= limit) return combinations;
-  if (limit <= 1) return combinations.slice(0, 1);
-  return Array.from({ length: limit }, (_, index) =>
-    combinations[Math.round(index * (combinations.length - 1) / (limit - 1))],
-  );
+  return prepareFortyQuestionSet(tests).slice(0, Math.max(0, limit));
+}
+
+const QUESTIONS_ADDED_FOR_UNIQUE_MOCKS = new Set([
+  "caral-q14",
+  "microplastics-q54-extra",
+  "ai-ethics-q28",
+  "ocean-acidification-q41",
+]);
+
+export function findFullMockVariant(variantId, variants = findFullMockVariants(), variantVersion = 1) {
+  const currentVariant = variants.find((variant) => variant.id === variantId);
+  if (currentVariant && variantVersion >= 2) return currentVariant;
+
+  // Older saved drafts store the three passage slugs in their variant ID.
+  // Rebuild that 40-question set without the four questions added later.
+  const passageSlugs = String(variantId || "").split("|");
+  if (passageSlugs.length !== 3 || passageSlugs.some((slug) => !slug)) return null;
+  const passages = passageSlugs.map((slug) => {
+    const passage = readingTestsModule.readingTests.find((test) => test.slug === slug)?.passages[0];
+    if (!passage) return null;
+    return {
+      ...passage,
+      questionGroups: passage.questionGroups.map((group) => ({
+        ...group,
+        questions: group.questions.filter((question) => !QUESTIONS_ADDED_FOR_UNIQUE_MOCKS.has(question.id)),
+      })),
+    };
+  });
+  if (passages.some((passage) => !passage)) return null;
+  const totalQuestions = passages.reduce((total, passage) =>
+    total + passage.questionGroups.flatMap((group) => group.questions).length, 0);
+  return totalQuestions === 40 ? { id: variantId, passages, legacy: true } : null;
 }
 
 export function chooseFullMockVariant(variants, previousResults = []) {
