@@ -11,7 +11,7 @@ const cardColors = {
 
 export default function ListeningPage() {
   return (
-    <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+    <main className="listening-library mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
       <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 via-surface to-brand-950/40 p-6 shadow-2xl sm:p-9 lg:p-12">
         <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-20 h-72 w-72 rounded-full bg-brand-500/10 blur-3xl" />
         <div className="relative max-w-3xl">

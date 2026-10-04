@@ -406,6 +406,82 @@
   }
 }
 
+/* The Listening library keeps a readable light palette when global theme
+   utility overrides are active. */
+html:not(.dark) .listening-library {
+  color: #0f172a;
+}
+
+html:not(.dark) .listening-library > section:first-child {
+  color: #0f172a;
+  background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 58%, #e0f2fe 100%) !important;
+  border-color: #cbd5e1 !important;
+}
+
+html:not(.dark) .listening-library > section:first-child h1,
+html:not(.dark) .listening-library > section:first-child .text-white {
+  color: #0f172a !important;
+}
+
+html:not(.dark) .listening-library > section:first-child .text-slate-200,
+html:not(.dark) .listening-library > section:first-child .text-slate-300 {
+  color: #334155 !important;
+}
+
+html:not(.dark) .listening-library > section:first-child [class*="bg-black/"] {
+  background-color: rgb(255 255 255 / 0.78) !important;
+  border-color: #cbd5e1 !important;
+}
+
+html:not(.dark) .listening-library > section:first-child [class*="text-brand-"] {
+  color: #075985 !important;
+}
+
+html:not(.dark) .listening-library article {
+  color: #0f172a !important;
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+
+html:not(.dark) .listening-library article .text-white,
+html:not(.dark) .listening-library article .text-slate-200,
+html:not(.dark) .listening-library article .text-slate-300 {
+  color: #1e293b !important;
+}
+
+html:not(.dark) .listening-library article .text-slate-400,
+html:not(.dark) .listening-library article .text-slate-500 {
+  color: #475569 !important;
+}
+
+html:not(.dark) .listening-library article [class*="text-sky-"],
+html:not(.dark) .listening-library article [class*="text-violet-"],
+html:not(.dark) .listening-library article [class*="text-emerald-"],
+html:not(.dark) .listening-library article [class*="text-amber-"] {
+  color: #0f172a !important;
+}
+
+html:not(.dark) .listening-library article [class*="bg-white/"] {
+  background-color: #f1f5f9 !important;
+}
+
+html:not(.dark) .listening-library article .bg-brand-500,
+html:not(.dark) .listening-library article .bg-brand-500 .text-white {
+  color: #ffffff !important;
+  background-color: #0369a1 !important;
+}
+
+html:not(.dark) .listening-library > section:nth-of-type(2) .text-brand-300,
+html:not(.dark) .listening-library > section:nth-of-type(2) h2 {
+  color: #0f172a !important;
+}
+
+html:not(.dark) .listening-library > p {
+  color: #475569 !important;
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
 /* The mock uses an intentionally stable dark reading surface in either site theme.
    Keep these scoped corrections stronger than the global light-theme utility remaps. */
 .mock-experience {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Flag, Headphones, Volume2 } from "lucide-react";
 import { requestHelpDialog } from "@/lib/help-dialog";
@@ -11,23 +11,64 @@ export default function ListeningTestExperience({ test, html }) {
   const reportRef = useRef(null);
   const [playbackRate, setPlaybackRate] = useState(1);
 
+  const syncFrameSettings = useCallback(() => {
+    const frame = frameRef.current?.contentWindow;
+    const audio = audioRef.current;
+    if (!frame || !audio) return;
+    frame.postMessage({
+      type: "listening:audio-state",
+      rate: audio.playbackRate,
+      volume: audio.volume,
+      muted: audio.muted || audio.volume === 0,
+    }, "*");
+  }, []);
+
+  const sendThemeToFrame = useCallback(() => {
+    const theme = document.documentElement.classList.contains("dark") ? "dark" : "light";
+    frameRef.current?.contentWindow?.postMessage({ type: "listening:set-theme", theme }, "*");
+  }, []);
+
   useEffect(() => {
     const handleFrameMessage = (event) => {
-      if (event.source !== frameRef.current?.contentWindow || event.data?.type !== "listening:report") return;
-      requestHelpDialog(reportRef.current, {
-        category: "incorrect_answer",
-        subject: `Listening content: ${test.title}`.slice(0, 200),
-        body: `Please describe the issue you found in “${test.title}”.\n\nQuestion number (if relevant):\nWhat seems incorrect or unclear:\n\n`,
-      });
+      if (event.source !== frameRef.current?.contentWindow) return;
+      if (event.data?.type === "listening:audio-control" && audioRef.current) {
+        const audio = audioRef.current;
+        const { rate, volume, muted } = event.data;
+        if (Number.isFinite(Number(rate)) && Number(rate) >= 0.5 && Number(rate) <= 2) {
+          audio.playbackRate = Number(rate);
+          setPlaybackRate(Number(rate));
+        }
+        if (Number.isFinite(Number(volume)) && Number(volume) >= 0 && Number(volume) <= 1) {
+          audio.volume = Number(volume);
+          audio.muted = false;
+        }
+        if (typeof muted === "boolean") audio.muted = muted;
+        syncFrameSettings();
+        return;
+      }
+      if (event.data?.type === "listening:report") {
+        requestHelpDialog(reportRef.current, {
+          category: "incorrect_answer",
+          subject: `Listening content: ${test.title}`.slice(0, 200),
+          body: `Please describe the issue you found in “${test.title}”.\n\nQuestion number (if relevant):\nWhat seems incorrect or unclear:\n\n`,
+        });
+      }
     };
+    const themeObserver = new MutationObserver(sendThemeToFrame);
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    sendThemeToFrame();
     window.addEventListener("message", handleFrameMessage);
-    return () => window.removeEventListener("message", handleFrameMessage);
-  }, [test.title]);
+    return () => {
+      window.removeEventListener("message", handleFrameMessage);
+      themeObserver.disconnect();
+    };
+  }, [sendThemeToFrame, syncFrameSettings, test.title]);
 
   const changePlaybackRate = (event) => {
     const rate = Number(event.target.value);
     setPlaybackRate(rate);
     if (audioRef.current) audioRef.current.playbackRate = rate;
+    syncFrameSettings();
   };
 
   return (
@@ -51,7 +92,7 @@ export default function ListeningTestExperience({ test, html }) {
           <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-2 px-3 pb-3 sm:flex-nowrap sm:gap-4 sm:px-5">
             <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-white/10 bg-slate-900 px-2 sm:px-3">
               <Volume2 size={16} className="hidden shrink-0 text-brand-300 sm:block" aria-hidden="true" />
-              <audio ref={audioRef} controls preload="metadata" className="h-11 min-w-0 flex-1" aria-label={`Audio for ${test.title}`}>
+              <audio ref={audioRef} controls preload="metadata" className="h-11 min-w-0 flex-1" aria-label={`Audio for ${test.title}`} onLoadedMetadata={syncFrameSettings} onVolumeChange={syncFrameSettings} onRateChange={syncFrameSettings}>
                 <source src={test.audioPath} type="audio/mpeg" />
                 Your browser cannot play this audio file.
               </audio>
@@ -60,7 +101,7 @@ export default function ListeningTestExperience({ test, html }) {
               <Headphones size={15} aria-hidden="true" />
               <span className="sr-only">Audio speed</span>
               <select value={playbackRate} onChange={changePlaybackRate} className="bg-transparent text-sm text-white outline-none" aria-label="Audio playback speed">
-                {[0.75, 0.9, 1, 1.1, 1.25, 1.5].map((rate) => <option key={rate} value={rate} className="bg-slate-900">{rate === 1 ? "Normal" : `${rate}×`}</option>)}
+                {[0.75, 1, 1.25, 1.5, 2].map((rate) => <option key={rate} value={rate} className="bg-slate-900">{rate === 1 ? "Normal" : `${rate}×`}</option>)}
               </select>
             </label>
           </div>
@@ -72,6 +113,7 @@ export default function ListeningTestExperience({ test, html }) {
         srcDoc={html}
         title={`${test.title} practice test`}
         className="min-h-0 w-full flex-1 border-0 bg-white"
+        onLoad={() => { sendThemeToFrame(); syncFrameSettings(); }}
         sandbox="allow-scripts allow-forms allow-modals allow-downloads allow-pointer-lock allow-presentation"
         allowFullScreen
         loading="eager"

@@ -1,6 +1,6 @@
 const sharedTheme = `
 <style id="mukh-listening-theme">
-  :root, html[data-theme="dark"], html[data-theme="light"] {
+  :root, html[data-theme="dark"] {
     color-scheme: dark !important;
     --bg: #0f172a !important;
     --panel: #1e293b !important;
@@ -19,76 +19,120 @@ const sharedTheme = `
     --highlight-bg: #facc15 !important;
     --highlight-fg: #111827 !important;
   }
-  html, body { min-height: 100%; background: #0f172a !important; color: #f1f5f9 !important; }
+  html[data-theme="light"] {
+    color-scheme: light !important;
+    --bg: #f8fafc !important;
+    --panel: #ffffff !important;
+    --panel-2: #f1f5f9 !important;
+    --border: #cbd5e1 !important;
+    --text: #0f172a !important;
+    --muted: #475569 !important;
+    --accent: #0369a1 !important;
+    --accent-2: #075985 !important;
+    --input-bg: #ffffff !important;
+    --input-border: #94a3b8 !important;
+    --input-correct: #047857 !important;
+    --input-wrong: #be123c !important;
+    --section: #f1f5f9 !important;
+    --timer: #ffffff !important;
+    --highlight-bg: #fde047 !important;
+    --highlight-fg: #422006 !important;
+  }
+  html, body { min-height: 100%; background: var(--bg) !important; color: var(--text) !important; }
   body { font-family: "Segoe UI", system-ui, -apple-system, sans-serif !important; line-height: 1.55 !important; }
-  body, body * { scrollbar-color: #475569 #0f172a; }
+  body, body * { scrollbar-color: var(--input-border) var(--bg); }
   header, .fixed-header, .audio-bar, .fixed-bottom, .part-banner, .section-banner,
   .bottom-nav, .navbar, .questions-panel, .content-scroll, .main-area, #mainArea,
-  #content, #questionsPanel { background-color: #0f172a !important; color: #f1f5f9 !important; border-color: #334155 !important; }
-  .part-banner { padding: 14px 20px !important; border-bottom: 1px solid #334155 !important; }
-  .content-scroll { background: #0f172a !important; }
+  #content, #questionsPanel { background-color: var(--bg) !important; color: var(--text) !important; border-color: var(--border) !important; }
+  .part-banner { padding: 14px 20px !important; border-bottom: 1px solid var(--border) !important; }
+  .content-scroll { background: var(--bg) !important; }
   .fixed-header, body > header, .bottom-nav, .fixed-bottom, .audio-bar {
-    box-shadow: 0 8px 24px rgba(2, 8, 23, .28) !important;
+    box-shadow: 0 8px 24px rgba(2, 8, 23, .16) !important;
   }
   .question-card, .notes-card, .note-card, .qgroup, .question-block, .rblock,
   .pick-two, .listening-map-card, .section-content > .question-card,
   .partgrid .prow, .typegrid .prow, .report-box, .leave-box {
-    color: #e2e8f0 !important; background: #1e293b !important;
-    border: 1px solid #334155 !important; border-radius: 16px !important;
+    color: var(--text) !important; background: var(--panel) !important;
+    border: 1px solid var(--border) !important; border-radius: 16px !important;
   }
   .question-card, .notes-card, .note-card, .qgroup, .question-block, .report-box, .leave-box { padding: 16px !important; }
-  .section-banner, .part-banner { border: 1px solid #334155 !important; border-radius: 14px !important; }
+  .section-banner, .part-banner { border: 1px solid var(--border) !important; border-radius: 14px !important; }
   h1, h2, h3, h4, p, li, th, td, label, .instruction, .instr, .task-kicker,
   .task-title, .question-prompt, .mc-stem, .sub, .answered-count, .part-banner,
-  .section-banner, .section-content { color: #e2e8f0 !important; }
-  .muted, .hint, .helper, .sub, .answered-count { color: #94a3b8 !important; }
+  .section-banner, .section-content { color: var(--text) !important; }
+  .muted, .hint, .helper, .sub, .answered-count { color: var(--muted) !important; }
   button, select, input:not([type="radio"]):not([type="checkbox"]):not([type="range"]), textarea,
   .icon-btn, .circle-btn, .header-tool-btn, .nav-arrow, .skip-btn, .speed-btn,
   .section-tab, .section-tab.active, .plabel, .subQuestion, .pillnums button,
   .check-btn, .submit-btn {
-    border-color: #475569 !important; border-radius: 10px !important;
+    border-color: var(--input-border) !important; border-radius: 10px !important;
   }
   button, select, input:not([type="radio"]):not([type="checkbox"]):not([type="range"]), textarea,
   .icon-btn, .circle-btn, .header-tool-btn, .nav-arrow, .section-tab,
   .subQuestion, .pillnums button, .check-btn {
-    color: #e2e8f0 !important; background-color: #172338 !important;
+    color: var(--text) !important; background-color: var(--panel-2) !important;
   }
   input:not([type="radio"]):not([type="checkbox"]):not([type="range"]), select, textarea {
-    min-height: 40px !important; background: #0b1220 !important;
-    border: 1px solid #475569 !important; padding: 8px 10px !important;
+    min-height: 40px !important; background: var(--input-bg) !important;
+    border: 1px solid var(--input-border) !important; padding: 8px 10px !important;
   }
   input[type="radio"], input[type="checkbox"] { accent-color: #0ea5e9 !important; }
   button:hover, .section-tab:hover, .subQuestion:hover, .pillnums button:hover {
-    border-color: #38bdf8 !important; background-color: #1e3a5f !important;
+    border-color: var(--accent) !important; background-color: var(--panel) !important;
   }
   .section-tab.active, .plabel.active, .subQuestion.active, .subQuestion.current,
   .pillnums button.active, .lmap-cell.selected {
-    color: #fff !important; background: #0369a1 !important; border-color: #38bdf8 !important;
+    color: #fff !important; background: var(--accent-2) !important; border-color: var(--accent) !important;
   }
   .submit-btn, .check-btn.result-mode, .check-btn:not(:disabled) {
-    color: #fff !important; background: #0284c7 !important; border-color: #38bdf8 !important;
+    color: #fff !important; background: var(--accent-2) !important; border-color: var(--accent) !important;
   }
-  .submit-btn:hover, .check-btn:hover { background: #0369a1 !important; }
-  .correct-ui, .correct, .opt-correct, .correct-answer-display { color: #86efac !important; }
-  .incorrect-ui, .incorrect, .opt-wrong { color: #fda4af !important; }
+  .submit-btn:hover, .check-btn:hover { background: var(--accent) !important; }
+  .correct-ui, .correct, .opt-correct, .correct-answer-display { color: var(--input-correct) !important; }
+  .incorrect-ui, .incorrect, .opt-wrong { color: var(--input-wrong) !important; }
   .question-card table, .note-card table, .notes-card table, .lmap-matrix,
-  .lmap-matrix td, .lmap-matrix th { border-color: #334155 !important; }
+  .lmap-matrix td, .lmap-matrix th { border-color: var(--border) !important; }
   .fillbox, .opt-box, .mc-option, .ldm-option, .lmap-cell, .question-nav,
   .nav-status, .navchunk, .partgrid .prow, .typegrid .prow {
-    border-color: #334155 !important;
+    border-color: var(--border) !important;
   }
   .fillbox, .opt-box, .mc-option, .ldm-option, .lmap-cell {
-    color: #e2e8f0 !important; background: #172338 !important;
+    color: var(--text) !important; background: var(--panel-2) !important;
   }
   .fillbox input, .opt-box input, .question-card input, .question-card select,
-  .question-card textarea { color: #f1f5f9 !important; caret-color: #38bdf8 !important; }
-  :focus-visible { outline: 2px solid #38bdf8 !important; outline-offset: 2px !important; }
-  a { color: #7dd3fc !important; }
+  .question-card textarea { color: var(--text) !important; caret-color: var(--accent) !important; }
+  :focus-visible { outline: 2px solid var(--accent) !important; outline-offset: 2px !important; }
+  a { color: var(--accent) !important; }
   .telegram-pin, .telegram-pin-text, .promo-brand, .promo-group, .watermark,
   .brand { display: none !important; }
-  .site-section-heading { margin: 0 0 16px; padding: 12px 16px; border: 1px solid #334155; border-radius: 14px; background: #172338; }
-  .site-section-heading span { display: block; margin-bottom: 3px; color: #7dd3fc; font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
-  .site-section-heading strong { color: #f8fafc; font-size: 17px; }
+  .site-section-heading { margin: 0 0 16px; padding: 12px 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--panel-2); }
+  .site-section-heading span { display: block; margin-bottom: 3px; color: var(--accent); font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+  .site-section-heading strong { color: var(--text); font-size: 17px; }
+  .modal, .modal-content, .modal-content-dark, .overlay .modal, .modal-overlay .modal-content {
+    max-width: calc(100vw - 24px) !important; max-height: calc(100dvh - 24px) !important;
+    overflow: auto !important; color: var(--text) !important; background: var(--panel) !important;
+    border: 1px solid var(--border) !important; border-radius: 20px !important;
+    box-shadow: 0 24px 80px rgba(2, 8, 23, .28) !important;
+  }
+  .modal h1, .modal h2, .modal h3, .modal h4, .modal p, .modal span,
+  .modal b, .modal strong, .modal small, .modal li, .modal label,
+  .modal-content h1, .modal-content h2, .modal-content h3, .modal-content h4,
+  .modal-content p, .modal-content span, .modal-content b, .modal-content strong,
+  .modal-content small, .modal-content li, .modal-content label {
+    color: var(--text) !important;
+  }
+  .overlay, .modal-overlay { background: rgba(15, 23, 42, .68) !important; }
+  .results-summary p, .score-hero, .results-details-header, .result-row { color: var(--text) !important; }
+  .results-summary p, .score-hero { background: var(--panel-2) !important; border-color: var(--border) !important; }
+  .results-table { max-height: 55dvh !important; overflow: auto !important; }
+  #resultsModal .user-ans, #resultsModal .correct-ans, #resultsModal .q-num,
+  #resultsModal .result-status { color: var(--text) !important; }
+  #resultsModal .result-row.correct .result-status { color: var(--input-correct) !important; }
+  #resultsModal .result-row.partial .result-status { color: #b45309 !important; }
+  #resultsModal .result-row.incorrect .result-status { color: var(--input-wrong) !important; }
+  .results-details-header, .result-row { display: grid !important; grid-template-columns: 36px minmax(0, 1fr) minmax(0, 1fr) auto !important; gap: 10px !important; }
+  .result-row { border-bottom: 1px solid var(--border) !important; }
+  .close { cursor: pointer !important; }
   @media (max-width: 640px) {
     .question-card, .notes-card, .note-card, .qgroup, .question-block { padding: 13px !important; }
     .fixed-header, body > header { gap: 5px !important; padding-left: 8px !important; padding-right: 8px !important; }
@@ -99,6 +143,16 @@ const sharedTheme = `
     .part-banner { padding: 12px 14px !important; }
     .navbar { gap: 8px !important; padding: 8px !important; }
     .site-section-heading strong { font-size: 15px; }
+    .navbar::after, .fixed-bottom::after {
+      content: "Swipe for more →"; position: sticky; right: 0; flex: 0 0 auto;
+      align-self: center; padding: 6px 8px; border-radius: 8px;
+      color: var(--muted); background: var(--panel); font-size: 10px; font-weight: 700;
+    }
+    .results-details-header { display: none !important; }
+    .result-row { grid-template-columns: 28px minmax(0, 1fr) !important; gap: 6px 10px !important; padding: 10px 0 !important; }
+    .result-row > :nth-child(2)::before { content: "Your answer: "; color: var(--muted); font-weight: 700; }
+    .result-row > :nth-child(3)::before { content: "Correct answer: "; color: var(--muted); font-weight: 700; }
+    .result-row > :nth-child(4) { grid-column: 2; }
   }
 </style>`;
 
@@ -157,13 +211,227 @@ function makeSectionScript(test) {
       observer.observe(activeTitle, { childList: true, characterData: true, subtree: true });
       activeTitle.textContent = names[0] || activeTitle.textContent;
     }
+    const root = document.documentElement;
+    const sendAudioControl = (control) => window.parent.postMessage({ type: 'listening:audio-control', ...control }, '*');
     window.addEventListener('message', (event) => {
-      if (event.source !== window.parent || event.data?.type !== 'listening:change-section') return;
-      const number = Number(event.data.section);
-      if (number < 1 || number > names.length) return;
-      if (typeof window.switchToSection === 'function') window.switchToSection(number);
-      else if (typeof window.showPart === 'function') window.showPart(number, false);
+      if (event.source !== window.parent) return;
+      if (event.data?.type === 'listening:change-section') {
+        const number = Number(event.data.section);
+        if (number < 1 || number > names.length) return;
+        if (typeof window.switchToSection === 'function') window.switchToSection(number);
+        else if (typeof window.showPart === 'function') window.showPart(number, false);
+      }
+      if (event.data?.type === 'listening:set-theme' && ['light', 'dark'].includes(event.data.theme)) {
+        root.setAttribute('data-theme', event.data.theme);
+        document.querySelectorAll('#themeRow [data-theme]').forEach((button) => {
+          button.classList.toggle('active', button.dataset.theme === event.data.theme);
+        });
+      }
+      if (event.data?.type === 'listening:audio-state') {
+        const { rate, volume, muted } = event.data;
+        document.querySelectorAll('#speedRow [data-speed]').forEach((button) => {
+          button.classList.toggle('active', Number(button.dataset.speed) === Number(rate));
+        });
+        const slider = document.getElementById('volSlider');
+        if (slider && Number.isFinite(Number(volume))) slider.value = String(Math.round(Number(volume) * 100));
+        const mute = document.getElementById('muteBtn');
+        if (mute) {
+          mute.setAttribute('aria-label', muted ? 'Unmute audio' : 'Mute audio');
+          mute.textContent = muted ? '🔇' : '🔊';
+        }
+      }
     });
+    document.addEventListener('click', (event) => {
+      const speed = event.target.closest?.('#speedRow [data-speed]');
+      if (speed) sendAudioControl({ rate: Number(speed.dataset.speed) });
+    }, true);
+    document.getElementById('volSlider')?.addEventListener('input', (event) => {
+      sendAudioControl({ volume: Number(event.target.value) / 100 });
+    });
+    document.getElementById('muteBtn')?.addEventListener('click', () => {
+      const slider = document.getElementById('volSlider');
+      if (slider) sendAudioControl({ muted: Number(slider.value) === 0 });
+    });
+    const labelledQuestionControls = () => {
+      document.querySelectorAll('input[id^="q"], select[id^="q"], textarea[id^="q"]').forEach((control) => {
+        const number = control.id.match(/^q(\d+)$/i)?.[1];
+        if (!number || control.hasAttribute('aria-label') || control.labels?.length) return;
+        const context = control.closest('li, tr, p, .mc-stem, .question-row, .qrow');
+        const copy = context?.cloneNode(true);
+        copy?.querySelectorAll('input, select, textarea').forEach((field) => field.remove());
+        const prompt = copy?.textContent.replace(/\s+/g, ' ').trim().slice(0, 180);
+        control.setAttribute('aria-label', prompt ? 'Question ' + number + ': ' + prompt : 'Question ' + number + ' answer');
+      });
+      document.querySelectorAll('.opt-box').forEach((group) => {
+        if (group.hasAttribute('role')) return;
+        group.setAttribute('role', 'group');
+        const prompt = group.previousElementSibling?.matches('.mc-stem') ? group.previousElementSibling : null;
+        if (prompt) {
+          if (!prompt.id) prompt.id = 'listening-question-' + Math.random().toString(36).slice(2, 9);
+          group.setAttribute('aria-labelledby', prompt.id);
+        }
+      });
+      document.querySelectorAll('#settingsBtn, #muteBtn, #expandBtn, #transcriptBtn, #leaveBtn').forEach((button) => {
+        button.setAttribute('role', 'button'); button.setAttribute('tabindex', '0');
+        if (button.id === 'settingsBtn') {
+          button.setAttribute('aria-label', 'Open settings'); button.setAttribute('aria-controls', 'settingsOverlay');
+        }
+        if (button.id === 'muteBtn') button.setAttribute('aria-label', 'Mute audio');
+        if (button.id === 'expandBtn') button.setAttribute('aria-label', 'Toggle full screen');
+        if (button.id === 'transcriptBtn') button.setAttribute('aria-label', 'Open transcript');
+        if (button.id === 'leaveBtn') button.setAttribute('aria-label', 'Leave test without saving');
+        if (!button.dataset.keyboardReady) {
+          button.dataset.keyboardReady = 'true';
+          button.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); button.click(); }
+          });
+        }
+      });
+      document.getElementById('prevArrow')?.setAttribute('aria-label', 'Previous section');
+      document.getElementById('nextArrow')?.setAttribute('aria-label', 'Next section');
+      document.querySelectorAll('.arrow-btn').forEach((button) => {
+        if (button.id === 'prevArrow') button.setAttribute('aria-label', 'Previous section');
+        if (button.id === 'nextArrow') button.setAttribute('aria-label', 'Next section');
+      });
+      document.querySelectorAll('.plabel[data-goto]').forEach((button) => {
+        button.setAttribute('role', 'button'); button.setAttribute('tabindex', '0');
+        const section = Number(button.dataset.goto);
+        button.setAttribute('aria-label', 'Section ' + section + ': ' + (names[section - 1] || ''));
+        if (button.classList.contains('active')) button.setAttribute('aria-current', 'step');
+        else button.removeAttribute('aria-current');
+        if (!button.dataset.keyboardReady) {
+          button.dataset.keyboardReady = 'true';
+          button.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); button.click(); }
+          });
+        }
+      });
+      document.querySelectorAll('.section-tab[data-section]').forEach((button) => {
+        const section = Number(button.dataset.section);
+        if (button.classList.contains('active')) button.setAttribute('aria-current', 'step');
+        else button.removeAttribute('aria-current');
+        button.setAttribute('aria-label', 'Section ' + section + ': ' + (names[section - 1] || ''));
+      });
+      document.querySelectorAll('.subQuestion[data-question], .pillnums button').forEach((button) => {
+        const number = Number(button.dataset.question || button.textContent.trim());
+        if (!Number.isFinite(number) || number < 1 || number > 40) return;
+        const field = document.getElementById('q' + number);
+        const answerGroup = [...document.querySelectorAll('[name="q' + number + '"]')];
+        const matchingSlot = document.querySelector('.ldm-slot[data-question="' + number + '"]');
+        const answered = typeof window.isQuestionAnswered === 'function'
+          ? window.isQuestionAnswered(number)
+          : matchingSlot
+            ? Boolean(matchingSlot.dataset.answer)
+          : field
+            ? (['radio', 'checkbox'].includes(field.type)
+              ? answerGroup.some((control) => control.checked)
+              : String(field.value || '').trim() !== '')
+            : answerGroup.some((control) => control.checked)
+              || button.classList.contains('answered')
+              || button.classList.contains('correct')
+              || button.classList.contains('incorrect')
+              || button.classList.contains('partial');
+        button.setAttribute('aria-label', 'Question ' + number + (answered ? ', answered' : ', unanswered'));
+        if (button.classList.contains('active') || button.classList.contains('current')) button.setAttribute('aria-current', 'step');
+        else button.removeAttribute('aria-current');
+      });
+      document.querySelectorAll('.navbar, .fixed-bottom').forEach((nav) => {
+        nav.setAttribute('aria-label', 'Question navigation. Swipe horizontally to see more questions.');
+      });
+    };
+    let previouslyFocused = null;
+    let openDialog = null;
+    const activeDialog = () => [...document.querySelectorAll('#settingsOverlay.show, #resultsOverlay.show, #resultsModal.show, #settingsModal.show')].at(-1) || null;
+    const closeControl = (dialog) => dialog?.querySelector('#closeSettings, #closeResults, .modal-close, .close');
+    const syncDialogs = () => {
+      labelledQuestionControls();
+      const dialog = activeDialog();
+      if (dialog && dialog !== openDialog) {
+        previouslyFocused = document.activeElement;
+        openDialog = dialog;
+        const panel = dialog.matches('.overlay, .modal-overlay') ? dialog.querySelector('.modal, .modal-content') || dialog : dialog;
+        if (panel !== dialog && dialog.getAttribute('role') === 'dialog') {
+          dialog.removeAttribute('role'); dialog.removeAttribute('aria-modal'); dialog.removeAttribute('aria-labelledby');
+        }
+        panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-modal', 'true');
+        const heading = panel.querySelector('h1, h2, h3');
+        if (heading) {
+          if (!heading.id) heading.id = 'listening-dialog-title';
+          panel.setAttribute('aria-labelledby', heading.id);
+        }
+        const close = closeControl(panel) || closeControl(dialog);
+        if (close) {
+          close.setAttribute('role', 'button'); close.setAttribute('tabindex', '0'); close.setAttribute('aria-label', 'Close dialog');
+          if (!close.dataset.keyboardReady) {
+            close.dataset.keyboardReady = 'true';
+            close.addEventListener('keydown', (event) => {
+              if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); close.click(); }
+            });
+          }
+        }
+        requestAnimationFrame(() => (close || panel).focus?.({ preventScroll: true }));
+      } else if (!dialog && openDialog) {
+        openDialog = null;
+        if (previouslyFocused?.isConnected) requestAnimationFrame(() => previouslyFocused.focus?.({ preventScroll: true }));
+      }
+    };
+    document.addEventListener('keydown', (event) => {
+      const dialog = activeDialog(); if (!dialog) return;
+      if (event.key === 'Escape') { (closeControl(dialog) || dialog).click(); return; }
+      if (event.key !== 'Tab') return;
+      const panel = dialog.matches('.overlay, .modal-overlay') ? dialog.querySelector('.modal, .modal-content') || dialog : dialog;
+      const focusable = [...panel.querySelectorAll('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]')].filter((el) => el.getClientRects().length);
+      if (!focusable.length) { event.preventDefault(); panel.focus(); return; }
+      const first = focusable[0], last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    }, true);
+    const getUnansweredCount = () => {
+      let unanswered = 0;
+      for (let number = 1; number <= 40; number++) {
+        if (typeof window.isQuestionAnswered === 'function') { if (!window.isQuestionAnswered(number)) unanswered++; continue; }
+        const field = document.getElementById('q' + number);
+        if (field) { if (!String(field.value || '').trim()) unanswered++; continue; }
+        const slot = document.querySelector('.ldm-slot[data-question="' + number + '"]');
+        if (slot) { if (!slot.dataset.answer) unanswered++; continue; }
+        const group = [...document.querySelectorAll('[name="q' + number + '"]')];
+        if (group.length && !group.some((control) => control.checked)) unanswered++;
+      }
+      return unanswered;
+    };
+    document.addEventListener('click', (event) => {
+      const submit = event.target.closest?.('#submitBtn, #checkButton');
+      if (!submit || document.getElementById('resultsOverlay')?.classList.contains('show') || document.getElementById('resultsModal')?.classList.contains('show')) return;
+      if (document.body.classList.contains('locked') || document.getElementById('questionsPanel')?.classList.contains('answers-locked')) return;
+      const unanswered = getUnansweredCount();
+      if (unanswered > 0 && !window.confirm('You still have ' + unanswered + ' unanswered question' + (unanswered === 1 ? '' : 's') + '. Submit your answers anyway?')) {
+        event.preventDefault(); event.stopImmediatePropagation();
+      }
+    }, true);
+    const updateUnansweredCount = () => {
+      const results = document.getElementById('resultsModal');
+      if (!results || !results.classList.contains('show') && !document.getElementById('resultsOverlay')?.classList.contains('show')) return;
+      const unanswered = getUnansweredCount();
+      const summary = results.querySelector('.results-summary');
+      if (summary && !summary.querySelector('.listening-unanswered')) {
+        const item = document.createElement('p'); item.className = 'listening-unanswered';
+        item.innerHTML = '<span>Unanswered</span><strong></strong>'; summary.append(item);
+      }
+      const item = results.querySelector('.listening-unanswered');
+      if (item) {
+        const value = item.querySelector('strong');
+        const count = unanswered + ' / 40';
+        if (value && value.textContent !== count) value.textContent = count;
+      }
+      else if (!results.querySelector('.listening-unanswered')) {
+        const item = document.createElement('p'); item.className = 'listening-unanswered';
+        item.textContent = 'Unanswered: ' + unanswered + ' / 40';
+        (results.querySelector('.score-hero') || results).after(item);
+      }
+    };
+    const observer = new MutationObserver(() => { syncDialogs(); updateUnansweredCount(); });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+    syncDialogs();
   })();</script>`;
 }
 

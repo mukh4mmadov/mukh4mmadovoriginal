@@ -904,7 +904,7 @@ function showResultsModal(){
 
   const partHtml = [1,2,3,4].map(p=>{
     const mistakes = incorrectNums.filter(n=>results[n].part===p).length;
-    return `<div class="prow"><b>Part ${p}</b><span class="mistake-count ${mistakes===0?'zero':''}">${mistakes} mistake${mistakes===1?'':'s'}</span></div>`;
+    return `<div class="prow"><b>Section ${p}</b><span class="mistake-count ${mistakes===0?'zero':''}">${mistakes} mistake${mistakes===1?'':'s'}</span></div>`;
   }).join('');
 
   const types = ['Note Completion','Multiple Choice','Table Completion'];
@@ -920,7 +920,7 @@ function showResultsModal(){
       <div class="big">${score} / ${total}</div>
       <div class="lbl">Overall score — ${Math.round(score/total*100)}%</div>
     </div>
-    <h4 class="rblock">Performance by Part</h4>
+    <h4 class="rblock">Performance by Section</h4>
     <div class="partgrid">${partHtml}</div>
     <h4 class="rblock">Mistakes by Question Type</h4>
     <div class="typegrid">${typeHtml}</div>

@@ -15,7 +15,7 @@ const listeningTests = [
     slug: "work-drama-food-safety",
     title: "Work, Drama & Food Safety",
     sectionTitles: ["Visiting a farm centre", "Summer vacation jobs", "Voice training for drama students", "Food safety standards"],
-    durationMinutes: 30,
+    durationMinutes: 35,
     questionCount: 40,
     audioPath: "/listening/audio/work-drama-food-safety.mp3",
     audioInsideTest: false,
