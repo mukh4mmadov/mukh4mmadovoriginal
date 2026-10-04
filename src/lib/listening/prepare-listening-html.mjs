@@ -127,17 +127,35 @@ const sharedTheme = `
   .results-table { max-height: 55dvh !important; overflow: auto !important; }
   #resultsModal .user-ans, #resultsModal .correct-ans, #resultsModal .q-num,
   #resultsModal .result-status { color: var(--text) !important; }
+  #resultsModal .user-ans, #resultsModal .q-num {
+    color: var(--text) !important; background: var(--panel-2) !important; border-color: var(--border) !important;
+  }
+  #resultsModal .correct-ans { color: var(--input-correct) !important; background: rgba(16, 185, 129, .12) !important; border-color: var(--input-correct) !important; }
+  #resultsModal .result-row.correct { background: rgba(16, 185, 129, .08) !important; }
+  #resultsModal .result-row.partial { background: rgba(245, 158, 11, .08) !important; }
+  #resultsModal .result-row.incorrect { background: rgba(244, 63, 94, .08) !important; }
   #resultsModal .result-row.correct .result-status { color: var(--input-correct) !important; }
   #resultsModal .result-row.partial .result-status { color: #b45309 !important; }
   #resultsModal .result-row.incorrect .result-status { color: var(--input-wrong) !important; }
   .results-details-header, .result-row { display: grid !important; grid-template-columns: 36px minmax(0, 1fr) minmax(0, 1fr) auto !important; gap: 10px !important; }
   .result-row { border-bottom: 1px solid var(--border) !important; }
   .close { cursor: pointer !important; }
+  html[data-theme="dark"] .instruction strong, html[data-theme="dark"] .instr strong {
+    color: #f8fafc !important; background: #334155 !important; border-radius: 4px; padding: 1px 3px;
+  }
+  html[data-theme="dark"] .q-badge, html[data-theme="dark"] .lmap-qno {
+    color: #0f172a !important; background: #cbd5e1 !important; border-color: #94a3b8 !important;
+  }
   @media (max-width: 640px) {
     .question-card, .notes-card, .note-card, .qgroup, .question-block { padding: 13px !important; }
     .fixed-header, body > header { gap: 5px !important; padding-left: 8px !important; padding-right: 8px !important; }
     .fixed-bottom, .bottom-nav { gap: 5px !important; padding-left: 6px !important; padding-right: 6px !important; }
     .section-tabs { max-width: 100%; overflow-x: auto; }
+    .section-tabs::after {
+      content: "Swipe for more"; position: sticky; right: 0; flex: 0 0 auto;
+      align-self: center; padding: 6px 8px; border-radius: 8px;
+      color: var(--muted); background: var(--panel); font-size: 10px; font-weight: 700;
+    }
     .subQuestion, .pillnums button { min-width: 32px !important; min-height: 34px !important; }
     .nav-status { gap: 5px !important; }
     .part-banner { padding: 12px 14px !important; }
@@ -212,6 +230,8 @@ function makeSectionScript(test) {
       activeTitle.textContent = names[0] || activeTitle.textContent;
     }
     const root = document.documentElement;
+    let audioVolume = 1;
+    let audioMuted = false;
     const sendAudioControl = (control) => window.parent.postMessage({ type: 'listening:audio-control', ...control }, '*');
     window.addEventListener('message', (event) => {
       if (event.source !== window.parent) return;
@@ -229,6 +249,8 @@ function makeSectionScript(test) {
       }
       if (event.data?.type === 'listening:audio-state') {
         const { rate, volume, muted } = event.data;
+        if (Number.isFinite(Number(volume))) audioVolume = Number(volume);
+        if (typeof muted === 'boolean') audioMuted = muted;
         document.querySelectorAll('#speedRow [data-speed]').forEach((button) => {
           button.classList.toggle('active', Number(button.dataset.speed) === Number(rate));
         });
@@ -242,30 +264,40 @@ function makeSectionScript(test) {
       }
     });
     document.addEventListener('click', (event) => {
+      const mute = event.target.closest?.('#muteBtn');
+      if (mute) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        audioMuted = !audioMuted;
+        sendAudioControl({ muted: audioMuted });
+        const slider = document.getElementById('volSlider');
+        if (slider) slider.value = String(Math.round(audioVolume * 100));
+        mute.setAttribute('aria-label', audioMuted ? 'Unmute audio' : 'Mute audio');
+        mute.textContent = audioMuted ? '🔇' : '🔊';
+        return;
+      }
       const speed = event.target.closest?.('#speedRow [data-speed]');
       if (speed) sendAudioControl({ rate: Number(speed.dataset.speed) });
     }, true);
     document.getElementById('volSlider')?.addEventListener('input', (event) => {
       sendAudioControl({ volume: Number(event.target.value) / 100 });
     });
-    document.getElementById('muteBtn')?.addEventListener('click', () => {
-      const slider = document.getElementById('volSlider');
-      if (slider) sendAudioControl({ muted: Number(slider.value) === 0 });
-    });
     const labelledQuestionControls = () => {
       document.querySelectorAll('input[id^="q"], select[id^="q"], textarea[id^="q"]').forEach((control) => {
         const number = control.id.match(/^q(\d+)$/i)?.[1];
         if (!number || control.hasAttribute('aria-label') || control.labels?.length) return;
-        const context = control.closest('li, tr, p, .mc-stem, .question-row, .qrow');
+        const context = control.closest('li, tr, td, p, .mc-stem, .instr, .instruction, .question-row, .qrow, .qgroup, .note-card, .question-card');
         const copy = context?.cloneNode(true);
         copy?.querySelectorAll('input, select, textarea').forEach((field) => field.remove());
         const prompt = copy?.textContent.replace(/\s+/g, ' ').trim().slice(0, 180);
         control.setAttribute('aria-label', prompt ? 'Question ' + number + ': ' + prompt : 'Question ' + number + ' answer');
       });
+      const volume = document.getElementById('volSlider');
+      if (volume) volume.setAttribute('aria-label', 'Audio volume');
       document.querySelectorAll('.opt-box').forEach((group) => {
         if (group.hasAttribute('role')) return;
         group.setAttribute('role', 'group');
-        const prompt = group.previousElementSibling?.matches('.mc-stem') ? group.previousElementSibling : null;
+        const prompt = group.previousElementSibling?.matches('.mc-stem, .instr, .instruction') ? group.previousElementSibling : null;
         if (prompt) {
           if (!prompt.id) prompt.id = 'listening-question-' + Math.random().toString(36).slice(2, 9);
           group.setAttribute('aria-labelledby', prompt.id);
@@ -312,14 +344,24 @@ function makeSectionScript(test) {
         else button.removeAttribute('aria-current');
         button.setAttribute('aria-label', 'Section ' + section + ': ' + (names[section - 1] || ''));
       });
-      document.querySelectorAll('.subQuestion[data-question], .pillnums button').forEach((button) => {
-        const number = Number(button.dataset.question || button.textContent.trim());
+      document.querySelectorAll('.subQuestion[data-question], .pillnums button, .question-nav button').forEach((button) => {
+        const number = Number(button.dataset.question || button.dataset.q || button.textContent.trim());
         if (!Number.isFinite(number) || number < 1 || number > 40) return;
         const field = document.getElementById('q' + number);
         const answerGroup = [...document.querySelectorAll('[name="q' + number + '"]')];
+        const checkboxGroup = [...document.querySelectorAll('.opt-box[data-group]')].find((group) => {
+          const [first, last] = group.dataset.group.replace(/^q/i, '').split('-').map(Number);
+          return number >= first && number <= last;
+        });
+        const checkboxIndex = checkboxGroup
+          ? number - Number(checkboxGroup.dataset.group.replace(/^q/i, '').split('-')[0])
+          : -1;
+        const checkedCount = checkboxGroup?.querySelectorAll('input[type="checkbox"]:checked').length || 0;
         const matchingSlot = document.querySelector('.ldm-slot[data-question="' + number + '"]');
         const answered = typeof window.isQuestionAnswered === 'function'
           ? window.isQuestionAnswered(number)
+          : checkboxGroup
+            ? checkedCount > checkboxIndex
           : matchingSlot
             ? Boolean(matchingSlot.dataset.answer)
           : field
@@ -339,7 +381,11 @@ function makeSectionScript(test) {
         nav.setAttribute('aria-label', 'Question navigation. Swipe horizontally to see more questions.');
       });
     };
+    const updateQuestionLabels = () => requestAnimationFrame(labelledQuestionControls);
+    document.addEventListener('input', updateQuestionLabels);
+    document.addEventListener('change', updateQuestionLabels);
     let previouslyFocused = null;
+    let pendingDialogOpener = null;
     let openDialog = null;
     const activeDialog = () => [...document.querySelectorAll('#settingsOverlay.show, #resultsOverlay.show, #resultsModal.show, #settingsModal.show')].at(-1) || null;
     const closeControl = (dialog) => dialog?.querySelector('#closeSettings, #closeResults, .modal-close, .close');
@@ -347,7 +393,8 @@ function makeSectionScript(test) {
       labelledQuestionControls();
       const dialog = activeDialog();
       if (dialog && dialog !== openDialog) {
-        previouslyFocused = document.activeElement;
+        previouslyFocused = pendingDialogOpener?.isConnected ? pendingDialogOpener : document.activeElement;
+        pendingDialogOpener = null;
         openDialog = dialog;
         const panel = dialog.matches('.overlay, .modal-overlay') ? dialog.querySelector('.modal, .modal-content') || dialog : dialog;
         if (panel !== dialog && dialog.getAttribute('role') === 'dialog') {
@@ -372,9 +419,19 @@ function makeSectionScript(test) {
         requestAnimationFrame(() => (close || panel).focus?.({ preventScroll: true }));
       } else if (!dialog && openDialog) {
         openDialog = null;
-        if (previouslyFocused?.isConnected) requestAnimationFrame(() => previouslyFocused.focus?.({ preventScroll: true }));
+        const focusTarget = previouslyFocused?.isConnected
+          && !previouslyFocused.matches(':disabled')
+          && !previouslyFocused.closest('[hidden], [aria-hidden="true"]')
+          ? previouslyFocused
+          : document.querySelector('#submitBtn:not(:disabled), #checkButton:not(:disabled), .question-nav button:not(:disabled)') || document.body;
+        if (focusTarget === document.body && !document.body.hasAttribute('tabindex')) document.body.tabIndex = -1;
+        requestAnimationFrame(() => focusTarget.focus?.({ preventScroll: true }));
       }
     };
+    document.addEventListener('click', (event) => {
+      const opener = event.target.closest?.('#settingsBtn, #submitBtn, #checkButton, #resultsBtn');
+      if (opener) pendingDialogOpener = opener;
+    }, true);
     document.addEventListener('keydown', (event) => {
       const dialog = activeDialog(); if (!dialog) return;
       if (event.key === 'Escape') { (closeControl(dialog) || dialog).click(); return; }
@@ -392,6 +449,16 @@ function makeSectionScript(test) {
         if (typeof window.isQuestionAnswered === 'function') { if (!window.isQuestionAnswered(number)) unanswered++; continue; }
         const field = document.getElementById('q' + number);
         if (field) { if (!String(field.value || '').trim()) unanswered++; continue; }
+        const checkboxGroup = [...document.querySelectorAll('.opt-box[data-group]')].find((group) => {
+          const [first, last] = group.dataset.group.replace(/^q/i, '').split('-').map(Number);
+          return number >= first && number <= last;
+        });
+        if (checkboxGroup) {
+          const first = Number(checkboxGroup.dataset.group.replace(/^q/i, '').split('-')[0]);
+          const checkedCount = checkboxGroup.querySelectorAll('input[type="checkbox"]:checked').length;
+          if (checkedCount <= number - first) unanswered++;
+          continue;
+        }
         const slot = document.querySelector('.ldm-slot[data-question="' + number + '"]');
         if (slot) { if (!slot.dataset.answer) unanswered++; continue; }
         const group = [...document.querySelectorAll('[name="q' + number + '"]')];
@@ -436,5 +503,11 @@ function makeSectionScript(test) {
 }
 
 export function prepareListeningHtml(html, test) {
-  return html.replace(/<\/head>/i, `${sharedTheme}</head>`).replace(/<\/body>/i, `${makeSectionScript(test)}</body>`);
+  const normalizedHtml = test.slug === 'community-nature-teamwork'
+    ? html.replace(
+      "box.dataset.group.split('-').map(Number)",
+      "box.dataset.group.replace(/^q/i, '').split('-').map(Number)",
+    )
+    : html;
+  return normalizedHtml.replace(/<\/head>/i, `${sharedTheme}</head>`).replace(/<\/body>/i, `${makeSectionScript(test)}</body>`);
 }

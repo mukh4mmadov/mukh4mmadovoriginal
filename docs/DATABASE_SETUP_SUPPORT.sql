@@ -200,6 +200,11 @@ COMMIT;
 -- =====================================================================
 BEGIN;
 
+-- Drop existing functions first to avoid type conflicts
+DROP FUNCTION IF EXISTS create_notification(UUID, TEXT, TEXT, TEXT, TEXT);
+DROP FUNCTION IF EXISTS mark_support_messages_read(UUID);
+DROP FUNCTION IF EXISTS mark_notification_read(UUID, UUID);
+
 CREATE OR REPLACE FUNCTION create_notification(
   p_user_id UUID,
   p_type TEXT,
