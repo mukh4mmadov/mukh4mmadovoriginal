@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import readingTestsModule from "@/data/readingTests_new";
@@ -195,8 +195,8 @@ export default function ReadingListPage() {
       </p>
 
       <section className="mb-8 flex flex-col justify-between gap-4 rounded-2xl border border-brand-400/20 bg-brand-500/10 p-5 sm:flex-row sm:items-center" aria-labelledby="mock-test-promo">
-        <div><p className="text-xs font-bold uppercase tracking-wider text-brand-300">Full exam simulation</p><h2 id="mock-test-promo" className="mt-1 text-lg font-bold text-white">Three passages · 40 questions · 60 minutes</h2><p className="mt-1 text-sm text-slate-300">Practice in a focused, full-screen test layout with a complete result review.</p></div>
-        <Link href="/mock" className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-brand-500 px-5 font-semibold text-white">Open reading full mock</Link>
+        <div><p className="text-xs font-bold uppercase tracking-wider text-brand-300">Full exam simulation</p><h2 id="mock-test-promo" className="mt-1 text-lg font-bold text-white">Three passages 쨌 40 questions 쨌 60 minutes</h2><p className="mt-1 text-sm text-slate-300">Practice in a focused, full-screen test layout with a complete result review.</p></div>
+        <Link href="/readingmock" className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-brand-500 px-5 font-semibold text-white">Open reading full mock</Link>
       </section>
 
       {reviewQueueCount > 0 && (
@@ -215,7 +215,7 @@ export default function ReadingListPage() {
                 <CalendarDays size={15} aria-hidden="true" /> Daily practice
                 <span className="rounded-full bg-white/5 px-2 py-1 text-slate-300">20 minutes</span>
               </div>
-              <h2 id="daily-practice-title" className="text-xl font-semibold text-white">{practiceSummary.todayCompleted ? "Today’s session is complete" : `Today’s passage: ${dailyPassage.title}`}</h2>
+              <h2 id="daily-practice-title" className="text-xl font-semibold text-white">{practiceSummary.todayCompleted ? "Today?셲 session is complete" : `Today?셲 passage: ${dailyPassage.title}`}</h2>
               <p className="mt-2 text-sm leading-6 text-slate-300">
                 {practiceSummary.todayCompleted
                   ? "You have completed a passage today. Take a break or review the answers you missed."
@@ -233,7 +233,7 @@ export default function ReadingListPage() {
               )}
             </div>
             <Link href={practiceSummary.todayCompleted ? "/statistics" : `/reading/${dailyPassage.slug}`} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-400">
-              {practiceSummary.todayCompleted ? "View weekly progress" : "Start today’s passage"}
+              {practiceSummary.todayCompleted ? "View weekly progress" : "Start today?셲 passage"}
               <ArrowRight size={16} aria-hidden="true" />
             </Link>
           </div>
@@ -295,7 +295,7 @@ export default function ReadingListPage() {
       <div className="mb-6 flex flex-wrap gap-3">
         <label className="sr-only" htmlFor="type-filter">Filter by question type</label><select id="type-filter" value={selectedType} onChange={(event)=>setSelectedType(event.target.value)} className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-white"><option value="all">All question types</option>{availableQuestionTypes.map((type)=><option key={type} value={type}>{type.replace(/-/g," ")}</option>)}</select>
         <label className="sr-only" htmlFor="completion-filter">Filter by completion</label><select id="completion-filter" value={completionFilter} onChange={(event)=>setCompletionFilter(event.target.value)} className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-white"><option value="all">All progress</option><option value="not-started">Not completed</option><option value="completed">Completed</option></select>
-        <label className="sr-only" htmlFor="sort-order">Sort passages</label><select id="sort-order" value={sortOrder} onChange={(event)=>setSortOrder(event.target.value)} className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-white"><option value="recommended">Recommended order</option><option value="title">Title A–Z</option><option value="shortest">Shortest passage</option><option value="questions">Fewest questions</option></select>
+        <label className="sr-only" htmlFor="sort-order">Sort passages</label><select id="sort-order" value={sortOrder} onChange={(event)=>setSortOrder(event.target.value)} className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-white"><option value="recommended">Recommended order</option><option value="title">Title A?밵</option><option value="shortest">Shortest passage</option><option value="questions">Fewest questions</option></select>
       </div>
 
       {(searchQuery || selectedDifficulty !== "all" || selectedType !== "all" || completionFilter !== "all" || sortOrder !== "recommended") && (
