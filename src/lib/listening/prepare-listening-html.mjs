@@ -140,6 +140,29 @@ const sharedTheme = `
   .results-details-header, .result-row { display: grid !important; grid-template-columns: 36px minmax(0, 1fr) minmax(0, 1fr) auto !important; gap: 10px !important; }
   .result-row { border-bottom: 1px solid var(--border) !important; }
   .close { cursor: pointer !important; }
+  /* Keep embedded source exercises visually aligned with the Reading workspace. */
+  body { margin: 0 !important; min-height: 100dvh !important; }
+  .fixed-header, body > header, .part-banner, .section-banner {
+    padding-top: 12px !important; padding-bottom: 12px !important;
+    backdrop-filter: blur(12px) !important;
+  }
+  .main-area, #mainArea, #content, .questions-panel, #questionsPanel,
+  .content-scroll, .contentScroll, .section-content, .part-section {
+    scrollbar-gutter: stable; scroll-behavior: smooth;
+  }
+  .section-content, .part-section { line-height: 1.7 !important; }
+  .site-section-heading { box-shadow: 0 8px 24px rgba(2, 8, 23, .12); }
+  .question-card, .notes-card, .note-card, .qgroup, .question-block,
+  .pick-two, .listening-map-card, .section-content > .question-card {
+    box-shadow: 0 8px 24px rgba(2, 8, 23, .10) !important;
+  }
+  .question-card:focus-within, .notes-card:focus-within, .note-card:focus-within,
+  .qgroup:focus-within, .question-block:focus-within {
+    border-color: var(--accent) !important;
+  }
+  button, select, input, textarea { font: inherit; }
+  button { min-height: 40px; }
+  audio { max-width: 100%; }
   html[data-theme="dark"] .instruction strong, html[data-theme="dark"] .instr strong {
     color: #f8fafc !important; background: #334155 !important; border-radius: 4px; padding: 1px 3px;
   }

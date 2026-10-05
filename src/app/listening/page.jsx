@@ -12,13 +12,13 @@ const cardColors = {
 export default function ListeningPage() {
   return (
     <main className="listening-library mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-      <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 via-surface to-brand-950/40 p-6 shadow-2xl sm:p-9 lg:p-12">
+      <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.12),transparent_48%)] bg-white/[0.04] p-6 shadow-[0_10px_40px_rgba(0,0,0,0.16)] sm:p-9 lg:p-12">
         <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-20 h-72 w-72 rounded-full bg-brand-500/10 blur-3xl" />
         <div className="relative max-w-3xl">
-          <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-brand-400/20 bg-brand-500/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-brand-200">
+          <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-brand-400/20 bg-brand-500/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-brand-300">
             <Headphones size={15} aria-hidden="true" /> IELTS Listening
           </p>
-          <h1 className="font-display text-3xl font-bold leading-tight text-white sm:text-4xl lg:text-5xl">
+          <h1 className="font-display text-3xl font-bold leading-tight text-slate-100 sm:text-4xl lg:text-5xl">
             Listen closely. Build confidence.
           </h1>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
@@ -33,25 +33,25 @@ export default function ListeningPage() {
       </section>
 
       <section className="mt-10" aria-labelledby="listening-tests-title">
-        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 sm:px-5">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-300">Practice library</p>
-            <h2 id="listening-tests-title" className="mt-1 text-2xl font-bold text-white">Choose a test</h2>
+            <h2 id="listening-tests-title" className="mt-1 text-2xl font-bold text-slate-100">Choose a test</h2>
           </div>
           <p className="text-sm text-slate-400">{listeningTests.length} tests available</p>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
           {listeningTests.map((test, index) => (
-            <article key={test.slug} className="group rounded-2xl border border-white/10 bg-slate-900/75 p-5 shadow-lg transition duration-200 hover:-translate-y-0.5 hover:border-white/20 hover:bg-slate-900 sm:p-6">
+            <article key={test.slug} className="group rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-[0_10px_40px_rgba(0,0,0,0.12)] transition duration-200 hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.07] sm:p-6">
               <div className="flex items-start gap-4">
                 <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border bg-gradient-to-br ${cardColors[test.accent]}`}>
                   <span className="text-lg font-bold">{String(index + 1).padStart(2, "0")}</span>
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Listening practice</p>
-                  <h3 className="mt-1 text-xl font-bold text-white">{test.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-400">{test.description}</p>
+                  <h3 className="mt-1 text-xl font-bold text-slate-100">{test.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-400">{test.description}</p>
                 </div>
               </div>
               <div className="mt-5 flex flex-wrap gap-2 text-xs font-medium text-slate-300">
