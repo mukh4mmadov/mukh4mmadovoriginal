@@ -170,7 +170,7 @@ export default function AdminLayout({ children }) {
   };
 
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="min-h-screen bg-surface lg:min-h-screen">
       {isSidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
@@ -180,7 +180,7 @@ export default function AdminLayout({ children }) {
 
       <aside
         id="admin-navigation"
-        className={`fixed top-0 left-0 z-50 h-full w-64 bg-surface border-r border-white/10 transition-transform duration-300 lg:translate-x-0 lg:static lg:z-0 ${
+        className={`fixed top-0 left-0 z-50 h-full w-64 bg-surface border-r border-white/10 transition-transform duration-300 lg:translate-x-0 lg:z-40 ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -207,7 +207,7 @@ export default function AdminLayout({ children }) {
                   href={item.href}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                     isActive
-                      ? 'bg-brand-500/10 text-brand-400'
+                      ? 'admin-nav-active bg-brand-500/10 text-brand-700 dark:text-brand-300'
                       : 'text-slate-400 hover:text-white hover:bg-white/5'
                   }`}
                   onClick={() => setIsSidebarOpen(false)}
@@ -231,7 +231,7 @@ export default function AdminLayout({ children }) {
         </div>
       </aside>
 
-      <div className="lg:ml-64">
+      <div className="min-w-0 lg:ml-64">
         <header className="sticky top-0 z-30 border-b border-white/10 bg-surface/80 backdrop-blur-xl">
           <div className="flex items-center justify-between px-4 py-4">
             <button

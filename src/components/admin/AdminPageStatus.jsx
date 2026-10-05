@@ -7,7 +7,7 @@ export function AdminPageLoading({ label = 'Loading admin data' }) {
   const [hasTimedOut, setHasTimedOut] = useState(false);
 
   useEffect(() => {
-    const timeout = window.setTimeout(() => setHasTimedOut(true), 12000);
+    const timeout = window.setTimeout(() => setHasTimedOut(true), 7000);
     return () => window.clearTimeout(timeout);
   }, []);
 

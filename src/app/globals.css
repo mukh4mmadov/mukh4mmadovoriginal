@@ -177,6 +177,29 @@
     color: #fff;
   }
 
+  html:not(.dark) .theme-form-control,
+  html:not(.dark) select:not([multiple]),
+  html:not(.dark) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  html:not(.dark) textarea {
+    color: #0f172a !important;
+    background-color: #fff !important;
+    border-color: #cbd5e1 !important;
+    color-scheme: light;
+  }
+
+  html:not(.dark) .theme-form-control option,
+  html:not(.dark) select option {
+    color: #0f172a;
+    background: #fff;
+  }
+
+  html:not(.dark) .admin-nav-active { color: #075985 !important; }
+  .dark .admin-nav-active { color: #7dd3fc !important; }
+  html:not(.dark) .reading-difficulty-easy { color: #047857 !important; }
+  html:not(.dark) .reading-difficulty-medium { color: #075985 !important; }
+  html:not(.dark) .reading-difficulty-hard { color: #be123c !important; }
+  html:not(.dark) .reading-full-mock-label { color: #075985 !important; }
+
   html:not(.dark) .question-option {
     @apply border-slate-300 bg-white text-slate-800;
   }

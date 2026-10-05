@@ -70,8 +70,8 @@ export default function AdminUsers() {
         </div>
       </div>
 
-      <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
-        <table className="w-full">
+      <div className="max-w-full overflow-x-auto rounded-xl border border-white/10 bg-white/5" role="region" aria-label="Users table" tabIndex={0}>
+        <table className="w-full min-w-[793px]">
           <thead>
             <tr className="border-b border-white/10">
               <th className="text-left p-4 text-sm font-medium text-slate-400">User</th>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { CheckCircle, Clock, Circle, Calendar, TrendingUp } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
+import DataLoadingStatus from "@/components/shared/DataLoadingStatus";
 
 export default function RoadmapPage() {
   const [items, setItems] = useState([]);
@@ -104,14 +105,7 @@ export default function RoadmapPage() {
     }).format(date);
   }
 
-  if (isLoading) {
-    return (
-      <main className="min-h-screen flex flex-col items-center justify-center gap-4" aria-busy="true" aria-live="polite">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500" aria-hidden="true" />
-        <p className="text-sm text-slate-300">Loading roadmap…</p>
-      </main>
-    );
-  }
+  if (isLoading) { return <DataLoadingStatus label="Roadmap" onRetry={loadRoadmap} />; }
 
   return (
     <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">

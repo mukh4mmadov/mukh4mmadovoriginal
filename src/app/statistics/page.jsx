@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabase/client';
 import { getReviewedQuestionCount } from '@/lib/reading/answer-review';
 import { formatAggregateTime, getMyReadingMetrics } from '@/lib/reading/metrics.mjs';
 import { requestOpenMigrationPrompt } from '@/lib/reading/migration-prompt-events.mjs';
+import DataLoadingStatus from '@/components/shared/DataLoadingStatus';
 
 const LOCAL_STUDY_GOAL_KEY = 'ielts-reading-study-goal-v1';
 const DEFAULT_STUDY_GOAL = { target_band: '6.5', exam_date: '', study_days_per_week: 4 };
@@ -274,16 +275,7 @@ export default function StatisticsPage() {
     }
   };
 
-  if (isLoading || loading) {
-    return (
-      <main className="min-h-screen flex items-center justify-center bg-slate-950" aria-busy="true">
-        <div role="status" aria-label="Loading statistics">
-          <span className="sr-only">Loading statistics</span>
-          <div className="animate-spin rounded-full h-12 w-12 border-2 border-white/30 border-t-white" aria-hidden="true" />
-        </div>
-      </main>
-    );
-  }
+  if (isLoading || loading) { return <DataLoadingStatus label="Statistics" onRetry={() => setLoadAttempt((attempt) => attempt + 1)} />; }
 
   if (loadError) {
     return <main className="mx-auto min-h-[70vh] max-w-2xl px-4 py-16 text-center"><h1 className="text-3xl font-bold text-white">Statistics are unavailable</h1><p role="alert" className="mt-3 text-slate-300">{loadError}</p><button type="button" onClick={() => setLoadAttempt((attempt) => attempt + 1)} className="mt-6 min-h-11 rounded-lg bg-brand-500 px-5 font-semibold text-white">Retry</button></main>;
@@ -403,7 +395,7 @@ export default function StatisticsPage() {
                 id="target-band"
                 value={goal.target_band}
                 onChange={(event) => setGoal((current) => ({ ...current, target_band: event.target.value }))}
-                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-white"
+                className="theme-form-control w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-white"
                 disabled={goalLoading || goalSaving}
               >
                 {Array.from({ length: 11 }, (_, index) => (4 + index * 0.5).toFixed(1)).map((band) => <option key={band} value={band}>{band}</option>)}
@@ -417,7 +409,7 @@ export default function StatisticsPage() {
                 min={new Date().toISOString().slice(0, 10)}
                 value={goal.exam_date}
                 onChange={(event) => setGoal((current) => ({ ...current, exam_date: event.target.value }))}
-                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-white"
+                className="theme-form-control w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-white"
                 disabled={goalLoading || goalSaving}
               />
             </div>
@@ -427,7 +419,7 @@ export default function StatisticsPage() {
                 id="study-days"
                 value={goal.study_days_per_week}
                 onChange={(event) => setGoal((current) => ({ ...current, study_days_per_week: Number(event.target.value) }))}
-                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-white"
+                className="theme-form-control w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-white"
                 disabled={goalLoading || goalSaving}
               >
                 {[2, 3, 4, 5, 6, 7].map((days) => <option key={days} value={days}>{days} days</option>)}

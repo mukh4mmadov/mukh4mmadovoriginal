@@ -170,6 +170,9 @@ const sharedTheme = `
     color: #0f172a !important; background: #cbd5e1 !important; border-color: #94a3b8 !important;
   }
   @media (max-width: 640px) {
+    .progress-area { gap: 6px !important; }
+    .time-text { min-width: 68px !important; font-size: 11px !important; }
+    #seekSlider { min-width: 48px !important; }
     .question-card, .notes-card, .note-card, .qgroup, .question-block { padding: 13px !important; }
     .fixed-header, body > header { gap: 5px !important; padding-left: 8px !important; padding-right: 8px !important; }
     .fixed-bottom, .bottom-nav { gap: 5px !important; padding-left: 6px !important; padding-right: 6px !important; }

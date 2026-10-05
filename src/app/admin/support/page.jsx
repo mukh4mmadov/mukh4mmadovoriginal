@@ -8,7 +8,7 @@ import { ticketNeedsReply } from "@/lib/support/tickets";
 const statuses = ["new", "in_progress", "waiting_on_learner", "resolved"];
 const categories = ["bug", "feature", "incorrect_answer", "general", "support"];
 const readable = (value) => String(value || "").replaceAll("_", " ");
-const inputClass = "rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-slate-100";
+const inputClass = "theme-form-control rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-slate-100";
 
 export default function AdminSupportInbox() {
   const { user } = useAuth();
