@@ -15,6 +15,9 @@ import {
 import readingTestsModule from "@/data/readingTests_new";
 import { locateEvidence } from "@/lib/reading/evidence-locator.mjs";
 import EvidenceViewer from "@/components/reading/EvidenceViewer";
+import { getAccountUserId } from "@/lib/auth/account";
+import { syncReviewQueue } from "@/lib/reading/review-queue-account";
+import { reviewQueueRepository } from "@/lib/supabase/repositories/review-queue.repository";
 
 function findEvidence(item) {
   const passage = readingTestsModule.readingTests.find((test) => test.slug === item.passageSlug)?.passages[0];
@@ -32,8 +35,11 @@ const QUESTION_TYPE_LABELS = {
 };
 
 export default function ReviewPage() {
-  const { user } = useAuth();
+  const { user, profile, isLoading } = useAuth();
   const userId = user?.id;
+  const accountUserId = getAccountUserId(user, profile, isLoading);
+  // "local" until the account copy has been merged in, then "synced".
+  const [syncState, setSyncState] = useState("local");
   const [queue, setQueue] = useState([]);
   const [reviewedIds, setReviewedIds] = useState(new Set());
   const [typeFilter, setTypeFilter] = useState("all");
@@ -46,7 +52,33 @@ export default function ReviewPage() {
     const nextQueue = getReviewQueue(userId);
     setQueue(nextQueue);
     setReviewedIds(new Set(nextQueue.filter((item) => isQuestionReviewed(item.id, userId)).map((item) => item.id)));
-  }, [userId]);
+    setSyncState("local");
+    if (!accountUserId || accountUserId !== userId) return undefined;
+
+    let cancelled = false;
+    setSyncState("syncing");
+    syncReviewQueue(accountUserId)
+      .then((merged) => {
+        if (cancelled) return;
+        setQueue(merged.queue);
+        setReviewedIds(new Set(merged.reviewedIds));
+        setSyncState("synced");
+      })
+      .catch((error) => {
+        console.warn("Review queue could not be synced with the account:", error);
+        if (!cancelled) setSyncState("failed");
+      });
+    return () => { cancelled = true; };
+  }, [userId, accountUserId]);
+
+  // Mirrors a change to the account copy once the queue is synced.
+  const saveToAccount = (write) => {
+    if (syncState !== "synced") return;
+    write().catch((error) => {
+      console.warn("Review queue change could not be saved to the account:", error);
+      setMessage("Saved in this browser, but your account copy could not be updated. It will catch up next time you open this page.");
+    });
+  };
 
   const typeCounts = useMemo(() => queue.reduce((counts, item) => {
     counts[item.questionType] = (counts[item.questionType] || 0) + 1;
@@ -78,8 +110,10 @@ export default function ReviewPage() {
         return next;
       });
       setMessage("Marked for another review.");
+      saveToAccount(() => reviewQueueRepository.setReviewed(accountUserId, item.id, false));
       return;
     }
+    saveToAccount(() => reviewQueueRepository.setReviewed(accountUserId, item.id, true));
     setReviewedIds((current) => new Set(current).add(item.id));
     setMessage("Marked as reviewed. Remove it from the queue when you are ready.");
   };
@@ -97,6 +131,7 @@ export default function ReviewPage() {
       return next;
     });
     setMessage("Question removed from your review queue.");
+    saveToAccount(() => reviewQueueRepository.remove(accountUserId, [itemId]));
   };
 
   const handleClearQueue = () => {
@@ -112,6 +147,7 @@ export default function ReviewPage() {
     setReviewedIds(new Set());
     setConfirmClear(false);
     setMessage("Review queue cleared.");
+    saveToAccount(() => reviewQueueRepository.remove(accountUserId));
   };
 
   return (
@@ -119,7 +155,11 @@ export default function ReviewPage() {
       <p className="mb-2 text-xs font-semibold uppercase tracking-[0.28em] text-brand-400">Study review</p>
       <h1 className="mb-3 text-3xl font-bold text-white">Mistake review queue</h1>
       <p className="mb-8 max-w-2xl text-sm leading-6 text-slate-300">
-        Revisit the questions you missed or skipped. Your queue and review marks are saved in this browser and do not sync to other devices.
+        Revisit the questions you missed or skipped.{" "}
+        {syncState === "synced" && "Your queue and review marks are saved to your account, so they follow you to other devices."}
+        {syncState === "syncing" && "Syncing with your account…"}
+        {syncState === "failed" && "Your queue is saved in this browser; your account copy is not available right now."}
+        {syncState === "local" && (accountUserId ? "Your queue is saved in this browser." : "Your queue is saved in this browser. Sign in to keep it on all your devices.")}
       </p>
 
       {queue.length > 0 ? (
