@@ -45,7 +45,21 @@ export const usersRepository = {
       .order('updated_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    // Scores live in metadata entries inside the answers JSON (see progressTracker).
+    return (data || []).map((row) => {
+      const answers = Array.isArray(row.answers) ? row.answers : [];
+      const bestScore = Number(answers.find((entry) => entry?.type === '_best_score')?.value);
+      const attempts = Number(answers.find((entry) => entry?.type === '_attempt_count')?.value);
+      return {
+        id: row.id,
+        slug: row.passage_id,
+        completed: Boolean(row.is_completed),
+        best_score: Number.isFinite(bestScore) ? bestScore : null,
+        attempts: Number.isFinite(attempts) ? attempts : null,
+        total_time: Number(row.time_spent_seconds) || 0,
+        updated_at: row.updated_at,
+      };
+    });
   },
 
   async getUserAIChatHistory(userId, limit = 50) {

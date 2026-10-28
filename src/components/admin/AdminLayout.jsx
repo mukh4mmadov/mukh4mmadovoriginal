@@ -15,6 +15,9 @@ import {
   Users,
   ClipboardList,
   HeartHandshake,
+  ExternalLink,
+  Moon,
+  Sun,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { isAdmin } from '@/lib/supabase/auth-admin';
@@ -30,6 +33,27 @@ export default function AdminLayout({ children }) {
   const [adminCheckError, setAdminCheckError] = useState('');
   const [adminCheckAttempt, setAdminCheckAttempt] = useState(0);
   const [isOffline, setIsOffline] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
+
+  // The admin panel has its own header and navigation, so hide the public
+  // site navbar and footer while it is open.
+  useEffect(() => {
+    document.body.classList.add('admin-active');
+    setDarkMode(document.documentElement.classList.contains('dark'));
+    return () => document.body.classList.remove('admin-active');
+  }, []);
+
+  useEffect(() => {
+    setIsSidebarOpen(false);
+  }, [pathname]);
+
+  const toggleTheme = () => {
+    const next = !darkMode;
+    setDarkMode(next);
+    window.localStorage.setItem('themePreference', next ? 'dark' : 'light');
+    // The (hidden) site navbar listens for this and applies the theme.
+    window.dispatchEvent(new CustomEvent('app-theme-change', { detail: { darkMode: next } }));
+  };
 
   useEffect(() => {
     const handleEscape = (e) => {
@@ -143,8 +167,8 @@ export default function AdminLayout({ children }) {
 
   if (authLoading || isAdminUser === null) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500" />
+      <div className="min-h-screen flex items-center justify-center" role="status" aria-label="Checking admin access">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500" aria-hidden="true" />
       </div>
     );
   }
@@ -175,36 +199,41 @@ export default function AdminLayout({ children }) {
         <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
+          aria-hidden="true"
         />
       )}
 
       <aside
         id="admin-navigation"
-        className={`fixed top-0 left-0 z-50 h-full w-64 bg-surface border-r border-white/10 transition-transform duration-300 lg:translate-x-0 lg:z-40 ${
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed top-0 left-0 z-50 h-full w-64 bg-surface border-r border-white/10 transition-transform duration-300 lg:visible lg:translate-x-0 lg:z-40 ${
+          isSidebarOpen ? 'visible translate-x-0' : 'invisible -translate-x-full'
         }`}
       >
         <div className="flex flex-col h-full">
-          <div className="flex items-center justify-between p-4 border-b border-white/10">
-            <h1 className="text-xl font-bold text-white">Admin Dashboard</h1>
+          <div className="flex items-center justify-between gap-2 p-4 border-b border-white/10">
+            <Link href="/admin" className="flex items-center gap-2 text-lg font-bold text-white">
+              <img src="/favicon.svg" alt="" width={28} height={28} className="h-7 w-7" />
+              Admin
+            </Link>
             <button
+              type="button"
               onClick={() => setIsSidebarOpen(false)}
-              className="lg:hidden text-slate-400 hover:text-white"
-              aria-label={isSidebarOpen ? 'Close admin navigation' : 'Open admin navigation'}
-              title={isSidebarOpen ? 'Close admin navigation' : 'Open admin navigation'}
+              className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-400 hover:bg-white/5 hover:text-white lg:hidden"
+              aria-label="Close admin navigation"
             >
-              <X size={20} />
+              <X size={20} aria-hidden="true" />
             </button>
           </div>
 
           <nav aria-label="Admin navigation" className="flex-1 p-4 space-y-1 overflow-y-auto">
             {navigation.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href;
+              const isActive = item.href === '/admin' ? pathname === '/admin' : pathname?.startsWith(item.href);
               return (
                 <Link
                   key={item.name}
                   href={item.href}
+                  aria-current={isActive ? 'page' : undefined}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                     isActive
                       ? 'admin-nav-active bg-brand-500/10 text-brand-700 dark:text-brand-300'
@@ -212,20 +241,28 @@ export default function AdminLayout({ children }) {
                   }`}
                   onClick={() => setIsSidebarOpen(false)}
                 >
-                  <Icon size={20} />
+                  <Icon size={20} aria-hidden="true" />
                   <span className="font-medium">{item.name}</span>
                 </Link>
               );
             })}
           </nav>
 
-          <div className="p-4 border-t border-white/10">
+          <div className="space-y-1 p-4 border-t border-white/10">
+            <Link
+              href="/home"
+              className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+            >
+              <ExternalLink size={20} aria-hidden="true" />
+              <span className="font-medium">View site</span>
+            </Link>
             <button
+              type="button"
               onClick={handleSignOut}
               className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
             >
-              <LogOut size={20} />
-              <span className="font-medium">Sign Out</span>
+              <LogOut size={20} aria-hidden="true" />
+              <span className="font-medium">Sign out</span>
             </button>
           </div>
         </div>
@@ -233,22 +270,31 @@ export default function AdminLayout({ children }) {
 
       <div className="min-w-0 lg:ml-64">
         <header className="sticky top-0 z-30 border-b border-white/10 bg-surface/80 backdrop-blur-xl">
-          <div className="flex items-center justify-between px-4 py-4">
+          <div className="flex items-center justify-between gap-3 px-4 py-3">
             <button
+              type="button"
               onClick={() => setIsSidebarOpen((open) => !open)}
-              className="lg:hidden text-slate-400 hover:text-white"
+              className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-400 hover:bg-white/5 hover:text-white lg:hidden"
               aria-label={isSidebarOpen ? 'Close admin navigation' : 'Open admin navigation'}
-              title={isSidebarOpen ? 'Close admin navigation' : 'Open admin navigation'}
               aria-expanded={isSidebarOpen}
               aria-controls="admin-navigation"
             >
-              {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+              {isSidebarOpen ? <X size={24} aria-hidden="true" /> : <Menu size={24} aria-hidden="true" />}
             </button>
-            <div className="flex items-center gap-4">
-              <div className="text-sm text-slate-400">
-                Admin: {user?.email}
-              </div>
+            <div className="ml-auto flex min-w-0 items-center gap-2 sm:gap-3">
+              <p className="hidden min-w-0 truncate text-sm text-slate-400 sm:block" title={user?.email}>
+                {user?.email}
+              </p>
               <AdminNotifications />
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="control-button"
+                aria-label={darkMode ? 'Switch to light theme' : 'Switch to dark theme'}
+                title={darkMode ? 'Switch to light theme' : 'Switch to dark theme'}
+              >
+                {darkMode ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
+              </button>
             </div>
           </div>
         </header>

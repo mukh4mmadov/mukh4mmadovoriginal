@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { X, User, BookOpen, MessageSquare, Bot, Activity, Calendar, Clock, Target, TrendingUp } from 'lucide-react';
 import { usersRepository } from '@/lib/supabase/repositories/users.repository';
 import { useModalAccessibility } from '@/hooks/useModalAccessibility';
+import { formatAggregateTime } from '@/lib/reading/metrics.mjs';
 
 export default function UserDetails({ userId, onClose, returnFocusRef }) {
   const [loading, setLoading] = useState(true);
@@ -78,11 +79,12 @@ export default function UserDetails({ userId, onClose, returnFocusRef }) {
       <div className="flex shrink-0 items-center justify-between border-b border-white/10 p-4 sm:p-6">
         <h2 id="user-details-title" className="text-xl font-bold text-white">User Details</h2>
         <button
+          type="button"
           onClick={onClose}
-          className="text-slate-400 hover:text-white transition-colors"
-          aria-label="Close"
+          className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-400 hover:bg-white/5 hover:text-white transition-colors"
+          aria-label="Close user details"
         >
-          <X size={20} />
+          <X size={20} aria-hidden="true" />
         </button>
       </div>
 
@@ -106,16 +108,18 @@ export default function UserDetails({ userId, onClose, returnFocusRef }) {
               const Icon = tab.icon;
               return (
                 <button
+                  type="button"
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
+                  aria-current={activeTab === tab.id ? 'true' : undefined}
                   className={`flex w-auto shrink-0 items-center gap-2 rounded-lg px-3 py-2 transition-colors md:w-full md:gap-3 ${
                     activeTab === tab.id
                       ? 'bg-brand-500/10 text-brand-400'
                       : 'text-slate-400 hover:text-white hover:bg-white/5'
                   }`}
                 >
-                  <Icon size={18} />
-                  <span className="text-sm">{tab.label}</span>
+                  <Icon size={18} aria-hidden="true" />
+                  <span className="whitespace-nowrap text-sm">{tab.label}</span>
                 </button>
               );
             })}
@@ -138,7 +142,7 @@ export default function UserDetails({ userId, onClose, returnFocusRef }) {
                   </div>
                   <div className="bg-white/5 rounded-lg p-4">
                     <p className="text-xs text-slate-400 mb-1">Email</p>
-                    <p className="text-white">{profile?.email}</p>
+                    <p className="break-all text-white">{profile?.email}</p>
                   </div>
                   <div className="bg-white/5 rounded-lg p-4">
                     <p className="text-xs text-slate-400 mb-1">Country</p>
@@ -173,7 +177,7 @@ export default function UserDetails({ userId, onClose, returnFocusRef }) {
                     <div className="bg-white/5 rounded-lg p-4">
                       <Clock className="text-purple-400 mb-2" size={20} />
                       <p className="text-2xl font-bold text-white">
-                        {stats.total_time_spent ? `${Math.round(stats.total_time_spent / 60)}m` : '0m'}
+                        {formatAggregateTime(stats.total_time_spent)}
                       </p>
                       <p className="text-xs text-slate-400">Time Spent</p>
                     </div>
@@ -279,7 +283,7 @@ function UserProgress({ userId }) {
       {progress.map((item) => (
         <div key={item.id} className="bg-white/5 rounded-lg p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="font-medium text-white">{item.slug}</span>
+            <span className="min-w-0 break-words font-medium text-white first-letter:uppercase">{String(item.slug || '').replace(/-/g, ' ')}</span>
             <span className={`text-sm ${item.completed ? 'text-green-400' : 'text-slate-400'}`}>
               {item.completed ? 'Completed' : 'In Progress'}
             </span>
@@ -287,11 +291,11 @@ function UserProgress({ userId }) {
           <div className="grid grid-cols-3 gap-4 text-sm">
             <div>
               <p className="text-slate-400">Score</p>
-              <p className="text-white">{item.best_score ? `${Math.round(item.best_score)}%` : 'N/A'}</p>
+              <p className="text-white">{item.best_score != null ? `${Math.round(item.best_score)}%` : 'N/A'}</p>
             </div>
             <div>
-              <p className="text-slate-400">Time</p>
-              <p className="text-white">{Math.round(item.total_time / 60)}m</p>
+              <p className="text-slate-400">Time (last attempt)</p>
+              <p className="text-white">{formatAggregateTime(item.total_time)}</p>
             </div>
             <div>
               <p className="text-slate-400">Last Updated</p>

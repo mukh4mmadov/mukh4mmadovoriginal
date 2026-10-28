@@ -49,7 +49,7 @@ export default function AdminAnalytics() {
         <ChartPanel icon={MessageSquare} title="AI Usage" color="purple"><SimpleChart data={data.aiUsage} color="purple" /></ChartPanel>
         <ChartPanel icon={Calendar} title="New Registrations per Tashkent Day" color="blue"><SimpleChart data={data.registrations} color="blue" /></ChartPanel>
         <ChartPanel icon={Award} title="Question Type Exposures and Accuracy" color="yellow">
-          <SimpleChart data={data.questionTypes.map((item) => ({ ...item, type: `${item.type} (${item.accuracy}%)` }))} color="yellow" />
+          <SimpleChart data={data.questionTypes.map((item) => ({ ...item, type: `${String(item.type || 'unknown type').replace(/-/g, ' ')} (${item.accuracy}% correct)` }))} color="yellow" />
         </ChartPanel>
       </div>
     </div>
@@ -57,7 +57,7 @@ export default function AdminAnalytics() {
 }
 
 function ChartPanel({ icon: Icon, title, children }) {
-  return <section className="rounded-xl border border-white/10 p-6"><div className="mb-4 flex items-center gap-2"><Icon className="text-brand-400" size={20} /><h2 className="text-lg font-semibold text-white">{title}</h2></div>{children}</section>;
+  return <section className="rounded-xl border border-white/10 p-6"><div className="mb-4 flex items-center gap-2"><Icon className="text-brand-400" size={20} aria-hidden="true" /><h2 className="text-lg font-semibold text-white">{title}</h2></div>{children}</section>;
 }
 
 function SimpleChart({ data, color }) {
@@ -72,9 +72,9 @@ function SimpleChart({ data, color }) {
           ? date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
           : item.type || 'Unknown';
         return <div key={`${label}-${index}`} className="flex items-center gap-2">
-          <span className="w-24 truncate text-xs text-slate-400" title={label}>{label}</span>
-          <div className="h-8 flex-1 overflow-hidden rounded bg-white/5"><div className={`h-full ${colors[color]} transition-all`} style={{ width: `${(value / maxValue) * 100}%` }} /></div>
-          <span className="w-12 text-right text-xs text-slate-300">{item.timeValue ? formatAggregateTime(value) : value}</span>
+          <span className="w-28 shrink-0 truncate text-xs text-slate-400 sm:w-40" title={label}>{label}</span>
+          <div className="h-6 min-w-0 flex-1 overflow-hidden rounded bg-white/5"><div className={`h-full ${colors[color]} transition-all`} style={{ width: `${(value / maxValue) * 100}%` }} /></div>
+          <span className="w-14 shrink-0 text-right text-xs text-slate-300">{item.timeValue ? formatAggregateTime(value) : value}</span>
         </div>;
       })}
       {!data.length && <p className="text-sm text-slate-500">No data for this period.</p>}

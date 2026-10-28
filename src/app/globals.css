@@ -5,7 +5,9 @@
 @layer base {
   body.ielts-mock-active { overflow: hidden; }
   body.ielts-mock-active .ielts-site-navbar,
-  body.ielts-mock-active .ielts-site-footer { display: none !important; }
+  body.ielts-mock-active .ielts-site-footer,
+  body.admin-active .ielts-site-navbar,
+  body.admin-active .ielts-site-footer { display: none !important; }
   :root {
     --font-display: "Georgia", serif;
     --font-sans:

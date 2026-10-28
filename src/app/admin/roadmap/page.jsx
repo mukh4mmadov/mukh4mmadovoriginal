@@ -5,6 +5,7 @@ import { Plus, Edit, Trash2, CheckCircle, Clock, Circle, Calendar, X } from 'luc
 import { supabase } from '@/lib/supabase/client';
 import { AdminPageError, AdminPageLoading } from '@/components/admin/AdminPageStatus';
 import { useModalAccessibility } from '@/hooks/useModalAccessibility';
+import { sortRoadmapItems } from '@/lib/roadmap';
 
 export default function AdminRoadmap() {
   const [items, setItems] = useState([]);
@@ -12,6 +13,9 @@ export default function AdminRoadmap() {
   const [loadError, setLoadError] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [actionError, setActionError] = useState('');
   const formTriggerRef = useRef(null);
   const titleInputRef = useRef(null);
   const modalRef = useModalAccessibility(isFormOpen, () => setIsFormOpen(false), titleInputRef, formTriggerRef);
@@ -38,7 +42,7 @@ export default function AdminRoadmap() {
         .order('priority', { ascending: false });
 
       if (error) throw error;
-      setItems(data || []);
+      setItems(sortRoadmapItems(data));
     } catch (error) {
       console.error('Error loading roadmap:', error);
       setLoadError(error.message || 'Roadmap data could not be loaded.');
@@ -49,12 +53,17 @@ export default function AdminRoadmap() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    if (isSaving) return;
 
     const entry = {
       ...formData,
+      title: formData.title.trim(),
+      description: formData.description.trim(),
       target_date: formData.target_date || null,
     };
 
+    setIsSaving(true);
+    setFormError('');
     try {
       if (editingItem) {
         const { error } = await supabase
@@ -81,6 +90,9 @@ export default function AdminRoadmap() {
       await loadRoadmap();
     } catch (error) {
       console.error('Error saving roadmap item:', error);
+      setFormError(`The item could not be saved. ${error.message || 'Please try again.'}`);
+    } finally {
+      setIsSaving(false);
     }
   }
 
@@ -88,12 +100,14 @@ export default function AdminRoadmap() {
     const item = items.find((roadmapItem) => roadmapItem.id === id);
     if (!confirm(`Delete “${item?.title || 'this roadmap item'}”? This action cannot be undone.`)) return;
 
+    setActionError('');
     try {
       const { error } = await supabase.from('roadmap').delete().eq('id', id);
       if (error) throw error;
       await loadRoadmap();
     } catch (error) {
       console.error('Error deleting roadmap item:', error);
+      setActionError(`“${item?.title || 'The item'}” could not be deleted. ${error.message || 'Please try again.'}`);
     }
   }
 
@@ -102,12 +116,12 @@ export default function AdminRoadmap() {
     if (item) {
       setEditingItem(item);
       setFormData({
-        title: item.title,
-        description: item.description,
-        status: item.status,
-        category: item.category,
-        priority: item.priority,
-        progress: item.progress,
+        title: item.title || '',
+        description: item.description || '',
+        status: item.status || 'planned',
+        category: item.category || 'feature',
+        priority: item.priority || 'medium',
+        progress: Number(item.progress) || 0,
         target_date: item.target_date || '',
       });
     } else {
@@ -122,6 +136,7 @@ export default function AdminRoadmap() {
         target_date: '',
       });
     }
+    setFormError('');
     setIsFormOpen(true);
   }
 
@@ -164,6 +179,7 @@ export default function AdminRoadmap() {
         </button>
       </div>
 
+      {actionError && <p role="alert" className="mb-6 rounded-lg border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">{actionError}</p>}
       <div className="space-y-8">
         {(['completed', 'in_progress', 'planned']).map((status) => {
           const config = statusConfig[status];
@@ -185,13 +201,13 @@ export default function AdminRoadmap() {
                     className="border border-white/10 rounded-xl p-6 hover:border-white/20 transition-colors"
                   >
                     <div className="flex items-start justify-between mb-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${categoryConfig[item.category].color}`}>
-                        {categoryConfig[item.category].label}
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${(categoryConfig[item.category] || categoryConfig.feature).color}`}>
+                        {(categoryConfig[item.category] || categoryConfig.feature).label}
                       </span>
                       <div className="flex gap-1">
                         <button
                           onClick={(event) => openForm(item, event)}
-                          className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+                          className="flex h-9 w-9 items-center justify-center hover:bg-white/10 rounded-lg transition-colors"
                           aria-label={`Edit roadmap item: ${item.title}`}
                           title="Edit roadmap item"
                         >
@@ -199,7 +215,7 @@ export default function AdminRoadmap() {
                         </button>
                         <button
                           onClick={() => deleteItem(item.id)}
-                          className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+                          className="flex h-9 w-9 items-center justify-center hover:bg-white/10 rounded-lg transition-colors"
                           aria-label={`Delete roadmap item: ${item.title}`}
                           title="Delete roadmap item"
                         >
@@ -214,8 +230,8 @@ export default function AdminRoadmap() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-slate-400">Progress</span>
-                        <span className={priorityConfig[item.priority].color}>
-                          {priorityConfig[item.priority].label} Priority
+                        <span className={(priorityConfig[item.priority] || priorityConfig.medium).color}>
+                          {(priorityConfig[item.priority] || priorityConfig.medium).label} priority
                         </span>
                       </div>
                       <div className="h-2 bg-white/10 rounded-full overflow-hidden">
@@ -229,7 +245,7 @@ export default function AdminRoadmap() {
                         {item.target_date && (
                           <span className="flex items-center gap-1">
                             <Calendar size={12} />
-                            {new Date(item.target_date).toLocaleDateString()}
+                            {new Date(`${item.target_date}T00:00:00Z`).toLocaleDateString(undefined, { timeZone: 'UTC' })}
                           </span>
                         )}
                       </div>
@@ -389,6 +405,7 @@ export default function AdminRoadmap() {
                 />
               </div>
 
+              {formError && <p role="alert" className="rounded-lg border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">{formError}</p>}
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
@@ -399,9 +416,10 @@ export default function AdminRoadmap() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg transition-colors"
+                  disabled={isSaving}
+                  className="flex-1 px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg transition-colors disabled:opacity-50"
                 >
-                  {editingItem ? 'Update' : 'Create'}
+                  {isSaving ? 'Saving…' : editingItem ? 'Update' : 'Create'}
                 </button>
               </div>
             </form>

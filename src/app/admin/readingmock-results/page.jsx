@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase/client";
 import { AdminPageError, AdminPageLoading } from "@/components/admin/AdminPageStatus";
 
 const PAGE_SIZE = 25;
-const inputClass = "rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-slate-100";
+const pageButtonClass = "min-h-10 rounded-lg border border-white/10 px-4 text-sm font-medium text-slate-200 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40";
 
 export default function AdminReadingMockResultsPage() {
   const [rows, setRows] = useState([]);
@@ -46,14 +46,14 @@ export default function AdminReadingMockResultsPage() {
   return (
     <div>
       <div className="mb-3 flex items-center gap-3">
-        <ClipboardList className="text-brand-400" size={28} />
+        <ClipboardList className="text-brand-400" size={28} aria-hidden="true" />
         <h1 className="text-3xl font-bold text-white">Reading Mock Results</h1>
       </div>
       <p className="mb-6 text-sm text-slate-400">All saved reading mock attempts from signed-in learners, newest first. Guest results are stored only in their browser unless they sign in and sync them.</p>
       {error && <p role="alert" className="mb-4 rounded-xl border border-red-400/20 bg-red-400/5 p-4 text-sm text-red-200">{error}</p>}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-slate-300">{total.toLocaleString()} {total === 1 ? "attempt" : "attempts"}</p>
-        <button type="button" onClick={() => void loadResults()} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-white/10 px-3 text-sm text-slate-200 hover:bg-white/5"><RefreshCw size={15} />Refresh</button>
+        <button type="button" onClick={() => void loadResults()} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-white/10 px-3 text-sm text-slate-200 hover:bg-white/5"><RefreshCw size={15} className={loading ? "animate-spin" : ""} aria-hidden="true" />Refresh</button>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/[0.03]">
@@ -79,7 +79,7 @@ export default function AdminReadingMockResultsPage() {
                 {expanded && <tr key={`${row.attempt_key}-details`} className="border-b border-white/10"><td colSpan={6} className="p-4 sm:p-6">
                   <div className="mb-5 grid gap-3 sm:grid-cols-3">{(Array.isArray(result.sections) ? result.sections : []).map((section) => <section key={`${row.attempt_key}-${section.title}`} className="rounded-lg border border-white/10 p-3"><p className="text-xs uppercase text-slate-400">{section.difficulty} · {section.answered}/{section.total} answered</p><h3 className="mt-1 font-semibold text-white">{section.title}</h3><p className="mt-2 text-lg font-bold text-slate-100">{section.correct}/{section.total}</p></section>)}</div>
                   <h2 className="mb-3 font-semibold text-white">Answer review</h2>
-                  <div className="space-y-2">{(Array.isArray(result.answers) ? result.answers : []).map((answer) => <article key={`${row.attempt_key}-q${answer.number}`} className="rounded-lg bg-white/[0.03] p-3 text-sm"><div className="flex flex-wrap justify-between gap-2"><p className="font-medium text-slate-100">Q{answer.number} · Passage {answer.passageNumber}: {answer.prompt}</p><span className={answer.correct ? "text-emerald-300" : "text-rose-300"}>{answer.correct ? "Correct" : answer.userAnswer ? "Incorrect" : "Skipped"}</span></div><p className="mt-2 text-slate-300">Learner: {answer.userAnswer || "Not answered"} · Correct: {answer.correctAnswer || "—"}</p>{answer.explanation && <p className="mt-1 text-slate-400">{answer.explanation}</p>}</article>)}</div>
+                  <div className="space-y-2">{(Array.isArray(result.answers) ? result.answers : []).map((answer) => <article key={`${row.attempt_key}-q${answer.number}`} className="rounded-lg bg-white/[0.03] p-3 text-sm"><div className="flex flex-wrap justify-between gap-2"><p className="font-medium text-slate-100">Q{answer.number} · Passage {answer.passageNumber}: {answer.prompt}</p>{(() => { const skipped = !answer.userAnswer || answer.userAnswer === "Skipped"; return <span className={answer.correct ? "text-emerald-300" : skipped ? "text-amber-200" : "text-rose-300"}>{answer.correct ? "Correct" : skipped ? "Skipped" : "Incorrect"}</span>; })()}</div><p className="mt-2 text-slate-300">Learner: {!answer.userAnswer || answer.userAnswer === "Skipped" ? "Not answered" : answer.userAnswer} · Correct: {answer.correctAnswer || "—"}</p>{answer.explanation && <p className="mt-1 text-slate-400">{answer.explanation}</p>}</article>)}</div>
                   {result.autoSubmitReason && <p className="mt-4 text-sm text-amber-200">Auto-submitted: {result.autoSubmitReason}</p>}
                 </td></tr>}
               </Fragment>;
@@ -87,7 +87,7 @@ export default function AdminReadingMockResultsPage() {
           </tbody>
         </table>
       </div>
-      <div className="mt-4 flex items-center justify-between gap-3 text-sm text-slate-300"><span>Page {page + 1} of {pageCount}</span><div className="flex gap-2"><button type="button" disabled={page === 0 || loading} onClick={() => setPage((current) => current - 1)} className={`${inputClass} disabled:opacity-40`}>Previous</button><button type="button" disabled={page + 1 >= pageCount || loading} onClick={() => setPage((current) => current + 1)} className={`${inputClass} disabled:opacity-40`}>Next</button></div></div>
+      <div className="mt-4 flex items-center justify-between gap-3 text-sm text-slate-300"><span>Page {page + 1} of {pageCount}</span><div className="flex gap-2"><button type="button" disabled={page === 0 || loading} onClick={() => setPage((current) => current - 1)} className={pageButtonClass}>Previous</button><button type="button" disabled={page + 1 >= pageCount || loading} onClick={() => setPage((current) => current + 1)} className={pageButtonClass}>Next</button></div></div>
     </div>
   );
 }
