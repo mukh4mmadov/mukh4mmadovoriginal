@@ -12,6 +12,7 @@ import { getReviewedQuestionCount } from '@/lib/reading/answer-review';
 import { formatAggregateTime, getMyReadingMetrics } from '@/lib/reading/metrics.mjs';
 import { requestOpenMigrationPrompt } from '@/lib/reading/migration-prompt-events.mjs';
 import DataLoadingStatus from '@/components/shared/DataLoadingStatus';
+import { ListeningStatsSection } from '@/components/listening/ListeningProgress';
 
 const LOCAL_STUDY_GOAL_KEY = 'ielts-reading-study-goal-v1';
 const DEFAULT_STUDY_GOAL = { target_band: '6.5', exam_date: '', study_days_per_week: 4 };
@@ -378,6 +379,8 @@ export default function StatisticsPage() {
             </div>
           </div>
         </section>
+
+        <ListeningStatsSection />
 
         <section aria-labelledby="study-plan-title" className="mb-8 rounded-2xl border border-brand-400/25 bg-brand-500/10 p-6">
           <div className="mb-5 flex items-center gap-3">

@@ -2,15 +2,48 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Flag, Headphones, Volume2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Flag, Headphones, Volume2, X } from "lucide-react";
 import { requestHelpDialog } from "@/lib/help-dialog";
+import { useAuth } from "@/contexts/AuthContext";
+import { getListeningAccountUserId, saveListeningAttemptToAccount } from "@/hooks/useListeningHistory";
+import { buildListeningAttempt, listeningResultSignature, saveListeningAttemptLocally } from "@/lib/listening/listening-results.mjs";
+import { makeAttemptUuid } from "@/lib/reading/reading-attempt-outbox.mjs";
 
 export default function ListeningTestExperience({ test, html }) {
   const audioRef = useRef(null);
   const frameRef = useRef(null);
   const reportRef = useRef(null);
   const [playbackRate, setPlaybackRate] = useState(1);
+  const [savedResult, setSavedResult] = useState(null);
+  const { user, profile, isLoading } = useAuth();
+  const accountUserId = getListeningAccountUserId(user, profile, isLoading);
+  const accountUserIdRef = useRef(accountUserId);
+  const startedAtRef = useRef(Date.now());
+  const lastResultSignatureRef = useRef("");
 
+  useEffect(() => {
+    accountUserIdRef.current = accountUserId;
+  }, [accountUserId]);
+
+  const saveResult = useCallback(async (payload) => {
+    const signature = listeningResultSignature(payload);
+    if (!signature || signature === lastResultSignatureRef.current) return;
+    const attempt = buildListeningAttempt(test, payload, { id: makeAttemptUuid(), startedAt: startedAtRef.current });
+    if (!attempt) return;
+    lastResultSignatureRef.current = signature;
+    const savedLocally = saveListeningAttemptLocally(window.localStorage, attempt);
+    const userId = accountUserIdRef.current;
+    let where = savedLocally ? "browser" : "none";
+    if (userId) {
+      try {
+        await saveListeningAttemptToAccount(userId, attempt);
+        where = "account";
+      } catch (error) {
+        console.error("Listening result could not be saved to the account:", error);
+      }
+    }
+    setSavedResult({ attempt, where });
+  }, [test]);
   const syncFrameSettings = useCallback(() => {
     const frame = frameRef.current?.contentWindow;
     const audio = audioRef.current;
@@ -46,6 +79,10 @@ export default function ListeningTestExperience({ test, html }) {
         syncFrameSettings();
         return;
       }
+      if (event.data?.type === "listening:results") {
+        void saveResult(event.data);
+        return;
+      }
       if (event.data?.type === "listening:report") {
         requestHelpDialog(reportRef.current, {
           category: "incorrect_answer",
@@ -62,7 +99,7 @@ export default function ListeningTestExperience({ test, html }) {
       window.removeEventListener("message", handleFrameMessage);
       themeObserver.disconnect();
     };
-  }, [sendThemeToFrame, syncFrameSettings, test.title]);
+  }, [sendThemeToFrame, syncFrameSettings, saveResult, test.title]);
 
   const changePlaybackRate = (event) => {
     const rate = Number(event.target.value);
@@ -109,13 +146,41 @@ export default function ListeningTestExperience({ test, html }) {
         )}
       </header>
 
+      {savedResult && (
+        <div role="status" className="shrink-0 border-b border-emerald-400/20 bg-emerald-500/10 px-3 py-2 sm:px-5">
+          <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-3 gap-y-1 text-sm text-emerald-200">
+            <CheckCircle2 size={18} className="shrink-0 text-emerald-300" aria-hidden="true" />
+            <p className="min-w-0 flex-1">
+              <strong>{savedResult.attempt.score}/{savedResult.attempt.total}</strong>
+              {savedResult.attempt.band != null && <> · approximate band <strong>{savedResult.attempt.band.toFixed(1)}</strong></>}
+              {" · "}
+              {savedResult.where === "account"
+                ? "Saved to your account."
+                : savedResult.where === "browser"
+                  ? accountUserId ? "Saved in this browser; account sync failed." : "Saved in this browser. Sign in to keep results across devices."
+                  : "This result could not be saved."}
+            </p>
+            <Link href="/listening#listening-history" className="font-semibold underline underline-offset-2">View history</Link>
+            <button type="button" onClick={() => setSavedResult(null)} className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-white/10" aria-label="Dismiss result message">
+              <X size={16} aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="min-h-0 flex-1 overflow-hidden bg-surface px-2 py-2 sm:px-4 sm:py-4 lg:px-6 lg:py-5">
         <iframe
           ref={frameRef}
           srcDoc={html}
           title={`${test.title} practice test`}
           className="mx-auto block h-full min-h-0 w-full max-w-[1600px] rounded-2xl border border-white/10 bg-surface shadow-[0_10px_40px_rgba(0,0,0,0.16)]"
-          onLoad={() => { sendThemeToFrame(); syncFrameSettings(); }}
+          onLoad={() => {
+            // A retake reloads the test page, which starts a new attempt.
+            startedAtRef.current = Date.now();
+            lastResultSignatureRef.current = "";
+            sendThemeToFrame();
+            syncFrameSettings();
+          }}
           sandbox="allow-scripts allow-forms allow-modals allow-downloads allow-pointer-lock allow-presentation"
           allowFullScreen
           loading="eager"

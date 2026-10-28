@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Clock3, Headphones, ListChecks, Music2 } from "lucide-react";
 import listeningTests from "@/data/listeningTests";
+import { ListeningCardStats, ListeningHistory } from "@/components/listening/ListeningProgress";
 
 const cardColors = {
   sky: "border-sky-400/20 from-sky-500/15 to-sky-500/[0.03] text-sky-200",
@@ -67,6 +68,7 @@ export default function ListeningPage() {
                   </li>
                 ))}
               </ol>
+              <ListeningCardStats slug={test.slug} />
               <Link href={`/listening/${test.slug}`} className="mt-6 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-brand-950/40 transition hover:bg-brand-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-300">
                 Start listening test <ArrowRight size={17} aria-hidden="true" className="transition-transform group-hover:translate-x-0.5" />
               </Link>
@@ -74,6 +76,8 @@ export default function ListeningPage() {
           ))}
         </div>
       </section>
+
+      <ListeningHistory />
 
       <p className="mt-8 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-xs leading-5 text-slate-400">
         These are independent practice materials. They are not official IELTS tests and are not affiliated with Cambridge English, the British Council, or IDP.
