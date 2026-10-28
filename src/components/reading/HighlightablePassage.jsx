@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import {
+  BookmarkCheck,
+  BookmarkPlus,
   Eraser,
   Trash2,
   Palette,
@@ -13,6 +16,7 @@ import {
   FontSize,
 } from "@/lib/highlightConstants";
 import { useTextHighlight } from "@/hooks/useTextHighlight";
+import { cleanTerm, termId } from "@/lib/vocabulary/vocabulary-notebook.mjs";
 
 const HIGH_CONTRAST_HIGHLIGHTS = {
   yellow: "#fef08a",
@@ -25,7 +29,17 @@ export default function HighlightablePassage({
   fontSize = "medium",
   highlightState,
   highContrastHighlights = false,
+  onSaveWord,
+  savedTermIds,
 }) {
+  // The word or short phrase the learner last selected, offered for saving.
+  const [pick, setPick] = useState(null);
+  const rememberPick = (text, paragraphText) => {
+    if (!onSaveWord) return;
+    const term = cleanTerm(text);
+    if (term) setPick({ term, paragraphText });
+  };
+  const pickSaved = pick ? savedTermIds?.has(termId(pick.term)) : false;
   const {
     highlights,
     eraseMode,
@@ -100,6 +114,29 @@ export default function HighlightablePassage({
           Clear all
         </button>
 
+        {onSaveWord && (
+          <>
+            <div className="w-px h-6 bg-white/10" />
+            <button
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => pick && !pickSaved && onSaveWord(pick)}
+              disabled={!pick || pickSaved}
+              className={`flex min-h-11 max-w-[14rem] items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
+                pickSaved
+                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                  : pick
+                    ? "border-brand-500/40 bg-brand-500/10 text-brand-200 hover:bg-brand-500/20"
+                    : "cursor-not-allowed border-white/10 bg-white/5 text-slate-400 opacity-70"
+              }`}
+              title={pick ? `Save "${pick.term}" to your vocabulary notebook` : "Select or double-click a word in the passage to save it"}
+            >
+              {pickSaved ? <BookmarkCheck size={12} aria-hidden="true" /> : <BookmarkPlus size={12} aria-hidden="true" />}
+              <span className="truncate">{pick ? (pickSaved ? `Saved "${pick.term}"` : `Save "${pick.term}"`) : "Save word"}</span>
+            </button>
+          </>
+        )}
+
         {totalHighlights > 0 && (
           <span className="text-xs text-slate-500">
             {totalHighlights} highlight{totalHighlights !== 1 ? "s" : ""}
@@ -125,12 +162,14 @@ export default function HighlightablePassage({
             <p
               key={paragraphKey}
               className="mb-6 overflow-wrap-anywhere break-words last:mb-0"
-              onMouseUp={(event) =>
-                handleSelection(paragraphKey, event.currentTarget)
-              }
-              onTouchEnd={(event) =>
-                handleSelection(paragraphKey, event.currentTarget)
-              }
+              onMouseUp={(event) => {
+                rememberPick(window.getSelection()?.toString(), p.text);
+                handleSelection(paragraphKey, event.currentTarget);
+              }}
+              onTouchEnd={(event) => {
+                rememberPick(window.getSelection()?.toString(), p.text);
+                handleSelection(paragraphKey, event.currentTarget);
+              }}
             >
               <span className="mr-3 inline-block font-semibold uppercase tracking-[0.2em] text-brand-400/90">
                 {p.label}
@@ -151,9 +190,10 @@ export default function HighlightablePassage({
                     aria-pressed={Boolean(highlightColor)}
                     aria-label={`Passage word ${tok.trim()}; press Enter or Space to toggle highlight`}
                     tabIndex={i === firstWordIndex ? 0 : -1}
-                    onDoubleClick={() =>
-                      handleDoubleClick(tokenKey, paragraphKey, tok.trim())
-                    }
+                    onDoubleClick={() => {
+                      rememberPick(tok, p.text);
+                      handleDoubleClick(tokenKey, paragraphKey, tok.trim());
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
