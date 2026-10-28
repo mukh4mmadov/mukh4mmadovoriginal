@@ -185,3 +185,26 @@ export function getReviewedQuestionCount(userId) {
     return 0;
   }
 }
+
+export function getReviewedQuestionIds(userId) {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const stored = window.localStorage.getItem(reviewedStorageKey(userId));
+    const reviewedIds = stored ? JSON.parse(stored) : [];
+    return Array.isArray(reviewedIds) ? reviewedIds : [];
+  } catch {
+    return [];
+  }
+}
+
+// Replaces this browser's queue and reviewed marks, e.g. after merging with the account copy.
+export function replaceReviewQueue(queue, reviewedIds, userId) {
+  if (!saveReviewQueue(queue, userId)) return false;
+  try {
+    window.localStorage.setItem(reviewedStorageKey(userId), JSON.stringify(reviewedIds));
+    return true;
+  } catch {
+    return false;
+  }
+}

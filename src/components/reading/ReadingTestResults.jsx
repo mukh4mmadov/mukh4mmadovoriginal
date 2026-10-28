@@ -22,6 +22,9 @@ import { addMissedQuestionsToReviewQueue, formatAnswer, getReviewQueue, isAnswer
 import { renumberInstructions } from "@/lib/reading/question-numbering.mjs";
 import { locateEvidence } from "@/lib/reading/evidence-locator.mjs";
 import EvidenceViewer from "@/components/reading/EvidenceViewer";
+import { useAuth } from "@/contexts/AuthContext";
+import { getAccountUserId } from "@/lib/auth/account";
+import { saveReviewItemsToAccount } from "@/lib/reading/review-queue-account";
 
 function allQuestions(passage) {
   return passage.questionGroups.flatMap((g) => g.questions);
@@ -38,6 +41,8 @@ export default function ReadingTestResults({
   userId,
 }) {
   const questions = useMemo(() => allQuestions(passage), [passage]);
+  const { user, profile, isLoading } = useAuth();
+  const accountUserId = getAccountUserId(user, profile, isLoading);
   const questionNumbers = useMemo(() => {
     const map = new Map();
     questions.forEach((question, index) => {
@@ -209,6 +214,13 @@ export default function ReadingTestResults({
     setReviewQueueCount(queue.length);
     setMissedQuestionsSaved(true);
     setReviewQueueMessage(`${missedCount} missed or skipped question${missedCount === 1 ? "" : "s"} saved to your review queue.`);
+    if (accountUserId && accountUserId === userId) {
+      const missedIds = new Set(questions.filter((question) => !isAnswerCorrect(question, answers[question.id])).map((question) => `${passage.slug}:${question.id}`));
+      saveReviewItemsToAccount(accountUserId, queue.filter((item) => missedIds.has(item.id))).catch((error) => {
+        // The queue is still saved in this browser; the review page retries the sync.
+        console.warn("Review queue could not be saved to the account:", error);
+      });
+    }
   };
 
   const shareResult = async () => {
