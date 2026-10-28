@@ -1,9 +1,10 @@
 import readingTestsModule from "@/data/readingTests_new";
 import listeningTests from "@/data/listeningTests";
 import writingTasks from "@/data/writingTasks";
+import { DRILL_TYPES } from "@/lib/reading/question-drills.mjs";
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://mukh4mmadovoriginal.vercel.app").replace(/\/$/, "");
-const staticRoutes = ["/home", "/reading", "/readingmock", "/listening", "/writing", "/roadmap", "/changelog", "/support", "/privacy", "/terms", "/contact"];
+const staticRoutes = ["/home", "/reading", "/reading/practice", "/readingmock", "/listening", "/writing", "/roadmap", "/changelog", "/support", "/privacy", "/terms", "/contact"];
 
 export default function sitemap() {
   const staticPages = staticRoutes.map((route) => ({
@@ -24,5 +25,10 @@ export default function sitemap() {
     changeFrequency: "monthly",
   }));
 
-  return [...staticPages, ...passagePages, ...listeningPages, ...writingPages];
+  const drillPages = DRILL_TYPES.map(({ type }) => ({
+    url: `${siteUrl}/reading/practice/${type}`,
+    changeFrequency: "monthly",
+  }));
+
+  return [...staticPages, ...passagePages, ...drillPages, ...listeningPages, ...writingPages];
 }

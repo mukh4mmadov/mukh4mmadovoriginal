@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   ClipboardList,
   BookMarked,
+  Target,
   CalendarDays,
   Flame,
 } from "lucide-react";
@@ -220,6 +221,11 @@ export default function ReadingListPage() {
             <ArrowRight size={15} aria-hidden="true" />
           </Link>
         )}
+        <Link href="/reading/practice" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/5">
+          <Target size={17} aria-hidden="true" />
+          Practise by question type
+          <ArrowRight size={15} aria-hidden="true" />
+        </Link>
         <Link href="/vocabulary" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/5">
           <BookMarked size={17} aria-hidden="true" />
           {vocabularyCount > 0 ? `Vocabulary notebook (${vocabularyCount} ${vocabularyCount === 1 ? "word" : "words"})` : "Vocabulary notebook"}
@@ -264,9 +270,14 @@ export default function ReadingListPage() {
                 {questionTypeRecommendation.skill.type.replace(/-/g, " ")}: {Math.round(questionTypeRecommendation.skill.accuracy * 100)}% across {questionTypeRecommendation.skill.total} saved answers.
               </p>
             </div>
-            <Link href={`/reading/${questionTypeRecommendation.test.slug}`} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-sm font-semibold text-amber-100 hover:bg-amber-300/15">
-              Practice {questionTypeRecommendation.test.title} <ArrowRight size={16} aria-hidden="true" />
-            </Link>
+            <div className="flex flex-col gap-2 sm:items-end">
+              <Link href={`/reading/practice/${questionTypeRecommendation.skill.type}`} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-sm font-semibold text-amber-100 hover:bg-amber-300/15">
+                Drill 10 {questionTypeRecommendation.skill.type.replace(/-/g, " ")} questions <ArrowRight size={16} aria-hidden="true" />
+              </Link>
+              <Link href={`/reading/${questionTypeRecommendation.test.slug}`} className="inline-flex min-h-9 items-center gap-1 text-sm text-amber-100/90 hover:underline">
+                Or practise {questionTypeRecommendation.test.title}
+              </Link>
+            </div>
           </div>
         </section>
       )}
