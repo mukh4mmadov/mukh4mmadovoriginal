@@ -607,7 +607,7 @@ export default function ReadingTestResults({
                             <p className="text-sm text-slate-200">
                               {q.before}{" "}
                               <span className="font-semibold text-white">
-                                {given || "[No answer]"}
+                                {given ? formatAnswer(q, given, passage) : "[No answer]"}
                               </span>{" "}
                               {q.after}
                             </p>
