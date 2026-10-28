@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, BookOpen, CheckCircle2, ClipboardList, RotateCcw, Trash2 } from "lucide-react";
+import { ArrowRight, BookOpen, CheckCircle2, ClipboardList, MapPin, RotateCcw, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   clearReviewQueue,
@@ -12,6 +12,16 @@ import {
   removeReviewQueueItem,
   unmarkQuestionReviewed,
 } from "@/lib/reading/answer-review";
+import readingTestsModule from "@/data/readingTests_new";
+import { locateEvidence } from "@/lib/reading/evidence-locator.mjs";
+import EvidenceViewer from "@/components/reading/EvidenceViewer";
+
+function findEvidence(item) {
+  const passage = readingTestsModule.readingTests.find((test) => test.slug === item.passageSlug)?.passages[0];
+  const question = passage?.questionGroups.flatMap((group) => group.questions).find((candidate) => candidate.id === item.questionId);
+  const location = question ? locateEvidence(passage, question) : null;
+  return location ? { passage, question, location, number: item.questionNumber, correctAnswer: item.correctAnswer } : null;
+}
 
 const QUESTION_TYPE_LABELS = {
   "true-false-not-given": "True / False / Not Given",
@@ -29,6 +39,8 @@ export default function ReviewPage() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [confirmClear, setConfirmClear] = useState(false);
   const [message, setMessage] = useState("");
+  const [evidenceItem, setEvidenceItem] = useState(null);
+  const evidenceById = useMemo(() => new Map(queue.map((item) => [item.id, findEvidence(item)])), [queue]);
 
   useEffect(() => {
     const nextQueue = getReviewQueue(userId);
@@ -179,6 +191,11 @@ export default function ReviewPage() {
                     <button type="button" onClick={() => toggleReviewed(item)} aria-pressed={reviewed} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-white/10 px-3 text-sm text-slate-200 hover:bg-white/5">
                       <CheckCircle2 size={16} aria-hidden="true" /> {reviewed ? "Reviewed" : "Mark reviewed"}
                     </button>
+                    {evidenceById.get(item.id) && (
+                      <button type="button" onClick={() => setEvidenceItem(evidenceById.get(item.id))} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 text-sm font-medium text-amber-200 hover:bg-amber-400/20">
+                        <MapPin size={16} aria-hidden="true" /> Show me where
+                      </button>
+                    )}
                     <Link href={`/reading/${item.passageSlug}`} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-500/10 px-3 text-sm font-medium text-brand-200 hover:bg-brand-500/20">
                       <BookOpen size={16} aria-hidden="true" /> Practice this passage
                     </Link>
@@ -202,6 +219,14 @@ export default function ReviewPage() {
         </section>
       )}
       {message && <p role="status" className="mt-5 text-sm text-slate-300">{message}</p>}
+      <EvidenceViewer
+        passage={evidenceItem?.passage}
+        question={evidenceItem?.question}
+        questionNumber={evidenceItem?.number}
+        location={evidenceItem?.location}
+        correctAnswer={evidenceItem?.correctAnswer}
+        onClose={() => setEvidenceItem(null)}
+      />
     </main>
   );
 }

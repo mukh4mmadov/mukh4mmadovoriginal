@@ -183,6 +183,18 @@ if (errors.length > 0) {
   console.log(`Question data check passed: ${readingTests.length} passages, ${questionCount} questions.`);
 }
 
+// Informational: how many questions the results screen can point to in the passage.
+const { summarizeEvidenceCoverage } = await import(
+  pathToFileURL(resolve(projectDirectory, "src/lib/reading/evidence-locator.mjs")).href
+);
+const coverage = summarizeEvidenceCoverage(readingTests.flatMap((test) => test.passages || []));
+const percent = (value) => `${Math.round((value / Math.max(1, coverage.questions)) * 100)}%`;
+console.log(
+  `"Show me where" coverage: ${coverage.exact} exact sentence (${percent(coverage.exact)}), `
+  + `${coverage.paragraph} paragraph only (${percent(coverage.paragraph)}), ${coverage.none} not located. `
+  + "Add an `evidence` field (an exact passage quote) to raise it.",
+);
+
 if (process.argv.includes("--self-test-invalid")) {
   const emptyPromptFixture = structuredClone(readingTests);
   const emptyPromptQuestion = findQuestion(emptyPromptFixture, "the-wonder-plant", "q1");
