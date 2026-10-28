@@ -1,9 +1,4 @@
 import { supabase } from '../client';
-import {
-  ReadingProgress,
-  ReadingProgressInsert,
-  ReadingProgressUpdate,
-} from '../models';
 
 const pendingAllProgress = new Map();
 

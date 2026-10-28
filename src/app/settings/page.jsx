@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Settings, ArrowLeft, Bell, Moon, Sun, Globe } from 'lucide-react';
+import { Settings, ArrowLeft, Bell, Moon, BookOpen } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const AI_DATA_CONSENT_KEY = 'ai-data-sharing-consent-v1';
+const READING_FONT_SIZE_KEY = 'readingFontSize';
 
 function decodeApplicationServerKey(base64String) {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -29,10 +30,8 @@ export default function SettingsPage() {
   const [aiDataConsent, setAiDataConsent] = useState(false);
 
   const [formData, setFormData] = useState({
-    theme: 'dark',
-    language: 'en',
-    auto_save_enabled: true,
-    reading_font_size: 16,
+    theme: 'system',
+    reading_font_size: 'medium',
   });
 
   useEffect(() => {
@@ -43,7 +42,12 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const savedTheme = window.localStorage.getItem('themePreference');
-    if (savedTheme) setFormData((current) => ({ ...current, theme: savedTheme }));
+    const savedFontSize = window.localStorage.getItem(READING_FONT_SIZE_KEY);
+    setFormData((current) => ({
+      ...current,
+      ...(savedTheme ? { theme: savedTheme } : {}),
+      ...(['small', 'medium', 'large'].includes(savedFontSize) ? { reading_font_size: savedFontSize } : {}),
+    }));
     setAnalyticsConsent(window.localStorage.getItem('analyticsConsent') === 'granted');
     setAiDataConsent(window.localStorage.getItem(AI_DATA_CONSENT_KEY) === 'accepted');
   }, []);
@@ -70,16 +74,6 @@ export default function SettingsPage() {
     }).catch(() => setPushEnabled(false));
   }, []);
 
-  useEffect(() => {
-    const handleError = (error) => {
-      console.error('Settings page error:', error);
-      router.push(`/login?redirect=${encodeURIComponent('/settings')}`);
-    };
-
-    window.addEventListener('error', handleError);
-    return () => window.removeEventListener('error', handleError);
-  }, [router]);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -88,6 +82,7 @@ export default function SettingsPage() {
 
     try {
       window.localStorage.setItem('themePreference', formData.theme);
+      window.localStorage.setItem(READING_FONT_SIZE_KEY, formData.reading_font_size);
       window.localStorage.setItem('analyticsConsent', analyticsConsent ? 'granted' : 'denied');
       const darkMode = formData.theme === 'system'
         ? window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -96,7 +91,7 @@ export default function SettingsPage() {
       document.documentElement.classList.toggle('dark', darkMode);
       document.documentElement.style.colorScheme = darkMode ? 'dark' : 'light';
       window.dispatchEvent(new CustomEvent('app-theme-change', { detail: { darkMode } }));
-      setSuccess('Settings updated successfully');
+      setSuccess('Settings saved.');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       setError(err.message || 'Failed to update settings');
@@ -198,7 +193,7 @@ export default function SettingsPage() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || !user) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-slate-950" aria-busy="true">
         <div role="status" aria-label="Loading settings">
@@ -213,6 +208,7 @@ export default function SettingsPage() {
     <main className="min-h-screen bg-slate-950">
       <div className="max-w-3xl mx-auto px-4 py-8">
         <button
+          type="button"
           onClick={() => router.back()}
           className="flex items-center gap-2 text-slate-400 hover:text-white mb-6 transition-colors"
         >
@@ -232,13 +228,13 @@ export default function SettingsPage() {
           </div>
 
           {error && (
-            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg" role="alert">
               <p className="text-sm text-red-400">{error}</p>
             </div>
           )}
 
           {success && (
-            <div className="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+            <div className="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-lg" role="status">
               <p className="text-sm text-green-400">{success}</p>
             </div>
           )}
@@ -289,7 +285,7 @@ export default function SettingsPage() {
 
             <div>
               <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Moon size={18} />
+                <Moon size={18} aria-hidden="true" />
                 Appearance
               </h3>
               <div className="space-y-4">
@@ -316,37 +312,7 @@ export default function SettingsPage() {
 
             <div>
               <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Globe size={18} />
-                Language & Region
-              </h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
-                  <div>
-                    <label htmlFor="language" className="text-white font-medium">Language</label>
-                    <p id="language-description" className="text-sm text-slate-400">Select your language</p>
-                  </div>
-                  <select
-                    id="language"
-                    value={formData.language}
-                    onChange={(e) => setFormData({ ...formData, language: e.target.value })}
-                    aria-describedby="language-description"
-                    className="px-4 py-2 bg-white/10 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    disabled={isSubmitting}
-                  >
-                    <option value="en">English</option>
-                    <option value="es">Spanish</option>
-                    <option value="fr">French</option>
-                    <option value="de">German</option>
-                    <option value="zh">Chinese</option>
-                    <option value="ar">Arabic</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Bell size={18} />
+                <Bell size={18} aria-hidden="true" />
                 Notifications
               </h3>
               <div className="space-y-4">
@@ -396,46 +362,27 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold text-white mb-4">Reading</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
-                  <div>
-                    <label htmlFor="auto-save-enabled" className="text-white font-medium">Auto Save Progress</label>
-                    <p id="auto-save-description" className="text-sm text-slate-400">Automatically save your reading progress</p>
-                  </div>
-                  <div className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      id="auto-save-enabled"
-                      type="checkbox"
-                      checked={formData.auto_save_enabled}
-                      onChange={(e) => setFormData({ ...formData, auto_save_enabled: e.target.checked })}
-                      className="sr-only peer"
-                      aria-describedby="auto-save-description"
-                      disabled={isSubmitting}
-                    />
-                    <div className="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500" />
-                  </div>
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <BookOpen size={18} aria-hidden="true" />
+                Reading
+              </h3>
+              <div className="flex flex-col gap-3 p-4 bg-white/5 rounded-lg sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <label htmlFor="reading-font-size" className="text-white font-medium">Default text size</label>
+                  <p id="reading-font-size-description" className="text-sm text-slate-400">Used for passages and questions when you open a reading test. Drafts and results are always saved on this device automatically.</p>
                 </div>
-
-                <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
-                  <div>
-                    <label htmlFor="reading-font-size" className="text-white font-medium">Reading Font Size</label>
-                    <p id="reading-font-size-description" className="text-sm text-slate-400">Adjust text size for reading passages</p>
-                  </div>
-                  <select
-                    id="reading-font-size"
-                    value={formData.reading_font_size}
-                    onChange={(e) => setFormData({ ...formData, reading_font_size: parseInt(e.target.value) })}
-                    aria-describedby="reading-font-size-description"
-                    className="px-4 py-2 bg-white/10 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    disabled={isSubmitting}
-                  >
-                    <option value="14">Small</option>
-                    <option value="16">Medium</option>
-                    <option value="18">Large</option>
-                    <option value="20">Extra Large</option>
-                  </select>
-                </div>
+                <select
+                  id="reading-font-size"
+                  value={formData.reading_font_size}
+                  onChange={(e) => setFormData({ ...formData, reading_font_size: e.target.value })}
+                  aria-describedby="reading-font-size-description"
+                  className="px-4 py-2 bg-white/10 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={isSubmitting}
+                >
+                  <option value="small">Small</option>
+                  <option value="medium">Medium</option>
+                  <option value="large">Large</option>
+                </select>
               </div>
             </div>
 

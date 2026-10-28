@@ -17,6 +17,11 @@ export default function RoadmapPage() {
   async function loadRoadmap() {
     setIsLoading(true);
     setLoadError(false);
+    if (!supabase) {
+      setItems([]);
+      setIsLoading(false);
+      return;
+    }
     try {
       const { data, error } = await supabase
         .from("roadmap")

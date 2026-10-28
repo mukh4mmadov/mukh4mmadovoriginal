@@ -93,7 +93,8 @@
   }
 
   html:not(.dark) .btn-primary {
-    @apply from-brand-600 to-brand-700 text-white;
+    @apply from-brand-600 to-brand-700;
+    color: #fff;
   }
 
   html:not(.dark) .btn-secondary {
@@ -108,7 +109,7 @@
     @apply text-slate-700;
   }
 
-  html:not(.dark) header {
+  html:not(.dark) header.ielts-site-navbar {
     @apply border-slate-300 bg-white/95;
   }
 
@@ -140,19 +141,24 @@
     @apply text-slate-900;
   }
 
-  html:not(.dark) [class*="bg-slate-950"] {
+  html:not(.dark) :is([class^="bg-slate-950"], [class*=" bg-slate-950"]) {
     background-color: rgb(241 245 249 / 0.96) !important;
   }
 
-  html:not(.dark) [class*="bg-surface"] {
+  html:not(.dark) :is([class^="bg-surface"], [class*=" bg-surface"]) {
     background-color: rgb(255 255 255 / 0.96) !important;
   }
 
-  html:not(.dark) [class*="bg-white/"] {
+  /* The solid token is used by panels and dialogs that must stay opaque. */
+  html:not(.dark) [class~="bg-surface"] {
+    background-color: #fff !important;
+  }
+
+  html:not(.dark) :is([class^="bg-white/"], [class*=" bg-white/"]) {
     background-color: rgb(15 23 42 / 0.045) !important;
   }
 
-  html:not(.dark) [class*="border-white/"] {
+  html:not(.dark) :is([class^="border-white/"], [class*=" border-white/"]) {
     border-color: rgb(100 116 139 / 0.24) !important;
   }
 
@@ -160,27 +166,72 @@
     --tw-ring-offset-color: #f8fafc;
   }
 
-  html:not(.dark) [class*="from-slate-950"],
-  html:not(.dark) [class*="via-slate-950"],
-  html:not(.dark) [class*="to-slate-950"] {
+  html:not(.dark) :is([class^="from-slate-950"], [class*=" from-slate-950"], [class^="via-slate-950"], [class*=" via-slate-950"], [class^="to-slate-950"], [class*=" to-slate-950"]):not(:is(.mock-experience, .support-experience, .auth-experience) *) {
     --tw-gradient-from: #f8fafc var(--tw-gradient-from-position) !important;
     --tw-gradient-to: rgb(248 250 252 / 0) var(--tw-gradient-to-position) !important;
   }
 
-  html:not(.dark) [class*="bg-blue-"],
-  html:not(.dark) [class*="bg-brand-"],
-  html:not(.dark) [class*="bg-red-"],
-  html:not(.dark) [class*="bg-green-"],
-  html:not(.dark) [class*="bg-emerald-"],
-  html:not(.dark) [class*="bg-orange-"],
-  html:not(.dark) [class*="bg-amber-"] {
+  html:not(.dark) :is([class~="bg-brand-500"], [class~="bg-brand-600"], [class~="bg-blue-500"], [class~="bg-red-500"], [class~="bg-green-500"], [class~="bg-emerald-500"], [class~="bg-rose-500"], [class~="bg-purple-500"], [class~="bg-cyan-500"], [class~="bg-sky-500"], [class~="bg-orange-500"], [class~="bg-accent-500"]) {
     color: #fff;
   }
 
-  html:not(.dark) .theme-form-control,
-  html:not(.dark) select:not([multiple]),
-  html:not(.dark) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
-  html:not(.dark) textarea {
+  /* Sky-500 is too light for white text on a light page. */
+  html:not(.dark) [class~="bg-brand-500"]:not(:is(.mock-experience, .support-experience, .auth-experience) *) {
+    background-color: #0369a1;
+  }
+
+  html:not(.dark) [class~="hover:bg-brand-600"]:hover:not(:is(.mock-experience, .support-experience, .auth-experience) *),
+  html:not(.dark) [class~="hover:bg-brand-400"]:hover:not(:is(.mock-experience, .support-experience, .auth-experience) *) {
+    background-color: #075985;
+  }
+
+  html:not(.dark) :is([class*="hover:bg-white/"]):hover:not(:is(.mock-experience, .support-experience, .auth-experience, .premium-results-card) *) {
+    background-color: rgb(15 23 42 / 0.06) !important;
+  }
+
+  html:not(.dark) :is([class*="hover:border-white/"]):hover:not(:is(.mock-experience, .support-experience, .auth-experience, .premium-results-card) *) {
+    border-color: rgb(100 116 139 / 0.4) !important;
+  }
+
+  /* Pastel accent text is readable on dark surfaces only; use deeper shades
+     on light surfaces. Dark-surface sections keep their own palette. */
+  html:not(.dark) :is(.text-brand-200, .text-brand-300, .text-brand-400, .text-sky-200, .text-sky-300, .text-sky-400):not(:is(.mock-experience, .support-experience, .auth-experience, .premium-results-card, [class~="bg-brand-500"]) *) {
+    color: #0369a1;
+  }
+
+  html:not(.dark) :is(.text-emerald-200, .text-emerald-300, .text-emerald-400, .text-green-400):not(:is(.mock-experience, .support-experience, .auth-experience, .premium-results-card) *) {
+    color: #047857;
+  }
+
+  html:not(.dark) :is(.text-amber-100, .text-amber-200, .text-amber-300, .text-amber-400, .text-yellow-400):not(:is(.mock-experience, .support-experience, .auth-experience, .premium-results-card) *) {
+    color: #b45309;
+  }
+
+  html:not(.dark) :is(.text-rose-200, .text-rose-300, .text-rose-400, .text-red-200, .text-red-300, .text-red-400):not(:is(.mock-experience, .support-experience, .auth-experience, .premium-results-card) *) {
+    color: #be123c;
+  }
+
+  html:not(.dark) :is(.text-cyan-300, .text-cyan-400):not(:is(.mock-experience, .support-experience, .auth-experience, .premium-results-card) *) {
+    color: #0e7490;
+  }
+
+  html:not(.dark) :is(.text-purple-300, .text-purple-400, .text-violet-300, .text-violet-400):not(:is(.mock-experience, .support-experience, .auth-experience, .premium-results-card) *) {
+    color: #6d28d9;
+  }
+
+  html:not(.dark) :is(.text-blue-300, .text-blue-400):not(:is(.mock-experience, .support-experience, .auth-experience, .premium-results-card) *) {
+    color: #1d4ed8;
+  }
+
+  html:not(.dark) :is(.text-accent-400, .text-orange-300, .text-orange-400):not(:is(.mock-experience, .support-experience, .auth-experience, .premium-results-card) *) {
+    color: #c2410c;
+  }
+
+  html:not(.dark) .gradient-text {
+    background-image: linear-gradient(to right, #0369a1, #0284c7, #c2410c);
+  }
+
+  html:not(.dark) :is(.theme-form-control, select:not([multiple]), input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea):not(:is(.mock-experience, .support-experience, .auth-experience) *) {
     color: #0f172a !important;
     background-color: #fff !important;
     border-color: #cbd5e1 !important;
@@ -263,7 +314,10 @@
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-3 font-semibold text-white shadow-[0_10px_30px_rgba(14,165,233,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:from-brand-400 hover:to-brand-500 hover:shadow-[0_14px_36px_rgba(14,165,233,0.32)] active:scale-[0.98] active:translate-y-0;
+    /* Plain `color` on purpose: `@apply text-white` would also copy the
+       light-theme `.text-white` override below and turn the label dark. */
+    color: #fff;
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-3 font-semibold shadow-[0_10px_30px_rgba(14,165,233,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:from-brand-400 hover:to-brand-500 hover:shadow-[0_14px_36px_rgba(14,165,233,0.32)] active:scale-[0.98] active:translate-y-0;
   }
 
   .btn-secondary {
@@ -271,7 +325,8 @@
   }
 
   .btn-accent {
-    @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-accent-500 to-accent-600 px-5 py-3 font-semibold text-white shadow-[0_10px_30px_rgba(16,185,129,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:from-accent-400 hover:to-accent-500 active:scale-[0.98];
+    color: #fff;
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-accent-500 to-accent-600 px-5 py-3 font-semibold shadow-[0_10px_30px_rgba(16,185,129,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:from-accent-400 hover:to-accent-500 active:scale-[0.98];
   }
 
   .btn-ghost {
@@ -626,4 +681,44 @@ html:not(.dark) .mock-experience [class~="bg-brand-500"] {
   html:not(.dark) .mock-experience [class*="border-white/"] {
     border-color: rgb(148 163 184 / 0.32) !important;
   }
+}
+
+/* Sign-in pages and the results summary card are dark surfaces in both
+   themes, like the mock above. */
+.auth-experience {
+  color-scheme: dark;
+  color: #f8fafc;
+  background-color: #020617;
+}
+
+html:not(.dark) :is(.auth-experience, .premium-results-card) :is([class^="bg-slate-950"], [class*=" bg-slate-950"]) {
+  background-color: #020617 !important;
+}
+
+html:not(.dark) :is(.auth-experience, .premium-results-card) :is([class^="bg-white/"], [class*=" bg-white/"]) {
+  background-color: rgb(255 255 255 / 0.06) !important;
+}
+
+html:not(.dark) :is(.auth-experience, .premium-results-card) :is([class^="border-white/"], [class*=" border-white/"]) {
+  border-color: rgb(148 163 184 / 0.32) !important;
+}
+
+html:not(.dark) :is(.auth-experience, .premium-results-card) :is(.text-white, .text-slate-100) {
+  color: #f8fafc !important;
+}
+
+html:not(.dark) :is(.auth-experience, .premium-results-card) .text-slate-200 {
+  color: #e2e8f0 !important;
+}
+
+html:not(.dark) :is(.auth-experience, .premium-results-card) .text-slate-300 {
+  color: #cbd5e1 !important;
+}
+
+html:not(.dark) :is(.auth-experience, .premium-results-card) :is(.text-slate-400, .text-slate-500) {
+  color: #94a3b8 !important;
+}
+
+html:not(.dark) :is(.auth-experience, .premium-results-card) :is([class^="bg-surface"], [class*=" bg-surface"]) {
+  background-color: rgb(15 23 42 / 0.6) !important;
 }

@@ -12,8 +12,9 @@ tickets, admin pages, and an AI reading coach that currently defaults to Gemini.
 npm install
 ```
 
-2. Copy `.env.local.example` to `.env.local` and fill in the required
-   environment variables.
+2. Copy `.env.example` to `.env.local` and fill in the required
+   environment variables. Without the Supabase variables the site still runs
+   in guest mode (sign-in, sync and admin pages are unavailable).
 3. Start the dev server:
 
 ```bash
@@ -26,6 +27,7 @@ npm run dev
 
 ```bash
 npm run lint
+npm test
 npm run build
 ```
 

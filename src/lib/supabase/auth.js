@@ -1,10 +1,13 @@
 import { supabase } from './client';
+
+const missingConfigError = () => new Error('Sign-in is not available right now. Please try again later.');
 import { getSafeRedirectPath } from '@/lib/auth/redirect';
 
 export class AuthService {
   profileRequests = new Map();
 
   async signInWithGoogle({ forceAccountSelection = false } = {}) {
+    if (!supabase) throw missingConfigError();
     const currentOrigin = typeof window !== 'undefined' ? window.location.origin : null;
     const redirect = currentOrigin
       ? (() => {
@@ -39,11 +42,15 @@ export class AuthService {
   }
 
   async signOut() {
+    if (!supabase) return;
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   }
 
   async getCurrentUser() {
+    // Without Supabase configuration (for example in local development) the
+    // site still works in guest mode.
+    if (!supabase) return null;
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error) {
       if (error.name === 'AuthSessionMissingError') {
@@ -55,6 +62,7 @@ export class AuthService {
   }
 
   async getUserProfile(userId) {
+    if (!supabase) return null;
     const existingRequest = this.profileRequests.get(userId);
     if (existingRequest) return existingRequest;
 
@@ -112,6 +120,7 @@ export class AuthService {
   }
 
   async updateProfile(userId, updates) {
+    if (!supabase) throw missingConfigError();
     const profileUpdates = { ...updates };
     if (
       typeof profileUpdates.date_of_birth === 'string' &&
@@ -132,6 +141,7 @@ export class AuthService {
   }
 
   onAuthStateChange(callback) {
+    if (!supabase) return { data: { subscription: { unsubscribe() {} } } };
     return supabase.auth.onAuthStateChange(callback);
   }
 }

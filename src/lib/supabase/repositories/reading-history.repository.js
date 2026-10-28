@@ -1,9 +1,4 @@
 import { supabase } from '../client';
-import {
-  ReadingHistory,
-  ReadingHistoryInsert,
-  ReadingHistoryUpdate,
-} from '../models';
 
 export class ReadingHistoryRepository {
   async getHistory(userId, limit = 50, offset = 0) {

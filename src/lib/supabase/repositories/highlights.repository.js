@@ -1,9 +1,4 @@
 import { supabase } from '../client';
-import {
-  Highlight,
-  HighlightInsert,
-  HighlightUpdate,
-} from '../models';
 
 export class HighlightsRepository {
   async getHighlights(userId, passageId) {

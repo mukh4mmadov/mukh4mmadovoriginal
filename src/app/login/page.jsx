@@ -93,7 +93,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-slate-950">
+    <main className="auth-experience min-h-screen relative overflow-hidden bg-slate-950">
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900" />
 
@@ -200,7 +200,7 @@ export default function LoginPage() {
           onClose={() => setToast(null)}
         />
       )}
-    </div>
+    </main>
   );
 }
 

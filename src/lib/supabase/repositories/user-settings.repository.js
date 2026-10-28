@@ -1,9 +1,4 @@
 import { supabase } from '../client';
-import {
-  UserSettings,
-  UserSettingsInsert,
-  UserSettingsUpdate,
-} from '../models';
 
 export class UserSettingsRepository {
   async getSettings(userId) {

@@ -9,7 +9,8 @@
     "start": "next start",
     "qa:public": "node scripts/qa-public-ui.mjs",
     "qa:offline": "node scripts/test-offline-fallback.mjs",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "node --test \"src/lib/reading/*.test.mjs\" && node scripts/test-reading-attempt-outbox.mjs && node scripts/test-admin-analytics-series.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

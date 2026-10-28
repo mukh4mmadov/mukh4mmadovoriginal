@@ -13,7 +13,14 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }) {
   const { slug } = await params;
   const test = getListeningTest(slug);
-  return test ? { title: test.title, description: `Timed IELTS Listening practice: ${test.title}.` } : {};
+  if (!test) return { title: "Listening Test Not Found" };
+  const description = `Timed IELTS Listening practice test: ${test.title}. Four sections, 40 questions and built-in audio controls.`;
+  return {
+    title: test.title,
+    description,
+    alternates: { canonical: `/listening/${test.slug}` },
+    openGraph: { title: `${test.title} | Mukh4mmadov IELTS`, description, url: `/listening/${test.slug}` },
+  };
 }
 
 export default async function ListeningTestPage({ params }) {

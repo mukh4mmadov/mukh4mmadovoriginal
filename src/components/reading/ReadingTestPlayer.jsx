@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState, useRef, useEffect } from "react";
 import Timer from "@/components/shared/Timer";
@@ -23,6 +23,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { analyticsService } from "@/lib/analytics/analytics.service";
 import { isAnswerCorrect } from "@/lib/reading/answer-review";
 import { enqueueReadingAttempt, makeAttemptUuid } from "@/lib/reading/reading-attempt-outbox.mjs";
+import { renumberInstructions } from "@/lib/reading/question-numbering.mjs";
+import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 
 function allQuestions(passage) {
   return passage.questionGroups.flatMap((g) => g.questions);
@@ -66,6 +68,9 @@ export default function ReadingTestPlayer({ passage }) {
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [aiPersonality, setAiPersonality] = useState("friendly");
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [mobilePanel, setMobilePanel] = useState("passage");
+  const [siteHeaderHeight, setSiteHeaderHeight] = useState(0);
+  const submitDialogRef = useModalAccessibility(showSubmitDialog, () => setShowSubmitDialog(false));
   const remainingSecondsRef = useRef(TIMER_DURATION_SECONDS);
   const remainingMillisecondsRef = useRef(TIMER_DURATION_MS);
   const timerDeadlineRef = useRef(Date.now() + TIMER_DURATION_MS);
@@ -144,6 +149,24 @@ export default function ReadingTestPlayer({ passage }) {
   };
 
   useEffect(() => {
+    try {
+      const savedSize = window.localStorage.getItem("readingFontSize");
+      if (["small", "medium", "large"].includes(savedSize)) setFontSize(savedSize);
+    } catch {
+      // Keep the default size when storage is unavailable.
+    }
+  }, []);
+
+  const changeFontSize = (size) => {
+    setFontSize(size);
+    try {
+      window.localStorage.setItem("readingFontSize", size);
+    } catch {
+      // The size still applies for this visit.
+    }
+  };
+
+  useEffect(() => {
     const media = window.matchMedia("(min-width: 1024px)");
     const updateLayout = () => setIsDesktop(media.matches);
     updateLayout();
@@ -156,6 +179,18 @@ export default function ReadingTestPlayer({ passage }) {
     document.addEventListener("fullscreenchange", sync);
     sync();
     return () => document.removeEventListener("fullscreenchange", sync);
+  }, []);
+
+  // The test fills the viewport below the sticky site header, so measure it
+  // instead of hard-coding its height.
+  useEffect(() => {
+    const header = document.querySelector(".ielts-site-navbar");
+    if (!header) return;
+    const update = () => setSiteHeaderHeight(header.getBoundingClientRect().height);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(header);
+    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
@@ -339,9 +374,14 @@ export default function ReadingTestPlayer({ passage }) {
     const element = questionRefs.current[questionId];
 
     if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "center" });
-      element.focus({ preventScroll: true });
+      setMobilePanel("questions");
       setActiveQ(questionId);
+      // On phones the question list may be hidden behind the passage tab, so
+      // wait for it to render before scrolling.
+      window.requestAnimationFrame(() => {
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
+        element.focus({ preventScroll: true });
+      });
     }
   };
 
@@ -504,6 +544,7 @@ export default function ReadingTestPlayer({ passage }) {
     setSubmitted(true);
     setTimerRunning(false);
     setShowSubmitDialog(false);
+    window.scrollTo({ top: 0 });
 
     const correctCount = questions.filter((q) =>
       isAnswerCorrect(q, answers[q.id]),
@@ -586,6 +627,7 @@ export default function ReadingTestPlayer({ passage }) {
 
   const resetTestState = () => {
     setAnswers({});
+    previousAnswersRef.current = {};
     setSubmitted(false);
     submittedRef.current = false;
     remainingSecondsRef.current = TIMER_DURATION_SECONDS;
@@ -597,6 +639,9 @@ export default function ReadingTestPlayer({ passage }) {
     setTimeSpent(0);
     setRemainingSeconds(TIMER_DURATION_SECONDS);
     setShowSubmitDialog(false);
+    setMobilePanel("passage");
+    setEvents([{ type: "opened", timestamp: Date.now() }]);
+    window.scrollTo({ top: 0 });
   };
 
   const handleRetry = () => {
@@ -612,6 +657,7 @@ export default function ReadingTestPlayer({ passage }) {
       }
     });
     setAnswers(nextAnswers);
+    previousAnswersRef.current = nextAnswers;
     setSubmitted(false);
     submittedRef.current = false;
     remainingSecondsRef.current = TIMER_DURATION_SECONDS;
@@ -623,6 +669,9 @@ export default function ReadingTestPlayer({ passage }) {
     setTimeSpent(0);
     setRemainingSeconds(TIMER_DURATION_SECONDS);
     setShowSubmitDialog(false);
+    setMobilePanel("passage");
+    setEvents([{ type: "opened", timestamp: Date.now() }]);
+    window.scrollTo({ top: 0 });
   };
 
   if (submitted) {
@@ -641,27 +690,34 @@ export default function ReadingTestPlayer({ passage }) {
   }
 
   return (
-    <main className="flex h-screen min-h-[100dvh] flex-col bg-surface text-slate-100">
+    <main
+      className="flex min-h-[100dvh] flex-col bg-surface text-slate-100 lg:min-h-0"
+      style={isDesktop ? { height: `calc(100dvh - ${siteHeaderHeight}px)` } : undefined}
+    >
       <div className={`flex-shrink-0 border-b border-white/10 bg-surface/95 px-3 py-2 backdrop-blur-sm md:px-6 md:py-3${isFullscreen ? " hidden" : ""}`}>
         <div className="mx-auto flex flex-col items-stretch gap-2 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
           <div className="w-full min-w-0 lg:flex-1">
-            <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.28em] text-brand-400 sm:text-[11px]">
+            <p className="mb-0.5 hidden text-xs text-brand-400 sm:line-clamp-1">
               {passage.subtitle}
             </p>
-            <h1 className="break-words font-display text-base font-semibold leading-snug sm:text-xl md:text-2xl">
+            <h1 className="break-words font-display text-lg font-semibold leading-snug sm:text-xl md:text-2xl">
               {passage.title}
             </h1>
-            <p className="mt-1 text-[10px] text-slate-400 sm:text-xs">{passage.provenanceLabel}</p>
-            {draftRestored && draftSaveStatus && <p role="status" className="mt-1 text-[10px] text-slate-500 sm:text-xs">{draftSaveStatus}</p>}
+            <p className="mt-1 text-[11px] text-slate-400 sm:text-xs">
+              {passage.provenanceLabel}
+              {draftRestored && draftSaveStatus && <span role="status" className="text-slate-500"> · {draftSaveStatus}</span>}
+            </p>
           </div>
-          <div className="flex w-full flex-wrap items-center justify-between gap-1 lg:w-auto lg:flex-shrink-0 lg:justify-end lg:gap-2 xl:gap-3">
-            <div className="hidden sm:flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-1">
-              <Type size={14} className="text-slate-400" />
+          <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:flex-shrink-0 lg:justify-end xl:gap-3">
+            <div className="hidden sm:flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-1" role="group" aria-label="Text size">
+              <Type size={14} className="text-slate-400" aria-hidden="true" />
               {["small", "medium", "large"].map((size) => (
                 <button
                   key={size}
                   type="button"
-                  onClick={() => setFontSize(size)}
+                  onClick={() => changeFontSize(size)}
+                  aria-label={`${size[0].toUpperCase()}${size.slice(1)} text`}
+                  aria-pressed={fontSize === size}
                   className={`h-6 w-6 rounded-full text-[10px] font-semibold transition-all duration-200 sm:h-7 sm:w-7 sm:text-[11px] ${
                     fontSize === size
                       ? "bg-brand-500 text-white shadow-lg shadow-brand-500/20"
@@ -683,18 +739,18 @@ export default function ReadingTestPlayer({ passage }) {
             <button
               type="button"
               onClick={() => setAiChatOpen(true)}
-                  className="flex min-h-11 items-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/10 px-3 py-2 text-sm font-medium text-brand-300 transition-colors hover:bg-brand-500/20"
+              className="flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/10 px-3 py-2 text-sm font-medium text-brand-300 transition-colors hover:bg-brand-500/20"
               aria-label="Open AI Coach"
               title="Open AI Coach"
             >
-              <Bot size={16} />
+              <Bot size={16} aria-hidden="true" />
               <span className="hidden sm:inline">AI Coach</span>
             </button>
-            <FullscreenToggle className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-slate-200 transition hover:bg-white/10" />
-            <ReportPassageIssueButton passageTitle={passage.title} />
+            <FullscreenToggle className="hidden min-h-11 min-w-11 sm:inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/5 text-slate-200 transition hover:bg-white/10" />
+            <ReportPassageIssueButton passageTitle={passage.title} compact />
             <button
               type="button"
-              className="btn-primary text-sm sm:text-base"
+              className="btn-primary ml-auto min-h-11 px-4 py-2 text-sm sm:text-base lg:ml-0"
               onClick={handleSubmit}
             >
               Submit
@@ -704,11 +760,46 @@ export default function ReadingTestPlayer({ passage }) {
       </div>
 
       <div
+        role="tablist"
+        aria-label="Test sections"
+        className="sticky z-30 flex gap-2 border-b border-white/10 bg-surface/95 px-3 py-2 backdrop-blur-sm lg:hidden"
+        style={{ top: siteHeaderHeight }}
+      >
+        {[
+          { id: "passage", label: "Passage" },
+          { id: "questions", label: `Questions · ${answeredCount}/${questions.length}` },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            id={`reading-tab-${tab.id}`}
+            aria-selected={mobilePanel === tab.id}
+            aria-controls={`reading-panel-${tab.id}`}
+            onClick={() => {
+              setMobilePanel(tab.id);
+              window.scrollTo({ top: 0 });
+            }}
+            className={`min-h-11 flex-1 rounded-xl border px-3 text-sm font-semibold transition ${
+              mobilePanel === tab.id
+                ? "border-brand-500/50 bg-brand-500/15 text-brand-200"
+                : "border-white/10 text-slate-300 hover:bg-white/5"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div
         id="reading-shell"
-        className="flex flex-1 flex-col overflow-hidden lg:flex-row"
+        className="flex flex-1 flex-col lg:flex-row lg:overflow-hidden"
       >
         <div
-          className="flex-shrink-0 overflow-y-auto border-b border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.08),transparent_45%)] px-4 py-4 sm:px-6 sm:py-6 lg:border-b-0 lg:border-r lg:px-8 lg:py-8"
+          id="reading-panel-passage"
+          role={isDesktop ? undefined : "tabpanel"}
+          aria-labelledby={isDesktop ? undefined : "reading-tab-passage"}
+          className={`${mobilePanel === "passage" ? "" : "hidden lg:block "}flex-shrink-0 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.08),transparent_45%)] px-4 py-4 sm:px-6 sm:py-6 lg:overflow-y-auto lg:overscroll-contain lg:border-r lg:border-white/10 lg:px-8 lg:py-8`}
           style={{ width: isDesktop ? `${panelWidth}%` : "100%" }}
         >
           <div className="mx-auto max-w-3xl">
@@ -730,21 +821,42 @@ export default function ReadingTestPlayer({ passage }) {
               fontSize={fontSize}
               highlightState={highlightState}
             />
+            <button
+              type="button"
+              onClick={() => {
+                setMobilePanel("questions");
+                window.scrollTo({ top: 0 });
+              }}
+              className="btn-primary mt-6 w-full lg:hidden"
+            >
+              Go to questions
+            </button>
           </div>
         </div>
 
         <div
           className="hidden lg:flex h-full w-2 flex-shrink-0 cursor-col-resize items-center justify-center transition-colors duration-200 hover:bg-white/10"
           onMouseDown={() => setIsResizing(true)}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowLeft") setPanelWidth((width) => Math.max(30, width - 2));
+            if (event.key === "ArrowRight") setPanelWidth((width) => Math.min(78, width + 2));
+          }}
+          tabIndex={0}
           role="separator"
           aria-orientation="vertical"
           aria-label="Resize reading panels"
+          aria-valuemin={30}
+          aria-valuemax={78}
+          aria-valuenow={Math.round(panelWidth)}
         >
           <div className="h-16 w-1 rounded-full bg-white/20" />
         </div>
 
         <div
-          className="flex-1 overflow-y-auto border-t border-white/10 bg-surface/80 px-3 py-3 sm:px-4 sm:py-4 lg:border-t-0 lg:px-6 lg:py-6"
+          id="reading-panel-questions"
+          role={isDesktop ? undefined : "tabpanel"}
+          aria-labelledby={isDesktop ? undefined : "reading-tab-questions"}
+          className={`${mobilePanel === "questions" ? "" : "hidden lg:block "}flex-1 bg-surface/80 px-3 py-3 sm:px-4 sm:py-4 lg:overflow-y-auto lg:overscroll-contain lg:px-6 lg:py-6`}
           style={{ width: isDesktop ? `${100 - panelWidth}%` : "100%" }}
         >
           <div className="mx-auto max-w-xl space-y-4 sm:space-y-5">
@@ -758,21 +870,16 @@ export default function ReadingTestPlayer({ passage }) {
               </p>
             )}
             <div className="rounded-2xl border border-white/10 bg-white/5 p-3 shadow-[0_10px_40px_rgba(0,0,0,0.16)] backdrop-blur-sm sm:p-4">
-              <div className="mb-3 flex items-center justify-between sm:mb-4">
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400 sm:text-[11px]">
-                    Progress
-                  </p>
-                  <p className="text-xs text-slate-400 sm:text-sm">
-                    Keep pace and track your completion.
-                  </p>
-                </div>
-                <div className="rounded-full border border-brand-500/20 bg-brand-500/10 px-2 py-0.5 text-xs font-semibold text-brand-300 sm:px-3 sm:py-1 sm:text-sm">
-                  {Math.round(progress)}%
-                </div>
+              <div className="mb-3 sm:mb-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400 sm:text-[11px]">
+                  Progress
+                </p>
+                <p className="text-xs text-slate-400 sm:text-sm">
+                  Keep pace and track your completion.
+                </p>
               </div>
 
-              <div className="grid gap-2 sm:gap-3 sm:grid-cols-3">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 <div className="rounded-xl border border-white/10 bg-surface/70 p-2 sm:p-3">
                   <p className="text-[10px] uppercase tracking-[0.24em] text-slate-500 sm:text-[11px]">
                     Answered
@@ -799,7 +906,14 @@ export default function ReadingTestPlayer({ passage }) {
                 </div>
               </div>
 
-              <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+              <div
+                className="mt-4 h-2 overflow-hidden rounded-full bg-white/10"
+                role="progressbar"
+                aria-label="Questions answered"
+                aria-valuemin={0}
+                aria-valuemax={questions.length}
+                aria-valuenow={answeredCount}
+              >
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-brand-500 via-cyan-400 to-accent-500 transition-all duration-500 ease-out"
                   style={{ width: `${progress}%` }}
@@ -843,9 +957,11 @@ export default function ReadingTestPlayer({ passage }) {
                       key={q.id}
                       onClick={() => scrollToQuestion(q.id)}
                       className={`flex h-11 w-11 items-center justify-center rounded-full border text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5 sm:h-9 sm:w-9 sm:text-sm ${stateClass}`}
-                      title={`Question ${number}`}
+                      title={`Question ${number}${isAnswered ? " (answered)" : ""}`}
+                      aria-label={`Question ${number}, ${isAnswered ? "answered" : "unanswered"}`}
+                      aria-current={isActive ? "step" : undefined}
                     >
-                      {isAnswered ? <Check size={14} /> : number}
+                      {isAnswered ? <Check size={14} aria-hidden="true" /> : number}
                     </button>
                   );
                 })}
@@ -864,7 +980,7 @@ export default function ReadingTestPlayer({ passage }) {
                     highlightState={highlightState}
                     className="block mb-4 text-sm text-slate-400"
                   >
-                    {group.instructions}
+                    {renumberInstructions(group.instructions, questionNumbers.get(group.questions[0]?.id))}
                   </HighlightableText>
 
                   {group.questions[0].type === "matching-headings" &&
@@ -979,8 +1095,10 @@ export default function ReadingTestPlayer({ passage }) {
                             <div className="ml-9 flex flex-wrap gap-2">
                               {["TRUE", "FALSE", "NOT GIVEN"].map((opt) => (
                                 <button
+                                  type="button"
                                   key={opt}
                                   onClick={() => setAnswer(q.id, opt)}
+                                  aria-pressed={given === opt}
                                   className={`min-h-11 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-all duration-200 ${
                                     given === opt
                                       ? "border-brand-500 bg-brand-500/20 text-brand-300"
@@ -997,8 +1115,10 @@ export default function ReadingTestPlayer({ passage }) {
                             <div className="ml-9 flex flex-wrap gap-2">
                               {["YES", "NO", "NOT GIVEN"].map((opt) => (
                                 <button
+                                  type="button"
                                   key={opt}
                                   onClick={() => setAnswer(q.id, opt)}
+                                  aria-pressed={given === opt}
                                   className={`min-h-11 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-all duration-200 ${
                                     given === opt
                                       ? "border-brand-500 bg-brand-500/20 text-brand-300"
@@ -1018,6 +1138,7 @@ export default function ReadingTestPlayer({ passage }) {
                                     type="button"
                                     key={choiceId}
                                     onClick={() => setAnswer(q.id, choiceId)}
+                                    aria-pressed={given === choiceId}
                                     className={`rounded-full border px-3 py-2 text-[11px] font-semibold transition-all duration-200 min-h-[44px] ${
                                       given === choiceId
                                         ? "border-brand-500 bg-brand-500/20 text-brand-300"
@@ -1037,6 +1158,7 @@ export default function ReadingTestPlayer({ passage }) {
                                   type="button"
                                   key={opt.key}
                                   onClick={() => setAnswer(q.id, opt.key)}
+                                  aria-pressed={given === opt.key}
                                   className={`block w-full rounded-xl border px-3 py-2 text-left text-sm transition-all duration-200 ${
                                     given === opt.key
                                       ? "border-brand-500 bg-brand-500/20 text-brand-300"
@@ -1100,9 +1222,16 @@ export default function ReadingTestPlayer({ passage }) {
       />
 
       {showSubmitDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setShowSubmitDialog(false);
+          }}
+        >
           <div
-            className="glass-card w-full max-w-md p-6 animate-fade-in"
+            ref={submitDialogRef}
+            tabIndex={-1}
+            className="w-full max-w-md rounded-[var(--radius-card)] border border-white/10 bg-surface p-6 shadow-2xl animate-fade-in"
             role="dialog"
             aria-modal="true"
             aria-labelledby="submit-dialog-title"
@@ -1120,7 +1249,7 @@ export default function ReadingTestPlayer({ passage }) {
                   id="submit-dialog-title"
                   className="mb-2 text-lg font-bold text-slate-100"
                 >
-                  Unanswered Questions
+                  Submit with unanswered questions?
                 </h3>
                 <p className="text-slate-300">
                   You still have{" "}
@@ -1132,15 +1261,20 @@ export default function ReadingTestPlayer({ passage }) {
               </div>
             </div>
 
-            <div className="mt-6 flex gap-3">
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <button
-                onClick={() => setShowSubmitDialog(false)}
+                type="button"
+                onClick={() => {
+                  setShowSubmitDialog(false);
+                  const firstUnanswered = questions.find((question) => !answers[question.id]);
+                  if (firstUnanswered) scrollToQuestion(firstUnanswered.id);
+                }}
                 className="btn-secondary flex-1"
               >
-                Review Answers
+                Review unanswered
               </button>
-              <button onClick={performSubmit} className="btn-primary flex-1">
-                Submit Anyway
+              <button type="button" onClick={performSubmit} className="btn-primary flex-1">
+                Submit anyway
               </button>
             </div>
           </div>

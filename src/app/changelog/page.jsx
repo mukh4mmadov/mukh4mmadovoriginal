@@ -17,6 +17,12 @@ export default function ChangelogPage() {
 
   async function loadChangelog() {
     setIsLoading(true);
+    if (!supabase) {
+      setEntries(getDemoChangelog());
+      setUsingDemoData(true);
+      setIsLoading(false);
+      return;
+    }
     try {
       const { data, error } = await supabase
         .from("changelog")
