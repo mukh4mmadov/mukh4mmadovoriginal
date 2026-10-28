@@ -31,13 +31,15 @@ export default function Timer({
   return (
     <div className="flex items-center gap-2">
       <div
-        className={`flex items-center gap-2 rounded-full px-4 py-2 font-mono text-sm font-semibold ${
+        role="timer"
+        aria-label={`${Number(mins)} minutes ${Number(secs)} seconds remaining`}
+        className={`flex items-center gap-2 rounded-full px-3 py-2 font-mono sm:px-4 text-sm font-semibold ${
           low
             ? "bg-accent-500/20 text-accent-400 animate-pulse-soft"
             : "bg-white/5 text-slate-200"
         }`}
       >
-        <Clock size={16} />
+        <Clock size={16} aria-hidden="true" />
         {mins}:{secs}
       </div>
 

@@ -1,9 +1,4 @@
 import { supabase } from '../client';
-import {
-  StudyStatistics,
-  StudyStatisticsInsert,
-  StudyStatisticsUpdate,
-} from '../models';
 
 export class StudyStatisticsRepository {
   async getStatistics(userId) {

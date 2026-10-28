@@ -5,6 +5,7 @@ import { Calendar, Plus, Edit, Trash2, Tag, AlertCircle, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client';
 import { AdminPageError, AdminPageLoading } from '@/components/admin/AdminPageStatus';
 import { useModalAccessibility } from '@/hooks/useModalAccessibility';
+import { normalizeChangelogEntry } from '@/lib/changelog';
 
 export default function AdminChangelog() {
   const [entries, setEntries] = useState([]);
@@ -12,6 +13,9 @@ export default function AdminChangelog() {
   const [loadError, setLoadError] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [actionError, setActionError] = useState('');
   const formTriggerRef = useRef(null);
   const versionInputRef = useRef(null);
   const modalRef = useModalAccessibility(isFormOpen, () => setIsFormOpen(false), versionInputRef, formTriggerRef);
@@ -37,7 +41,7 @@ export default function AdminChangelog() {
         .order('published_at', { ascending: false });
 
       if (error) throw error;
-      setEntries(data || []);
+      setEntries((data || []).map(normalizeChangelogEntry));
     } catch (error) {
       console.error('Error loading changelog:', error);
       setLoadError(error.message || 'Changelog data could not be loaded.');
@@ -48,16 +52,20 @@ export default function AdminChangelog() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    if (isSaving) return;
+    const lines = (value) => value.split('\n').map((line) => line.trim()).filter(Boolean);
 
     const entry = {
-      version: formData.version,
-      title: formData.title,
-      description: formData.description,
-      features: formData.features.split('\n').filter(f => f.trim()),
-      fixes: formData.fixes.split('\n').filter(f => f.trim()),
-      breaking_changes: formData.breaking_changes.split('\n').filter(f => f.trim()),
+      version: formData.version.trim(),
+      title: formData.title.trim(),
+      description: formData.description.trim(),
+      features: lines(formData.features),
+      fixes: lines(formData.fixes),
+      breaking_changes: lines(formData.breaking_changes),
     };
 
+    setIsSaving(true);
+    setFormError('');
     try {
       if (editingEntry) {
         const { error } = await supabase
@@ -83,6 +91,9 @@ export default function AdminChangelog() {
       await loadChangelog();
     } catch (error) {
       console.error('Error saving changelog:', error);
+      setFormError(`The entry could not be saved. ${error.message || 'Please try again.'}`);
+    } finally {
+      setIsSaving(false);
     }
   }
 
@@ -90,12 +101,14 @@ export default function AdminChangelog() {
     const entry = entries.find((item) => item.id === id);
     if (!confirm(`Delete changelog entry “${entry?.title || 'Untitled entry'}”? This cannot be undone.`)) return;
 
+    setActionError('');
     try {
       const { error } = await supabase.from('changelog').delete().eq('id', id);
       if (error) throw error;
       await loadChangelog();
     } catch (error) {
       console.error('Error deleting changelog:', error);
+      setActionError(`“${entry?.title || 'The entry'}” could not be deleted. ${error.message || 'Please try again.'}`);
     }
   }
 
@@ -104,9 +117,9 @@ export default function AdminChangelog() {
     if (entry) {
       setEditingEntry(entry);
       setFormData({
-        version: entry.version,
-        title: entry.title,
-        description: entry.description,
+        version: entry.version || '',
+        title: entry.title || '',
+        description: entry.description || '',
         features: entry.features.join('\n'),
         fixes: entry.fixes.join('\n'),
         breaking_changes: entry.breaking_changes.join('\n'),
@@ -122,6 +135,7 @@ export default function AdminChangelog() {
         breaking_changes: '',
       });
     }
+    setFormError('');
     setIsFormOpen(true);
   }
 
@@ -146,6 +160,7 @@ export default function AdminChangelog() {
         </button>
       </div>
 
+      {actionError && <p role="alert" className="mb-6 rounded-lg border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">{actionError}</p>}
       <div className="space-y-8">
         {entries.map((entry) => (
           <div key={entry.id} className="relative">
@@ -354,6 +369,7 @@ export default function AdminChangelog() {
                 />
               </div>
 
+              {formError && <p role="alert" className="rounded-lg border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">{formError}</p>}
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
@@ -364,9 +380,10 @@ export default function AdminChangelog() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg transition-colors"
+                  disabled={isSaving}
+                  className="flex-1 px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg transition-colors disabled:opacity-50"
                 >
-                  {editingEntry ? 'Update' : 'Create'}
+                  {isSaving ? 'Saving…' : editingEntry ? 'Update' : 'Create'}
                 </button>
               </div>
             </form>

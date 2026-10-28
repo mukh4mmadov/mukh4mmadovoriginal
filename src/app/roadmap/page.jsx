@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { CheckCircle, Clock, Circle, Calendar, TrendingUp } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
+import { sortRoadmapItems } from "@/lib/roadmap";
 import DataLoadingStatus from "@/components/shared/DataLoadingStatus";
 
 export default function RoadmapPage() {
@@ -17,6 +18,11 @@ export default function RoadmapPage() {
   async function loadRoadmap() {
     setIsLoading(true);
     setLoadError(false);
+    if (!supabase) {
+      setItems([]);
+      setIsLoading(false);
+      return;
+    }
     try {
       const { data, error } = await supabase
         .from("roadmap")
@@ -24,7 +30,7 @@ export default function RoadmapPage() {
         .order("priority", { ascending: false });
 
       if (error) throw error;
-      setItems(data || []);
+      setItems(sortRoadmapItems(data));
     } catch (error) {
       console.error("Error loading roadmap:", error);
       setItems([]);

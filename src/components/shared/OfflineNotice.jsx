@@ -3,8 +3,14 @@
 import { useEffect, useState } from "react";
 import { WifiOff } from "lucide-react";
 
+// Tests run in the browser and save drafts locally, so a dropped connection
+// must not navigate learners away from an attempt in progress.
+const TEST_PAGE_PATTERN = /^\/(reading\/[^/]+|readingmock|listening\/[^/]+)\/?$/;
+const isOnTestPage = () => TEST_PAGE_PATTERN.test(window.location.pathname);
+
 export default function OfflineNotice() {
   const [isOffline, setIsOffline] = useState(false);
+  const [onTestPage, setOnTestPage] = useState(false);
 
   useEffect(() => {
     let registration = null;
@@ -33,8 +39,9 @@ export default function OfflineNotice() {
 
     const updateStatus = (forceOnline = false) => {
       setIsOffline(!navigator.onLine);
+      setOnTestPage(isOnTestPage());
       syncWorkerNetworkState(forceOnline);
-      if (!navigator.onLine && window.location.pathname !== "/offline.html") {
+      if (!navigator.onLine && window.location.pathname !== "/offline.html" && !isOnTestPage()) {
         window.location.replace("/offline.html");
       }
     };
@@ -70,19 +77,25 @@ export default function OfflineNotice() {
 
   return (
     <div
-      className="fixed bottom-4 left-4 right-4 z-[70] mx-auto flex max-w-xl items-center gap-3 rounded-xl border border-amber-300/30 bg-slate-950/95 p-4 text-sm text-amber-100 shadow-2xl"
+      className="fixed bottom-4 left-4 right-4 z-[130] mx-auto flex max-w-xl items-center gap-3 rounded-xl border border-amber-300/30 bg-slate-950/95 p-4 text-sm text-amber-100 shadow-2xl"
       role="status"
       aria-live="polite"
     >
       <WifiOff size={20} className="shrink-0" aria-hidden="true" />
-      <p className="flex-1">You are offline. Reconnect to continue using the app.</p>
-      <button
-        type="button"
-        onClick={() => window.location.reload()}
-        className="min-h-11 rounded-lg bg-amber-300/15 px-3 font-semibold text-amber-100 hover:bg-amber-300/25"
-      >
-        Retry
-      </button>
+      <p className="flex-1">
+        {onTestPage
+          ? "You are offline. Keep working: your answers are saved on this device and results are checked in your browser."
+          : "You are offline. Reconnect to continue using the app."}
+      </p>
+      {!onTestPage && (
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="min-h-11 rounded-lg bg-amber-300/15 px-3 font-semibold text-amber-100 hover:bg-amber-300/25"
+        >
+          Retry
+        </button>
+      )}
     </div>
   );
 }

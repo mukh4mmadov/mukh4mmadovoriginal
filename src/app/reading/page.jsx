@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import readingTestsModule from "@/data/readingTests_new";
@@ -14,8 +14,7 @@ import {
   Flame,
 } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
-import { getProgress } from "@/lib/progressTracker";
-import DailyInspiration from "@/components/shared/DailyInspiration";
+import { getAllProgress } from "@/lib/progressTracker";
 import { useAuth } from "@/contexts/AuthContext";
 import { getReviewQueue } from "@/lib/reading/answer-review";
 import { getPracticeSummary, getQuestionTypeAccuracy } from "@/lib/reading/practice-summary";
@@ -38,16 +37,21 @@ export default function ReadingListPage() {
   }, [user?.id]);
 
   useEffect(() => {
+    let isActive = true;
     const syncProgress = async () => {
       const data = {};
       const drafts = {};
+      // One request for all saved progress instead of one per passage. Local
+      // entries come first so unsynced browser results still show.
+      const [localProgress, accountProgress] = await Promise.all([
+        getAllProgress(null),
+        user?.id ? getAllProgress(user.id) : Promise.resolve([]),
+      ]);
+      for (const progress of [...localProgress, ...accountProgress]) {
+        if (progress?.slug) data[progress.slug] = progress;
+      }
       if (readingTests && readingTests.length > 0) {
         for (const test of readingTests) {
-          const progress = await getProgress(test.slug, user?.id);
-          if (progress) {
-            data[test.slug] = progress;
-          }
-
           try {
             const savedDraft = window.localStorage.getItem(`ielts-reading-${test.slug}`);
             if (savedDraft) {
@@ -61,6 +65,7 @@ export default function ReadingListPage() {
           }
         }
       }
+      if (!isActive) return;
       setProgressData(data);
       setDraftData(drafts);
       setProgressLoaded(true);
@@ -68,7 +73,10 @@ export default function ReadingListPage() {
 
     setProgressLoaded(false);
     syncProgress();
-  }, [user]);
+    return () => {
+      isActive = false;
+    };
+  }, [user?.id, readingTests]);
 
   const recommendation = useMemo(() => {
     if (!progressLoaded || !readingTests.length) return null;
@@ -152,9 +160,10 @@ export default function ReadingListPage() {
   const filteredTests = useMemo(() => {
     if (!readingTests || readingTests.length === 0) return [];
     const filtered = readingTests.filter((t) => {
+      const query = searchQuery.trim().toLowerCase();
       const matchesSearch =
-        t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.subtitle.toLowerCase().includes(searchQuery.toLowerCase());
+        t.title.toLowerCase().includes(query) ||
+        (t.subtitle || "").toLowerCase().includes(query);
       const matchesDifficulty =
         selectedDifficulty === "all" || t.difficulty === selectedDifficulty;
       const questions = t.passages.flatMap((passage) => passage.questionGroups.flatMap((group) => group.questions));
@@ -226,11 +235,6 @@ export default function ReadingListPage() {
                 <span className="inline-flex items-center gap-1"><Flame size={15} className="text-amber-300" aria-hidden="true" /> {practiceSummary.currentStreak > 0 ? `${practiceSummary.currentStreak}-day streak` : "Start your practice streak"}</span>
               </div>
               <p className="mt-2 text-xs text-slate-500">One missed day is allowed before your streak resets. Counts use saved attempt history.</p>
-              {questionTypeRecommendation && !practiceSummary.todayCompleted && (
-                <p className="mt-3 text-sm text-slate-400">
-                  Recent results show {Math.round(questionTypeRecommendation.skill.accuracy * 100)}% accuracy in {questionTypeRecommendation.skill.type.replace(/-/g, " ")} questions ({questionTypeRecommendation.skill.total} answers).
-                </p>
-              )}
             </div>
             <Link href={practiceSummary.todayCompleted ? "/statistics" : `/reading/${dailyPassage.slug}`} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-400">
               {practiceSummary.todayCompleted ? "View weekly progress" : "Start today’s passage"}
@@ -256,68 +260,65 @@ export default function ReadingListPage() {
         </section>
       )}
 
-      <div className="mb-8 flex flex-col gap-4 rounded-[1.5rem] border border-white/10 bg-white/5 p-4 shadow-[0_12px_40px_rgba(2,8,23,0.12)] sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative flex-1 max-w-md">
-          <label htmlFor="search-input" className="sr-only">Search passages</label>
+      <section aria-label="Search and filter passages" className="mb-6 rounded-[1.5rem] border border-white/10 bg-white/5 p-4 shadow-[0_12px_40px_rgba(2,8,23,0.12)]">
+        <div className="relative">
+          <label htmlFor="search-input" className="sr-only">Search passages by title or topic</label>
           <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
             size={18}
             aria-hidden="true"
           />
           <input
             id="search-input"
-            type="text"
-            placeholder="Search passages..."
+            type="search"
+            placeholder="Search passages…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="input-field pl-10"
-            aria-label="Search passages by title or subtitle"
+            autoComplete="off"
           />
         </div>
-        <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-slate-950/40 px-3 py-2">
-          <label htmlFor="difficulty-select" className="sr-only">Filter by difficulty level</label>
-          <Filter className="text-slate-400" size={18} aria-hidden="true" />
-          <select
-            id="difficulty-select"
-            value={selectedDifficulty}
-            onChange={(e) => setSelectedDifficulty(e.target.value)}
-            className="rounded-xl bg-transparent px-2 py-1 text-sm text-white focus:border-brand-500 focus:outline-none"
-            aria-label="Filter passages by difficulty level"
-          >
-            <option value="all">All Levels</option>
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-          </select>
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {[
+            { id: "difficulty-select", label: "Difficulty", value: selectedDifficulty, onChange: setSelectedDifficulty, options: [["all", "All levels"], ["easy", "Easy"], ["medium", "Medium"], ["hard", "Hard"]] },
+            { id: "type-filter", label: "Question type", value: selectedType, onChange: setSelectedType, options: [["all", "All question types"], ...availableQuestionTypes.map((type) => [type, type.replace(/-/g, " ")])] },
+            { id: "completion-filter", label: "Progress", value: completionFilter, onChange: setCompletionFilter, options: [["all", "All progress"], ["not-started", "Not completed"], ["completed", "Completed"]] },
+            { id: "sort-order", label: "Sort", value: sortOrder, onChange: setSortOrder, options: [["recommended", "Recommended order"], ["title", "Title A–Z"], ["shortest", "Shortest passage"], ["questions", "Fewest questions"]] },
+          ].map((filter) => (
+            <label key={filter.id} htmlFor={filter.id} className="block min-w-0">
+              <span className="mb-1 block text-xs font-medium text-slate-400">{filter.label}</span>
+              <select
+                id={filter.id}
+                value={filter.value}
+                onChange={(event) => filter.onChange(event.target.value)}
+                className="theme-form-control min-h-11 w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 text-sm capitalize text-white"
+              >
+                {filter.options.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>
+            </label>
+          ))}
         </div>
-      </div>
-
-      <div className="mb-6 flex flex-wrap gap-3">
-        <label className="sr-only" htmlFor="type-filter">Filter by question type</label><select id="type-filter" value={selectedType} onChange={(event)=>setSelectedType(event.target.value)} className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-white"><option value="all">All question types</option>{availableQuestionTypes.map((type)=><option key={type} value={type}>{type.replace(/-/g," ")}</option>)}</select>
-        <label className="sr-only" htmlFor="completion-filter">Filter by completion</label><select id="completion-filter" value={completionFilter} onChange={(event)=>setCompletionFilter(event.target.value)} className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-white"><option value="all">All progress</option><option value="not-started">Not completed</option><option value="completed">Completed</option></select>
-        <label className="sr-only" htmlFor="sort-order">Sort passages</label><select id="sort-order" value={sortOrder} onChange={(event)=>setSortOrder(event.target.value)} className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-white"><option value="recommended">Recommended order</option><option value="title">Title A–Z</option><option value="shortest">Shortest passage</option><option value="questions">Fewest questions</option></select>
-      </div>
-
-      {(searchQuery || selectedDifficulty !== "all" || selectedType !== "all" || completionFilter !== "all" || sortOrder !== "recommended") && (
-        <div className="mb-6 flex items-center gap-2 text-sm text-slate-400">
-          <span>Showing filtered results</span>
-          <button
-            type="button"
-            onClick={() => {
-              setSearchQuery("");
-              setSelectedDifficulty("all");
-              setSelectedType("all"); setCompletionFilter("all"); setSortOrder("recommended");
-            }}
-            className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm font-medium text-slate-300 transition hover:bg-white/10"
-          >
-            Clear filters
-          </button>
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-slate-400" aria-live="polite">
+          <span>
+            Showing {filteredTests.length} of {readingTests.length} passages
+          </span>
+          {(searchQuery || selectedDifficulty !== "all" || selectedType !== "all" || completionFilter !== "all" || sortOrder !== "recommended") && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery("");
+                setSelectedDifficulty("all");
+                setSelectedType("all");
+                setCompletionFilter("all");
+                setSortOrder("recommended");
+              }}
+              className="min-h-9 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm font-medium text-slate-300 transition hover:bg-white/10"
+            >
+              Clear filters
+            </button>
+          )}
         </div>
-      )}
-
-      <div className="mb-8">
-        <DailyInspiration />
-      </div>
+      </section>
 
       {recommendation && !searchQuery && selectedDifficulty === "all" && (
         <section
@@ -331,7 +332,7 @@ export default function ReadingListPage() {
             {recommendation.test.title}
           </h2>
           <p className="mb-4 max-w-2xl text-sm leading-6 text-slate-300">
-            {recommendation.reason} The recommendation uses saved passage completion and best scores; it does not analyze individual question types.
+            {recommendation.reason}
           </p>
           <Link
             href={`/reading/${recommendation.test.slug}`}
@@ -343,26 +344,32 @@ export default function ReadingListPage() {
         </section>
       )}
 
+      <p className="mb-4 text-xs leading-5 text-slate-500">
+        All passages are practice content and are not official IELTS material. Difficulty is a rough estimate based on passage length and question-format mix, not an official IELTS level.
+      </p>
+
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         {filteredTests.length === 0 ? (
           <div className="col-span-full text-center py-12">
-            <FileText className="mx-auto mb-4 text-slate-500" size={48} />
+            <FileText className="mx-auto mb-4 text-slate-500" size={48} aria-hidden="true" />
             <p className="text-slate-400">
-              No passages found matching your criteria.
+              No passages match your search and filters.
             </p>
           </div>
         ) : (
-          filteredTests.map((t, index) => {
+          filteredTests.map((t) => {
             const passage = t.passages[0];
+            const saved = progressData[t.slug];
+            const bestScore = Number(saved?.bestScore);
+            const lastScore = Number(saved?.lastScore);
             return (
               <Link
                 key={t.slug}
                 href={`/reading/${t.slug}`}
-                className="surface-card group relative overflow-hidden transition-all duration-500 hover:scale-[1.01] hover:-translate-y-0.5 hover:border-brand-500/20"
-                style={{ animationDelay: `${index * 100}ms` }}
+                className="surface-card group relative flex flex-col overflow-hidden transition-all duration-300 hover:-translate-y-0.5 hover:border-brand-500/30"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-brand-500/0 via-brand-500/0 to-brand-500/0 group-hover:from-brand-500/5 group-hover:via-brand-500/10 group-hover:to-brand-500/5 transition-all duration-500" />
-                <div className="relative z-10">
+                <div className="relative z-10 flex flex-1 flex-col">
                   <div className="mb-3 flex items-start justify-between">
                     <div className="flex items-center gap-2">
                       <FileText
@@ -370,29 +377,28 @@ export default function ReadingListPage() {
                         size={26}
                         aria-hidden="true"
                       />
-                      {progressData[t.slug]?.completed && (
-                        <CheckCircle2 className="text-emerald-400" size={18} aria-hidden="true" />
+                      {saved?.completed && (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-400">
+                          <CheckCircle2 size={16} aria-hidden="true" /> Completed
+                        </span>
                       )}
                     </div>
                     {t.difficulty && (
                       <span
                         className={`rounded-full border px-2.5 py-1 text-xs font-semibold uppercase ${getDifficultyColor(t.difficulty)}`}
+                        title={t.difficultyRationale}
                       >
                         {t.difficulty}
                       </span>
                     )}
                   </div>
-                  <p className="mb-1 text-xs uppercase tracking-widest text-slate-500 group-hover:text-slate-400 transition-colors">
-                    {t.subtitle}
-                  </p>
-                  <h3 className="mb-2 font-display text-xl font-bold group-hover:text-brand-200 transition-colors">
+                  <h3 className="mb-2 font-display text-xl font-bold transition-colors group-hover:text-brand-200">
                     {t.title}
                   </h3>
-                  <p className="mb-3 text-xs leading-5 text-slate-400">
-                    {passage.provenanceLabel}. Difficulty is a rough estimate based on passage length and question-format mix, not an official IELTS level.
+                  <p className="mb-4 line-clamp-2 flex-1 text-sm leading-6 text-slate-400">
+                    {t.subtitle}
                   </p>
-                  <p className="mb-3 text-xs leading-5 text-slate-500">{t.difficultyRationale}</p>
-                  <div className="mb-4 flex items-center gap-4 text-xs text-slate-400">
+                  <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
                     <span className="flex items-center gap-1 group-hover:text-brand-300 transition-colors">
                       <Clock size={14} aria-hidden="true" /> 20 min
                     </span>
@@ -406,26 +412,27 @@ export default function ReadingListPage() {
                       }{" "}
                       questions
                     </span>
-                    {progressData[t.slug]?.bestScore !== undefined && (
+                    {saved?.completed && Number.isFinite(bestScore) && (
                       <span className="flex items-center gap-1 text-emerald-400">
-                        Best: {progressData[t.slug].bestScore.toFixed(0)}%
+                        Best: {bestScore.toFixed(0)}%
                       </span>
                     )}
-                    {progressData[t.slug]?.lastScore !== undefined && (
+                    {saved?.completed && Number.isFinite(lastScore) && (
                       <span className="group-hover:text-brand-300 transition-colors">
-                        Last: {progressData[t.slug].lastScore.toFixed(0)}%
+                        Last: {lastScore.toFixed(0)}%
                       </span>
                     )}
                   </div>
                   <span className="inline-flex items-center gap-1 text-sm font-semibold text-brand-400 group-hover:gap-2 group-hover:text-brand-300 transition-all">
                     {draftData[t.slug]
                       ? `Continue saved test (${draftData[t.slug].answered} answered)`
-                      : progressData[t.slug]?.completed
+                      : saved?.completed
                         ? "Practice again"
                         : "Start test"}{" "}
                     <ArrowRight
                       size={16}
                       className="group-hover:translate-x-1 transition-transform"
+                      aria-hidden="true"
                     />
                   </span>
                 </div>

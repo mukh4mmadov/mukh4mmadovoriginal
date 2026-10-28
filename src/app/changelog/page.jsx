@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Calendar, Tag, AlertCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
+import { normalizeChangelogEntry } from "@/lib/changelog";
 import DataLoadingStatus from "@/components/shared/DataLoadingStatus";
 
 export default function ChangelogPage() {
@@ -17,6 +18,12 @@ export default function ChangelogPage() {
 
   async function loadChangelog() {
     setIsLoading(true);
+    if (!supabase) {
+      setEntries(getDemoChangelog());
+      setUsingDemoData(true);
+      setIsLoading(false);
+      return;
+    }
     try {
       const { data, error } = await supabase
         .from("changelog")
@@ -24,7 +31,7 @@ export default function ChangelogPage() {
         .order("published_at", { ascending: false });
 
       if (error) throw error;
-      setEntries(data || []);
+      setEntries((data || []).map(normalizeChangelogEntry));
     } catch (error) {
       console.error("Error loading changelog:", error);
       setEntries(getDemoChangelog());

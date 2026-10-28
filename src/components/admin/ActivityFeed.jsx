@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react';
 import { Activity, BookOpen, MessageSquare, AlertTriangle, UserPlus, Clock } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import { formatAggregateTime } from '@/lib/reading/metrics.mjs';
+
+const readableSlug = (slug) => String(slug || 'a passage').replace(/-/g, ' ');
 
 export default function ActivityFeed() {
   const [activities, setActivities] = useState([]);
@@ -14,6 +17,10 @@ export default function ActivityFeed() {
   }, []);
 
   async function loadActivities() {
+    if (!supabase) {
+      setIsLoading(false);
+      return;
+    }
     try {
       const { data, error } = await supabase
         .from('analytics_events')
@@ -31,6 +38,7 @@ export default function ActivityFeed() {
   }
 
   function setupRealtimeSubscription() {
+    if (!supabase) return undefined;
     const channel = supabase
       .channel('activity-feed')
       .on(
@@ -69,9 +77,9 @@ export default function ActivityFeed() {
       case 'quote_saved':
         return 'Saved a quote';
       case 'reading_started':
-        return `Started reading ${data.passageId}`;
+        return `Started reading “${readableSlug(data.passageId)}”`;
       case 'reading_finished':
-        return `Finished reading in ${Math.round((data.timeSpent || 0) / 60)} minutes`;
+        return `Finished a passage in ${formatAggregateTime(data.timeSpent)}`;
       case 'user_registered':
         return 'New user registered';
       case 'user_login':
@@ -81,9 +89,9 @@ export default function ActivityFeed() {
       case 'feedback_submitted':
         return 'Submitted feedback';
       case 'bug_report_submitted':
-        return `Reported a bug: ${data.subject}`;
+        return data.subject ? `Reported a bug: ${data.subject}` : 'Reported a bug';
       default:
-        return item.event_type.replace(/_/g, ' ');
+        return String(item.event_type || 'Event').replace(/_/g, ' ');
     }
   }
 
@@ -136,16 +144,16 @@ export default function ActivityFeed() {
 
   return (
     <div className="border border-white/10 rounded-xl p-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-start justify-between gap-3 mb-4">
         <div>
           <h2 className="text-lg font-semibold text-white">Recent Site Events</h2>
           <p className="mt-1 text-xs text-slate-400">
             This feed uses analytics events. Saved reading attempts are tracked separately in Analytics.
           </p>
         </div>
-        <div className="flex items-center gap-2 text-xs text-slate-400">
-          <Clock size={14} />
-          <span>Live updates</span>
+        <div className="flex shrink-0 items-center gap-2 text-xs text-slate-400">
+          <Clock size={14} aria-hidden="true" />
+          <span>Live</span>
         </div>
       </div>
 

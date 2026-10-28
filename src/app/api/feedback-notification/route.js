@@ -12,6 +12,11 @@ function escapeHeader(value) {
 function isRateLimited(key) {
   const now = Date.now();
   const windowStart = now - 60_000;
+  if (requestCounts.size > 5000) {
+    for (const [address, times] of requestCounts) {
+      if (!times.some((time) => time > windowStart)) requestCounts.delete(address);
+    }
+  }
   const recent = (requestCounts.get(key) || []).filter((time) => time > windowStart);
   if (recent.length >= 5) {
     requestCounts.set(key, recent);

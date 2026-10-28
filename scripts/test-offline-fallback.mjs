@@ -5,14 +5,26 @@ import { join } from 'node:path';
 
 const port = Number(process.env.QA_OFFLINE_PORT || 3137);
 const baseUrl = `http://localhost:${port}`;
-const browserPath = process.env.MSEDGE_PATH || 'C:\\PROGRA~2\\Microsoft\\Edge\\Application\\msedge.exe';
-if (!existsSync(browserPath)) throw new Error(`Microsoft Edge not found at ${browserPath}. Set MSEDGE_PATH.`);
+const browserCandidates = [
+  process.env.BROWSER_PATH,
+  process.env.MSEDGE_PATH,
+  'C:\\PROGRA~2\\Microsoft\\Edge\\Application\\msedge.exe',
+  '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  '/opt/pw-browsers/chromium',
+  '/usr/bin/microsoft-edge',
+  '/usr/bin/google-chrome',
+  '/usr/bin/chromium',
+  '/usr/bin/chromium-browser',
+].filter(Boolean);
+const browserPath = browserCandidates.find((candidate) => existsSync(candidate));
+if (!browserPath) throw new Error('No Chromium-based browser found. Set BROWSER_PATH (or MSEDGE_PATH) to Edge, Chrome or Chromium.');
 
 let server;
 let socket;
 const profile = mkdtempSync(join(tmpdir(), 'mukh4mmadov-offline-qa-'));
 const browser = spawn(browserPath, [
-  '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
+  '--headless=new', '--disable-gpu', ...(process.platform === 'linux' ? ['--no-sandbox'] : []), '--no-first-run', '--no-default-browser-check',
   '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank',
 ], { stdio: 'ignore', windowsHide: true });
 
@@ -99,12 +111,12 @@ try {
   const portFile = join(profile, 'DevToolsActivePort');
   const portDeadline = Date.now() + 15000;
   while (!existsSync(portFile) && Date.now() < portDeadline) await new Promise((resolve) => setTimeout(resolve, 100));
-  if (!existsSync(portFile)) throw new Error('Edge did not start its DevTools endpoint');
+  if (!existsSync(portFile)) throw new Error('The browser did not start its DevTools endpoint');
 
   const devtoolsPort = readFileSync(portFile, 'utf8').split(/\r?\n/)[0];
   const targets = await fetch(`http://127.0.0.1:${devtoolsPort}/json/list`).then((response) => response.json());
   const target = targets.find((entry) => entry.type === 'page');
-  if (!target) throw new Error('Edge did not create a page target');
+  if (!target) throw new Error('The browser did not create a page target');
 
   socket = new WebSocket(target.webSocketDebuggerUrl);
   await new Promise((resolve, reject) => {

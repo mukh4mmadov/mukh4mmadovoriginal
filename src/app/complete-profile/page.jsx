@@ -9,7 +9,7 @@ import { getSafeRedirectPath } from '@/lib/auth/redirect';
 
 export default function CompleteProfilePage() {
   const router = useRouter();
-  const { user, profile, isLoading } = useAuth();
+  const { user, profile, isLoading, applyProfileUpdate } = useAuth();
   const [fullName, setFullName] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,7 +42,7 @@ export default function CompleteProfilePage() {
 
     try {
       if (user) {
-        await authService.updateProfile(user.id, { full_name: fullName.trim() });
+        applyProfileUpdate(await authService.updateProfile(user.id, { full_name: fullName.trim() }));
         const redirect = getSafeRedirectPath(
           new URLSearchParams(window.location.search).get('redirect'),
         );
@@ -56,14 +56,14 @@ export default function CompleteProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+      <div className="auth-experience min-h-screen flex items-center justify-center bg-slate-950">
         <div className="animate-spin rounded-full h-12 w-12 border-2 border-white/30 border-t-white" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-slate-950">
+    <div className="auth-experience min-h-screen relative overflow-hidden bg-slate-950">
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900" />
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse" />
@@ -77,17 +77,17 @@ export default function CompleteProfilePage() {
               <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <User className="w-8 h-8 text-white" />
               </div>
-              <h1 className="text-2xl font-bold text-white mb-2">Complete Your Profile</h1>
+              <h1 className="text-2xl font-bold text-white mb-2">Complete your profile</h1>
               <p className="text-slate-400">Please enter your display name to continue</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
                 <label htmlFor="fullName" className="text-sm font-medium text-slate-300">
-                  Full Name
+                  Full name
                 </label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" aria-hidden="true" />
                   <input
                     id="fullName"
                     type="text"
@@ -96,7 +96,8 @@ export default function CompleteProfilePage() {
                     className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     placeholder="John Doe"
                     required
-                    aria-label="Full name"
+                    maxLength={100}
+                    autoComplete="name"
                     disabled={isSubmitting}
                     autoFocus
                   />
@@ -104,7 +105,7 @@ export default function CompleteProfilePage() {
               </div>
 
               {error && (
-                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg" role="alert">
                   <p className="text-sm text-red-400">{error}</p>
                 </div>
               )}

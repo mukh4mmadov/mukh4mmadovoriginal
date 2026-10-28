@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { AIProviderFactory } from "@/lib/ai/providers";
 
 const rateLimitMap = new Map();
@@ -6,6 +6,10 @@ const RATE_LIMIT = 20;
 const RATE_LIMIT_WINDOW = 60 * 1000;
 const MAX_MESSAGE_LENGTH = 10000;
 const MAX_MESSAGES_PER_REQUEST = 50;
+const MAX_TOTAL_MESSAGE_LENGTH = 40000;
+const MAX_PARAGRAPHS = 40;
+const MAX_PASSAGE_LENGTH = 40000;
+const MAX_CONTEXT_LENGTH = 80000;
 const ALLOWED_PERSONALITIES = ["friendly", "strict", "savage"];
 const ALLOWED_PROVIDERS = ["openai", "gemini", "claude", "openrouter"];
 
@@ -17,6 +21,11 @@ function validateMessages(messages) {
   if (!Array.isArray(messages)) return false;
   if (messages.length === 0 || messages.length > MAX_MESSAGES_PER_REQUEST)
     return false;
+  const totalLength = messages.reduce(
+    (total, message) => total + (typeof message?.content === "string" ? message.content.length : 0),
+    0,
+  );
+  if (totalLength > MAX_TOTAL_MESSAGE_LENGTH) return false;
 
   return messages.every((message) => {
     if (!isRecord(message)) return false;
@@ -51,7 +60,7 @@ function validateContext(context) {
   if (!Array.isArray(passage.paragraphs)) return false;
 
   const paragraphs = passage.paragraphs;
-  if (paragraphs.length === 0) return false;
+  if (paragraphs.length === 0 || paragraphs.length > MAX_PARAGRAPHS) return false;
 
   const hasValidParagraphs = paragraphs.every((paragraph) => {
     if (!isRecord(paragraph)) return false;
@@ -61,6 +70,11 @@ function validateContext(context) {
   });
 
   if (!hasValidParagraphs) return false;
+  const passageLength = paragraphs.reduce((total, paragraph) => total + paragraph.text.length, 0);
+  if (passageLength > MAX_PASSAGE_LENGTH) return false;
+  // Bound the whole context (question data, answered questions) so the
+  // endpoint cannot be used to send arbitrarily large prompts.
+  if (JSON.stringify(context).length > MAX_CONTEXT_LENGTH) return false;
 
   if (context.question !== undefined && !isRecord(context.question))
     return false;
@@ -69,6 +83,11 @@ function validateContext(context) {
 
 function checkRateLimit(identifier) {
   const now = Date.now();
+  if (rateLimitMap.size > 5000) {
+    for (const [key, entry] of rateLimitMap) {
+      if (now > entry.resetTime) rateLimitMap.delete(key);
+    }
+  }
   const record = rateLimitMap.get(identifier);
 
   if (!record || now > record.resetTime) {
@@ -222,9 +241,17 @@ export async function POST(request) {
           );
           controller.close();
         } catch (error) {
+          // Provider errors can include upstream response bodies; keep them in
+          // the server log and show the learner a plain message.
+          console.error("AI provider error:", error);
+          const busy = error instanceof Error && /\b(429|503)\b/.test(error.message);
           controller.enqueue(
             encoder.encode(
-              `data: ${JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" })}\n\n`,
+              `data: ${JSON.stringify({
+                error: busy
+                  ? "The AI Coach is busy right now. Please wait a moment and try again."
+                  : "The AI Coach could not answer right now. Please try again.",
+              })}\n\n`,
             ),
           );
           controller.close();
@@ -240,6 +267,7 @@ export async function POST(request) {
       },
     });
   } catch (error) {
+    console.error("AI chat request failed:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

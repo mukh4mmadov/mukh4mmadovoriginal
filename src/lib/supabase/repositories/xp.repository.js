@@ -1,9 +1,4 @@
 import { supabase } from '../client';
-import {
-  XP,
-  XPInsert,
-  XPUpdate,
-} from '../models';
 
 export class XPRepository {
   async getXP(userId) {

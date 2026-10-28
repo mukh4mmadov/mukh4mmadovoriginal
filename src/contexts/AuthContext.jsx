@@ -1,8 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { User } from '@supabase/supabase-js';
-import { authService, AuthUser } from '@/lib/supabase/auth';
+import { authService } from '@/lib/supabase/auth';
 import { migrationService } from '@/lib/supabase/services/migration.service';
 import { analyticsService } from '@/lib/analytics/analytics.service';
 
@@ -112,6 +111,12 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // Pages that edit the profile hand back the saved row so the navbar and
+  // other consumers update without a reload.
+  const applyProfileUpdate = (nextProfile) => {
+    if (nextProfile) setProfile(nextProfile);
+  };
+
   const migrateLocalStorage = async () => {
     if (!user) return;
 
@@ -137,6 +142,7 @@ export function AuthProvider({ children }) {
     isGuest: profile?.is_guest || false,
     signInWithGoogle,
     signOut,
+    applyProfileUpdate,
     migrateLocalStorage,
     hasLocalStorageData,
   };

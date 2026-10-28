@@ -16,9 +16,9 @@ import {
   Share2,
 } from "lucide-react";
 import AIChatPanel from "@/components/ai/AIChatPanel";
-import DailyInspiration from "@/components/shared/DailyInspiration";
 import Link from "next/link";
-import { addMissedQuestionsToReviewQueue, getReviewQueue, isAnswerCorrect } from "@/lib/reading/answer-review";
+import { addMissedQuestionsToReviewQueue, formatAnswer, getReviewQueue, isAnswerCorrect } from "@/lib/reading/answer-review";
+import { renumberInstructions } from "@/lib/reading/question-numbering.mjs";
 
 function allQuestions(passage) {
   return passage.questionGroups.flatMap((g) => g.questions);
@@ -34,7 +34,7 @@ export default function ReadingTestResults({
   events = [],
   userId,
 }) {
-  const questions = allQuestions(passage);
+  const questions = useMemo(() => allQuestions(passage), [passage]);
   const questionNumbers = useMemo(() => {
     const map = new Map();
     questions.forEach((question, index) => {
@@ -99,7 +99,10 @@ export default function ReadingTestResults({
 
   const skillsWithUsefulSample = analyticsByType.filter((skill) => skill.count >= 2);
   const strongestSkill = skillsWithUsefulSample[0];
-  const weakestSkill = skillsWithUsefulSample[skillsWithUsefulSample.length - 1];
+  // With a single question type there is nothing to compare it against.
+  const weakestSkill = skillsWithUsefulSample.length > 1
+    ? skillsWithUsefulSample[skillsWithUsefulSample.length - 1]
+    : undefined;
   const avgTimePerQuestion = answeredCount > 0 ? timeSpent / answeredCount : 0;
   const hasUsefulPaceEstimate = answeredCount >= 3 && skippedCount <= questions.length / 2;
 
@@ -240,40 +243,33 @@ export default function ReadingTestResults({
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
-      <div className="mb-6">
-        <DailyInspiration compact />
-      </div>
+    <main className="mx-auto max-w-7xl px-4 py-8">
+      <Link
+        href="/reading"
+        className="mb-4 inline-flex min-h-11 items-center gap-2 text-sm text-slate-400 transition-colors hover:text-white"
+      >
+        <ArrowLeft size={16} aria-hidden="true" />
+        All passages
+      </Link>
 
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onRetry}
-            className="flex items-center gap-2 text-sm text-slate-400 transition-colors hover:text-white"
-          >
-            <ArrowLeft size={16} aria-hidden="true" />
-            Back to test
-          </button>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setAiChatOpen(true)}
-            className="flex items-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/10 px-3 py-2 text-sm font-medium text-brand-300 hover:bg-brand-500/20 transition-colors"
-            title="Open AI Coach"
-            aria-label="Open AI Coach"
-          >
-            <Bot size={16} aria-hidden="true" />
-            <span className="hidden sm:inline">AI Coach</span>
-          </button>
-        </div>
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand-400">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <p className="mb-1 text-sm text-brand-400">
             {passage.subtitle}
           </p>
           <h1 className="min-w-0 break-words font-display text-2xl font-bold [overflow-wrap:anywhere] sm:text-3xl">{passage.title}</h1>
         </div>
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedQuestionId(null);
+            setAiChatOpen(true);
+          }}
+          className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 self-start rounded-full border border-brand-500/30 bg-brand-500/10 px-4 py-2 text-sm font-medium text-brand-300 transition-colors hover:bg-brand-500/20 sm:self-auto"
+        >
+          <Bot size={16} aria-hidden="true" />
+          Ask the AI Coach
+        </button>
       </div>
 
       <div className="premium-results-card mb-8 overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-br from-slate-900 via-slate-900/80 to-brand-950/70 p-6 shadow-[0_30px_80px_rgba(0,0,0,0.28)]">
@@ -399,7 +395,7 @@ export default function ReadingTestResults({
                 Weakest Skill
               </p>
               <p className="text-sm font-medium text-white">
-                {weakestSkill?.type.replace(/-/g, ' ') || 'Not enough answers yet'}
+                {weakestSkill?.type.replace(/-/g, ' ') || (strongestSkill ? 'Only one question type answered' : 'Not enough answers yet')}
               </p>
               <p className="text-xs text-rose-300 mt-1">
                 {weakestSkill ? `${weakestSkill.accuracy.toFixed(0)}% accuracy` : 'Answer more questions to see a pattern'}
@@ -522,7 +518,7 @@ export default function ReadingTestResults({
       <div className="space-y-8">
         {passage.questionGroups.map((group, gi) => (
           <div key={gi} className="glass-card">
-            <p className="mb-4 text-sm text-slate-400">{group.instructions}</p>
+            <p className="mb-4 text-sm text-slate-400">{renumberInstructions(group.instructions, questionNumbers.get(group.questions[0]?.id))}</p>
 
             {group.questions[0].type === "matching-headings" &&
               passage.headingBank?.length > 0 && (
@@ -596,7 +592,7 @@ export default function ReadingTestResults({
                             </p>
                           )}
 
-                          {q.type === "true-false-not-given" && given && (
+                          {(q.type === "true-false-not-given" || q.type === "yes-no-not-given") && given && (
                             <span className="inline-block rounded-lg border px-3 py-1.5 text-xs font-semibold bg-white/10 border-white/20 text-slate-300">
                               {given}
                             </span>
@@ -652,12 +648,7 @@ export default function ReadingTestResults({
                           <p className="text-xs text-emerald-400 font-semibold">
                             ✓ Correct answer:{" "}
                             <span className="text-white">
-                              {q.type === "sentence-completion"
-                                ? q.answer[0]
-                                : q.type === "multiple-choice"
-                                  ? q.options?.find((o) => o.key === q.answer)
-                                      ?.text || q.answer
-                                  : q.answer}
+                              {formatAnswer(q, q.answer, passage)}
                             </span>
                           </p>
                         </div>
@@ -758,6 +749,6 @@ export default function ReadingTestResults({
         personality={aiPersonality}
         onPersonalityChange={setAiPersonality}
       />
-    </div>
+    </main>
   );
 }

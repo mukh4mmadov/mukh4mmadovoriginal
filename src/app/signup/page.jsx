@@ -40,7 +40,14 @@ export default function SignUpPage() {
   }, [user, authLoading, router]);
 
   if (authLoading) {
-    return null;
+    return (
+      <main className="flex min-h-screen items-center justify-center p-6" role="status" aria-live="polite">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-white">Create your account</h1>
+          <p className="mt-2 text-sm text-slate-300">Checking your session…</p>
+        </div>
+      </main>
+    );
   }
 
   if (user) {
@@ -73,7 +80,7 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-slate-950">
+    <main className="auth-experience min-h-screen relative overflow-hidden bg-slate-950">
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900" />
 
@@ -182,7 +189,7 @@ export default function SignUpPage() {
           onClose={() => setToast(null)}
         />
       )}
-    </div>
+    </main>
   );
 }
 

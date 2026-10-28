@@ -8,7 +8,7 @@ import { authService } from '@/lib/supabase/auth';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, profile, isLoading } = useAuth();
+  const { user, profile, isLoading, applyProfileUpdate } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -37,26 +37,27 @@ export default function ProfilePage() {
     }
   }, [user, profile, isLoading, router]);
 
-  useEffect(() => {
-    const handleError = (error) => {
-      console.error('Profile page error:', error);
-      router.push(`/login?redirect=${encodeURIComponent('/profile')}`);
-    };
-
-    window.addEventListener('error', handleError);
-    return () => window.removeEventListener('error', handleError);
-  }, [router]);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
+    if (!formData.full_name.trim()) {
+      setError('Please enter your name.');
+      return;
+    }
     setIsSubmitting(true);
 
     try {
       if (user) {
-        await authService.updateProfile(user.id, formData);
-        setSuccess('Profile updated successfully');
+        const savedProfile = await authService.updateProfile(user.id, {
+          ...formData,
+          full_name: formData.full_name.trim(),
+          username: formData.username.trim(),
+          country: formData.country.trim(),
+          bio: formData.bio.trim(),
+        });
+        applyProfileUpdate(savedProfile);
+        setSuccess('Profile saved.');
         setTimeout(() => setSuccess(''), 3000);
       }
     } catch (err) {
@@ -66,7 +67,7 @@ export default function ProfilePage() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || !user) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-slate-950" aria-busy="true">
         <div role="status" aria-label="Loading profile">
@@ -81,6 +82,7 @@ export default function ProfilePage() {
     <main className="min-h-screen bg-slate-950">
       <div className="mx-auto max-w-3xl px-4 py-8">
         <button
+          type="button"
           onClick={() => router.back()}
           className="flex items-center gap-2 text-slate-400 hover:text-white mb-6 transition-colors"
         >
@@ -111,13 +113,13 @@ export default function ProfilePage() {
           </div>
 
           {error && (
-            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg" role="alert">
               <p className="text-sm text-red-400">{error}</p>
             </div>
           )}
 
           {success && (
-            <div className="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+            <div className="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-lg" role="status">
               <p className="text-sm text-green-400">{success}</p>
             </div>
           )}
@@ -135,6 +137,9 @@ export default function ProfilePage() {
                   onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                   className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   placeholder="John Doe"
+                  required
+                  maxLength={100}
+                  autoComplete="name"
                   disabled={isSubmitting}
                 />
               </div>
@@ -150,6 +155,8 @@ export default function ProfilePage() {
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                   className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   placeholder="johndoe"
+                  maxLength={40}
+                  autoComplete="username"
                   disabled={isSubmitting}
                 />
               </div>
@@ -165,6 +172,7 @@ export default function ProfilePage() {
                   type="date"
                   value={formData.date_of_birth}
                   onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+                  max={new Date().toISOString().slice(0, 10)}
                   className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   disabled={isSubmitting}
                 />
@@ -180,7 +188,9 @@ export default function ProfilePage() {
                   value={formData.country}
                   onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                   className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="United States"
+                  placeholder="Uzbekistan"
+                  maxLength={80}
+                  autoComplete="country-name"
                   disabled={isSubmitting}
                 />
               </div>
@@ -197,6 +207,7 @@ export default function ProfilePage() {
                 rows={4}
                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
                 placeholder="Tell us about yourself..."
+                maxLength={500}
                 disabled={isSubmitting}
               />
             </div>

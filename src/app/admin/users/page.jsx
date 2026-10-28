@@ -30,11 +30,9 @@ export default function AdminUsers() {
     }
   };
 
-  const filteredUsers = users.filter((user) =>
-    user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.username?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const query = searchQuery.trim().toLowerCase();
+  const filteredUsers = users.filter((user) => !query || [user.email, user.full_name, user.username]
+    .some((value) => value?.toLowerCase().includes(query)));
 
   if (loading) {
     return <AdminPageLoading label="Loading users" />;
@@ -46,28 +44,26 @@ export default function AdminUsers() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-white">Users</h1>
-        <span className="text-sm text-slate-400">
-          Total: {users.length} · Active (with attempts): {filteredUsers.length}
-        </span>
-      </div>
-      <p className="-mt-6 mb-6 text-sm text-slate-400">
-        These figures use exact saved attempts. Older progress without question-level attempt records is not included.
-        Showing {filteredUsers.length} active {filteredUsers.length === 1 ? 'record' : 'records'}.
+      <h1 className="mb-2 text-3xl font-bold text-white">Users</h1>
+      <p className="mb-6 max-w-3xl text-sm text-slate-400">
+        Registered learners (guest profiles are excluded), most recently active first. Attempt figures use exact saved attempts; older progress without question-level records is not included.
       </p>
 
-      <div className="mb-6">
-        <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
+          <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
           <input
-            type="text"
+            type="search"
+            aria-label="Search users by name, email, or username"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search users by name, email, or username..."
-            className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="min-h-11 w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
         </div>
+        <p className="shrink-0 text-sm text-slate-400" aria-live="polite">
+          {query ? `${filteredUsers.length} of ${users.length} learners` : `${users.length} learners`}
+        </p>
       </div>
 
       <div className="max-w-full overflow-x-auto rounded-xl border border-white/10 bg-white/5" role="region" aria-label="Users table" tabIndex={0}>
@@ -86,16 +82,16 @@ export default function AdminUsers() {
             {filteredUsers.length === 0 ? (
               <tr>
                 <td colSpan={6} className="text-center p-8 text-slate-400">
-                  No users found
+                  {query ? 'No learners match your search.' : 'No registered learners yet.'}
                 </td>
               </tr>
             ) : (
               filteredUsers.map((user) => (
-                <tr key={user.id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
+                <tr key={user.user_id || user.id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
                   <td className="p-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-brand-500/20 rounded-full flex items-center justify-center">
-                        <Users size={20} className="text-brand-400" />
+                        <Users size={20} className="text-brand-400" aria-hidden="true" />
                       </div>
                       <div>
                         <p className="font-medium text-white">{user.full_name || 'Unknown'}</p>
@@ -115,10 +111,12 @@ export default function AdminUsers() {
                   </td>
                   <td className="p-4 text-center">
                     <button
-                      onClick={(event) => { detailsTriggerRef.current = event.currentTarget; setSelectedUserId(user.id); }}
-                      className="px-3 py-1.5 bg-brand-500 hover:bg-brand-600 text-white text-sm rounded-lg transition-colors"
+                      type="button"
+                      onClick={(event) => { detailsTriggerRef.current = event.currentTarget; setSelectedUserId(user.user_id || user.id); }}
+                      className="min-h-9 px-3 py-1.5 bg-brand-500 hover:bg-brand-600 text-white text-sm rounded-lg transition-colors"
+                      aria-label={`View details for ${user.full_name || user.email || 'this learner'}`}
                     >
-                      View Details
+                      View details
                     </button>
                   </td>
                 </tr>

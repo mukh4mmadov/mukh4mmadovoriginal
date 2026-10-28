@@ -3,16 +3,45 @@
 import Link from "next/link";
 import { Moon, Sun, LogOut, User, ChevronDown, Settings, BarChart3, Menu, X, MessageSquare, LifeBuoy } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { requestHelpDialog } from "@/lib/help-dialog";
 
+const NAV_LINKS = [
+  { href: "/reading", label: "Reading" },
+  { href: "/readingmock", label: "Mock test" },
+  { href: "/listening", label: "Listening" },
+  { href: "/changelog", label: "Changelog" },
+  { href: "/roadmap", label: "Roadmap" },
+];
+
 export default function Navbar() {
+  const pathname = usePathname();
   const { user, profile, signOut, isLoading } = useAuth();
   const [darkMode, setDarkMode] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const mobileMenuButtonRef = useRef(null);
+  const profileButtonRef = useRef(null);
+  const isActive = (href) => pathname === href || pathname?.startsWith(`${href}/`);
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+    setIsProfileDropdownOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!isProfileDropdownOpen) return;
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setIsProfileDropdownOpen(false);
+        profileButtonRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isProfileDropdownOpen]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -122,7 +151,7 @@ export default function Navbar() {
           href="/home"
           className="flex items-center gap-2 font-display text-xl font-semibold tracking-tight text-white"
         >
-          <img src="/favicon.svg" alt="" className="h-8 w-8" />
+          <img src="/favicon.svg" alt="" width={32} height={32} className="h-8 w-8" />
           <span className="gradient-text">Mukh4mmadov IELTS</span>
         </Link>
 
@@ -139,7 +168,7 @@ export default function Navbar() {
             ref={mobileMenuButtonRef}
             type="button"
             onClick={toggleMobileMenu}
-            className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+            className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-white/10 transition-colors"
             aria-label={isMobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
             aria-expanded={isMobileMenuOpen}
             aria-controls="mobile-navigation"
@@ -148,39 +177,30 @@ export default function Navbar() {
           </button>
         </div>
 
-        <nav className="hidden lg:flex items-center gap-3 text-sm font-medium text-slate-300 sm:gap-6">
+        <nav aria-label="Main navigation" className="hidden lg:flex items-center gap-1 text-sm font-medium text-slate-300 xl:gap-3">
           <button type="button" onClick={(event) => requestHelpDialog(event.currentTarget)} className="rounded-full px-3 py-2 transition-all hover:bg-white/10 hover:text-white">Help</button>
-          <Link
-            href="/reading"
-            className="rounded-full px-3 py-2 transition-all hover:bg-white/10 hover:text-white"
-          >
-            Reading
-          </Link>
-          <Link
-            href="/listening"
-            className="rounded-full px-3 py-2 transition-all hover:bg-white/10 hover:text-white"
-          >
-            Listening
-          </Link>
-          <Link
-            href="/changelog"
-            className="rounded-full px-3 py-2 transition-all hover:bg-white/10 hover:text-white"
-          >
-            Changelog
-          </Link>
-          <Link
-            href="/roadmap"
-            className="rounded-full px-3 py-2 transition-all hover:bg-white/10 hover:text-white"
-          >
-            Roadmap
-          </Link>
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              aria-current={isActive(link.href) ? "page" : undefined}
+              className={`rounded-full px-3 py-2 transition-all hover:bg-white/10 hover:text-white ${isActive(link.href) ? "bg-white/10 text-white" : ""}`}
+            >
+              {link.label}
+            </Link>
+          ))}
 
           {isLoading ? (
             <div className="h-8 w-8 animate-pulse rounded-full bg-white/10" />
           ) : user ? (
             <div className="relative profile-dropdown">
               <button
+                ref={profileButtonRef}
+                type="button"
                 onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                aria-expanded={isProfileDropdownOpen}
+                aria-controls="profile-menu"
+                aria-label={`Account menu for ${getDisplayName()}`}
                 className="flex items-center gap-2 rounded-full px-3 py-2 transition-all hover:bg-white/10"
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500 text-sm font-semibold text-white">
@@ -195,14 +215,14 @@ export default function Navbar() {
                   )}
                 </div>
                 <span className="hidden sm:block">{getDisplayName()}</span>
-                <ChevronDown size={16} className={`transition-transform ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown size={16} aria-hidden="true" className={`transition-transform ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {isProfileDropdownOpen && (
-                <div className="absolute right-0 top-full mt-2 w-48 rounded-lg border border-white/10 bg-surface py-2 shadow-xl">
+                <div id="profile-menu" className="absolute right-0 top-full mt-2 w-56 rounded-lg border border-white/10 bg-surface py-2 shadow-xl">
                   <div className="px-4 py-2 border-b border-white/10">
                     <p className="text-sm font-medium text-white">{getDisplayName()}</p>
-                    <p className="text-xs text-slate-400">{user.email}</p>
+                    <p className="truncate text-xs text-slate-400">{user.email}</p>
                   </div>
                   <Link
                     href="/profile"
@@ -235,6 +255,7 @@ export default function Navbar() {
                     <LifeBuoy size={16} /> Help
                   </button>
                   <button
+                    type="button"
                     onClick={handleSignOut}
                     className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
                   >
@@ -258,9 +279,9 @@ export default function Navbar() {
           <button
             type="button"
             onClick={toggleTheme}
-            aria-label="Toggle theme"
-            aria-pressed={darkMode}
-            className="control-button"
+            aria-label={darkMode ? "Switch to light theme" : "Switch to dark theme"}
+            title={darkMode ? "Switch to light theme" : "Switch to dark theme"}
+            className="control-button ml-2"
           >
             {darkMode ? <Sun size={18} /> : <Moon size={18} />}
           </button>
@@ -273,34 +294,17 @@ export default function Navbar() {
         className="lg:hidden border-t border-white/10 bg-surface/95 backdrop-blur-xl"
       >
           <nav aria-label="Mobile navigation" className="px-4 py-4 space-y-3">
-            <Link
-              href="/reading"
-              className="block rounded-lg px-4 py-3 text-white hover:bg-white/10 transition-colors"
-              onClick={closeMobileMenu}
-            >
-             Reading
-            </Link>
-            <Link
-              href="/listening"
-              className="block rounded-lg px-4 py-3 text-white hover:bg-white/10 transition-colors"
-              onClick={closeMobileMenu}
-            >
-              Listening
-            </Link>
-            <Link
-              href="/changelog"
-              className="block rounded-lg px-4 py-3 text-white hover:bg-white/10 transition-colors"
-              onClick={closeMobileMenu}
-            >
-              Changelog
-            </Link>
-            <Link
-              href="/roadmap"
-              className="block rounded-lg px-4 py-3 text-white hover:bg-white/10 transition-colors"
-              onClick={closeMobileMenu}
-            >
-              Roadmap
-            </Link>
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                aria-current={isActive(link.href) ? "page" : undefined}
+                className={`block rounded-lg px-4 py-3 text-white hover:bg-white/10 transition-colors ${isActive(link.href) ? "bg-white/10 font-semibold" : ""}`}
+                onClick={closeMobileMenu}
+              >
+                {link.label}
+              </Link>
+            ))}
             <button type="button" onClick={(event) => requestHelpDialog(event.currentTarget)} className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-white hover:bg-white/10 transition-colors">
               <LifeBuoy size={18} /> Help
             </button>
@@ -312,7 +316,7 @@ export default function Navbar() {
                 <div className="border-t border-white/10 pt-3 mt-3">
                   <div className="px-4 py-2 mb-3">
                     <p className="text-sm font-medium text-white">{getDisplayName()}</p>
-                    <p className="text-xs text-slate-400">{user.email}</p>
+                    <p className="truncate text-xs text-slate-400">{user.email}</p>
                   </div>
                   <Link
                     href="/profile"
@@ -342,6 +346,7 @@ export default function Navbar() {
                     <MessageSquare size={18} /> My feedback
                   </Link>
                   <button
+                    type="button"
                     onClick={handleSignOut}
                     className="flex w-full items-center gap-3 px-4 py-3 text-left text-white hover:bg-white/10 transition-colors"
                   >
@@ -365,9 +370,8 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={toggleTheme}
-                aria-label="Toggle theme"
-                aria-pressed={darkMode}
-                className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+                aria-label={darkMode ? "Switch to light theme" : "Switch to dark theme"}
+                className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-white/10 transition-colors"
               >
                 {darkMode ? <Sun size={20} className="text-white" /> : <Moon size={20} className="text-white" />}
               </button>

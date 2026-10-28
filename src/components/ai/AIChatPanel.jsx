@@ -450,7 +450,7 @@ export default function AIChatPanel({
   return (
     <>
       <div
-        className="hidden sm:block fixed top-0 h-full w-1.5 -ml-1.5 cursor-col-resize hover:bg-brand-500/30 transition-colors z-50"
+        className="hidden sm:block fixed top-0 h-full w-1.5 -ml-1.5 cursor-col-resize hover:bg-brand-500/30 transition-colors z-[61]"
         onMouseDown={() => setIsResizing(true)}
         style={{ left: `calc(100% - ${panelWidth}px)` }}
         role="separator"
@@ -459,7 +459,7 @@ export default function AIChatPanel({
       />
       <div
         ref={modalRef}
-        className="hidden sm:flex fixed right-0 inset-y-0 min-h-0 overflow-hidden overscroll-y-contain bg-surface/95 backdrop-blur-xl border-l border-white/10 shadow-2xl z-50 flex-col"
+        className="hidden sm:flex fixed right-0 inset-y-0 min-h-0 overflow-hidden overscroll-y-contain bg-surface border-l border-white/10 shadow-2xl z-[60] flex-col"
         style={{ width: `${panelWidth}px` }}
         role="dialog"
         aria-modal="true"
@@ -659,26 +659,6 @@ export default function AIChatPanel({
           <div ref={messagesEndRef} />
         </div>
 
-        {messages.length === 0 && (
-          <div className="p-3 border-t border-white/10">
-            <div className="grid grid-cols-2 gap-1.5">
-              {SUGGESTED_PROMPTS.filter(
-                (p) => !p.personality || p.personality === personality,
-              ).map((suggestion) => (
-                <button
-                  key={suggestion.label}
-                  onClick={() => handleSend(suggestion.prompt)}
-                  disabled={isLoading}
-                  className="text-left px-2 py-1.5 rounded-md bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-slate-300 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <span className="mr-1">{suggestion.icon}</span>
-                  {suggestion.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         <div className="shrink-0 p-4 border-t border-white/10">
           <div className="flex gap-2">
             <textarea
@@ -686,7 +666,7 @@ export default function AIChatPanel({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask anything... (Shift+Enter for new line)"
+              placeholder="Ask about this passage…"
               aria-label="Ask the AI Reading Coach about this passage"
               disabled={isLoading}
               rows={1}
@@ -699,7 +679,7 @@ export default function AIChatPanel({
               className="px-4 py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="Send message"
             >
-              <Send size={18} />
+              <Send size={18} aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -707,7 +687,7 @@ export default function AIChatPanel({
 
       <div
         ref={modalRef}
-        className="sm:hidden fixed inset-0 z-50 flex min-h-0 flex-col overflow-hidden overscroll-y-contain bg-surface"
+        className="sm:hidden fixed inset-0 z-[60] flex min-h-0 flex-col overflow-hidden overscroll-y-contain bg-surface"
         role="dialog"
         aria-modal="true"
         aria-labelledby="ai-reading-coach-title-mobile"
@@ -896,26 +876,6 @@ export default function AIChatPanel({
           <div ref={messagesEndRef} />
         </div>
 
-        {messages.length === 0 && (
-          <div className="p-3 border-t border-white/10">
-            <div className="grid grid-cols-2 gap-1.5">
-              {SUGGESTED_PROMPTS.filter(
-                (p) => !p.personality || p.personality === personality,
-              ).map((suggestion) => (
-                <button
-                  key={suggestion.label}
-                  onClick={() => handleSend(suggestion.prompt)}
-                  disabled={isLoading}
-                  className="text-left px-2 py-1.5 rounded-md bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-slate-300 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <span className="mr-1">{suggestion.icon}</span>
-                  {suggestion.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         <div className="shrink-0 p-4 border-t border-white/10">
           <div className="flex gap-2">
             <textarea
@@ -923,7 +883,7 @@ export default function AIChatPanel({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask anything... (Shift+Enter for new line)"
+              placeholder="Ask about this passage…"
               aria-label="Ask the AI Reading Coach about this passage"
               disabled={isLoading}
               rows={1}
@@ -936,7 +896,7 @@ export default function AIChatPanel({
               className="px-4 py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="Send message"
             >
-              <Send size={18} />
+              <Send size={18} aria-hidden="true" />
             </button>
           </div>
         </div>

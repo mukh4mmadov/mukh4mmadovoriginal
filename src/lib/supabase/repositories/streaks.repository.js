@@ -1,9 +1,4 @@
 import { supabase } from '../client';
-import {
-  Streak,
-  StreakInsert,
-  StreakUpdate,
-} from '../models';
 
 export class StreaksRepository {
   async getStreak(userId) {

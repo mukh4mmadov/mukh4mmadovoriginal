@@ -3530,8 +3530,10 @@ function getReadingTest(slug) {
   return readingTests.find((t) => t.slug === slug);
 }
 
-export default {
+const readingTestsModule = {
   readingTests,
   getReadingTest,
-  passages
+  passages,
 };
+
+export default readingTestsModule;
