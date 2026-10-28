@@ -740,6 +740,17 @@ export const cambridgePassages = [
       },
       {
         instructions: "Complete the summary using the list of words, A–I, below. Write the correct letter, A–I, in boxes 31–35 on your answer sheet.",
+        wordBank: [
+          { id: "A", text: "ice" },
+          { id: "B", text: "stone" },
+          { id: "C", text: "sand" },
+          { id: "D", text: "cooking" },
+          { id: "E", text: "metal" },
+          { id: "F", text: "water" },
+          { id: "G", text: "fossil bones" },
+          { id: "H", text: "paintings" },
+          { id: "I", text: "grass" },
+        ],
         questions: [
           {
             id: "q31",

@@ -994,6 +994,22 @@ export default function ReadingTestPlayer({ passage }) {
                     {renumberInstructions(group.instructions, questionNumbers.get(group.questions[0]?.id))}
                   </HighlightableText>
 
+                  {group.wordBank?.length > 0 && (
+                    <div className="mb-4 rounded-xl border border-white/10 bg-surface/60 p-4">
+                      <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-accent-400">
+                        List of words
+                      </p>
+                      <ul className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm text-slate-300 sm:grid-cols-3">
+                        {group.wordBank.map((word) => (
+                          <li key={word.id}>
+                            <span className="mr-2 font-semibold text-slate-100">{word.id}</span>
+                            {word.text}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
                   {group.questions[0].type === "matching-headings" &&
                     passage.headingBank?.length > 0 && (
                       <div className="mb-4 rounded-xl border border-white/10 bg-surface/60 p-4">
@@ -1067,7 +1083,7 @@ export default function ReadingTestPlayer({ passage }) {
                                   aria-invalid={Boolean(answerErrors[q.id])}
                                   aria-describedby={answerErrors[q.id] ? `${q.id}-answer-error` : undefined}
                                   className="mx-1 w-full max-w-[9rem] rounded-lg border border-white/15 bg-white/10 px-2 py-1 text-sm text-white placeholder:text-slate-300 focus:border-brand-500 focus:outline-none sm:w-36"
-                                  placeholder={`max ${q.maxWords} word${q.maxWords > 1 ? "s" : ""}`}
+                                  placeholder={group.wordBank?.length ? "letter" : `max ${q.maxWords} word${q.maxWords > 1 ? "s" : ""}`}
                                 />{" "}
                                 <HighlightableText
                                   fontSize={fontSize}

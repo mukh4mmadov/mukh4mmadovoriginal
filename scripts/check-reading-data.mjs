@@ -116,6 +116,15 @@ function validateReadingTests(readingTests, renderedTypes) {
             if (!hasText(question.before) && !hasText(question.after)) {
               errors.push(`${location}: empty prompt; sentence-completion requires text in "before" or "after".`);
             }
+            // Summaries answered with a letter need the word list those letters refer to.
+            const letterAnswers = [question.answer].flat().filter((answer) => /^[A-Z]$/.test(String(answer)));
+            if (letterAnswers.length > 0) {
+              const bankIds = new Set((group.wordBank || []).filter((word) => hasText(word.id) && hasText(word.text)).map((word) => word.id));
+              const missing = letterAnswers.filter((answer) => !bankIds.has(answer));
+              if (missing.length > 0) {
+                errors.push(`${location}: answer ${missing.join(", ")} refers to a word list, but the group's "wordBank" has no such entry.`);
+              }
+            }
           } else if (type === "matching-headings" && passage.headingBank?.length > 0) {
             if (!hasText(question.paragraphLabel)) {
               errors.push(`${location}: empty rendered prompt; matching-headings with a heading bank requires "paragraphLabel".`);
@@ -216,6 +225,18 @@ if (process.argv.includes("--self-test-invalid")) {
     missingKeyFixture,
     renderedTypes,
     'passage "the-wonder-plant", group 1, question "q1": missing or empty answer key',
+  );
+  const missingWordBankFixture = structuredClone(readingTests);
+  const megafaunaGroup = missingWordBankFixture
+    .find((test) => test.slug === "australias-megafauna-controversy")?.passages[0].questionGroups
+    .find((group) => group.wordBank);
+  if (!megafaunaGroup) throw new Error("Could not locate the Megafauna word-list group for the word-bank self-check.");
+  delete megafaunaGroup.wordBank;
+  assertInvalidFixtureIsRejected(
+    "missing word list",
+    missingWordBankFixture,
+    renderedTypes,
+    'passage "australias-megafauna-controversy", group 2, question "q31": answer B refers to a word list, but the group\'s "wordBank" has no such entry.',
   );
   console.log("Question data validator self-checks passed; fixtures were in-memory copies and source data was not changed.");
 }

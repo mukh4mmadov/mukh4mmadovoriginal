@@ -33,8 +33,20 @@ export function isAnswerCorrect(question, givenAnswer) {
   return false;
 }
 
+// The word list ("List of words A–I") a summary question's letters refer to.
+export function findWordBank(passage, question) {
+  return passage?.questionGroups?.find((group) => group.questions?.some((item) => item.id === question.id))?.wordBank || null;
+}
+
 export function formatAnswer(question, answer, passage) {
   if (answer === undefined || answer === null || answer === "") return "Skipped";
+  const wordBank = question.type === "sentence-completion" ? findWordBank(passage, question) : null;
+  if (wordBank) {
+    return [answer].flat().map((value) => {
+      const word = wordBank.find((item) => item.id === String(value).trim().toUpperCase());
+      return word ? `${word.id}. ${word.text}` : String(value);
+    }).join(" / ");
+  }
   if (Array.isArray(answer)) return answer.join(" / ");
 
   if (question.type === "multiple-choice") {
