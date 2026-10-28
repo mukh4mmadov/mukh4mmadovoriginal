@@ -40,7 +40,7 @@ export const cambridgePassages = [
     ],
     questionGroups: [
       {
-        instructions: "Do the following statements agree with the information given in Reading Passage 1? Write TRUE if the statement agrees with the information, FALSE if the statement contradicts the information, or NOT GIVEN if there is no information on this.",
+        instructions: "Do the following statements agree with the information given in the passage? Write TRUE if the statement agrees with the information, FALSE if the statement contradicts the information, or NOT GIVEN if there is no information on this.",
         questions: [
           {
             id: "q1",
@@ -699,7 +699,7 @@ export const cambridgePassages = [
     ],
     questionGroups: [
       {
-        instructions: "Do the following statements agree with the claims of the writer in Reading Passage 3? In boxes 27–30 on your answer sheet, write YES if the statement agrees with the claims of the writer, NO if the statement contradicts the claims of the writer, or NOT GIVEN if it is impossible to say what the writer thinks about this.",
+        instructions: "Do the following statements agree with the claims of the writer in the passage? In boxes 27–30 on your answer sheet, write YES if the statement agrees with the claims of the writer, NO if the statement contradicts the claims of the writer, or NOT GIVEN if it is impossible to say what the writer thinks about this.",
         questions: [
           {
             id: "q27",
