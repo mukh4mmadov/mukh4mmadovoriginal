@@ -58,7 +58,7 @@ export const newPassages = [
     questionGroups: [
       {
         instructions:
-          "Questions 1–7. Reading Passage 1 has six sections, A–F. Which section contains the following information? Write the correct letter, A–F, in boxes 1–7 on your answer sheet. NB You may use any letter more than once.",
+          "Questions 1–7. The passage has six sections, A–F. Which section contains the following information? Write the correct letter, A–F, in boxes 1–7 on your answer sheet. NB You may use any letter more than once.",
         questions: [
           {
             id: "q1",
@@ -291,7 +291,7 @@ export const newPassages = [
     questionGroups: [
       {
         instructions:
-          "Questions 14–20. Do the following statements agree with the information given in Reading Passage 2? In boxes 14–20 on your answer sheet, write TRUE if the statement agrees with the information, FALSE if the statement contradicts the information, NOT GIVEN if there is no information on this.",
+          "Questions 14–20. Do the following statements agree with the information given in the passage? In boxes 14–20 on your answer sheet, write TRUE if the statement agrees with the information, FALSE if the statement contradicts the information, NOT GIVEN if there is no information on this.",
         questions: [
           {
             id: "q14",
@@ -500,7 +500,7 @@ export const newPassages = [
     questionGroups: [
       {
         instructions:
-          "Questions 27–32. Reading Passage 3 has six paragraphs, A–F. Which paragraph contains the following information? Write the correct letter, A–F, in boxes 27–32 on your answer sheet. NB You may use any letter more than once.",
+          "Questions 27–32. The passage has six paragraphs, A–F. Which paragraph contains the following information? Write the correct letter, A–F, in boxes 27–32 on your answer sheet. NB You may use any letter more than once.",
         questions: [
           {
             id: "q27",
@@ -626,7 +626,7 @@ export const newPassages = [
       },
       {
         instructions:
-          "Questions 36–40. Do the following statements agree with the views of the writer in Reading Passage 3? In boxes 36–40 on your answer sheet, write YES if the statement agrees with the views of the writer, NO if the statement contradicts the views of the writer, NOT GIVEN if it is impossible to say what the writer thinks about this.",
+          "Questions 36–40. Do the following statements agree with the views of the writer in the passage? In boxes 36–40 on your answer sheet, write YES if the statement agrees with the views of the writer, NO if the statement contradicts the views of the writer, NOT GIVEN if it is impossible to say what the writer thinks about this.",
         questions: [
           {
             id: "q36",
@@ -720,7 +720,7 @@ export const newPassages = [
     questionGroups: [
       {
         instructions:
-          "Questions 1–6. Do the following statements agree with the information given in Reading Passage 1? In boxes 1–6 on your answer sheet, write TRUE if the statement agrees with the information, FALSE if the statement contradicts the information, NOT GIVEN if there is no information on this.",
+          "Questions 1–6. Do the following statements agree with the information given in the passage? In boxes 1–6 on your answer sheet, write TRUE if the statement agrees with the information, FALSE if the statement contradicts the information, NOT GIVEN if there is no information on this.",
         questions: [
           {
             id: "q1",
@@ -935,7 +935,7 @@ export const newPassages = [
     questionGroups: [
       {
         instructions:
-          "Questions 14–19. Reading Passage 2 has six paragraphs, A–F. Choose the correct heading for each paragraph from the list of headings below. Write the correct number, i–ix, in boxes 14–19 on your answer sheet.",
+          "Questions 14–19. The passage has six paragraphs, A–F. Choose the correct heading for each paragraph from the list of headings below. Write the correct number, i–ix, in boxes 14–19 on your answer sheet.",
         questions: [
           {
             id: "q14",
@@ -1368,7 +1368,7 @@ export const newPassages = [
       },
       {
         instructions:
-          "Questions 36–40. Do the following statements agree with the information given in Reading Passage 3? In boxes 36–40, write: TRUE if the statement agrees, FALSE if the statement contradicts, NOT GIVEN if there is no information on this.",
+          "Questions 36–40. Do the following statements agree with the information given in the passage? In boxes 36–40, write: TRUE if the statement agrees, FALSE if the statement contradicts, NOT GIVEN if there is no information on this.",
         questions: [
           {
             id: "q36",
@@ -1587,7 +1587,7 @@ export const newPassages = [
       },
       {
         instructions:
-          "Questions 7–9. Reading Passage 1 has ten paragraphs, A–J. Which paragraph contains the following information? Write the correct letter, A–J, in boxes 7-9.",
+          "Questions 7–9. The passage has ten paragraphs, A–J. Which paragraph contains the following information? Write the correct letter, A–J, in boxes 7-9.",
         questions: [
           {
             id: "q7",
@@ -1626,7 +1626,7 @@ export const newPassages = [
       },
       {
         instructions:
-          "Questions 10–13. Do the following statements agree with the information given in Reading Passage 1? In boxes 10–13, write: TRUE if the statement agrees with the information, FALSE if the statement contradicts the information, NOT GIVEN if there is no information on this.",
+          "Questions 10–13. Do the following statements agree with the information given in the passage? In boxes 10–13, write: TRUE if the statement agrees with the information, FALSE if the statement contradicts the information, NOT GIVEN if there is no information on this.",
         questions: [
           {
             id: "q10",
@@ -1732,7 +1732,7 @@ export const newPassages = [
     questionGroups: [
       {
         instructions:
-          "Questions 14–21. Reading Passage 2 has nine paragraphs, A–I. Choose the correct heading for paragraphs A and C–I from the list of headings below. Write the correct number, i–xii, in boxes 14–21.",
+          "Questions 14–21. The passage has nine paragraphs, A–I. Choose the correct heading for paragraphs A and C–I from the list of headings below. Write the correct number, i–xii, in boxes 14–21.",
         questions: [
           {
             id: "q14",
@@ -1818,7 +1818,7 @@ export const newPassages = [
       },
       {
         instructions:
-          "Questions 22–26. Do the following statements agree with the information given in Reading Passage 2? In boxes 22–26, write: TRUE if the statement agrees with the information, FALSE if the statement contradicts the information, NOT GIVEN if there is no information on this.",
+          "Questions 22–26. Do the following statements agree with the information given in the passage? In boxes 22–26, write: TRUE if the statement agrees with the information, FALSE if the statement contradicts the information, NOT GIVEN if there is no information on this.",
         questions: [
           {
             id: "q22",
@@ -2034,7 +2034,7 @@ export const newPassages = [
       },
       {
         instructions:
-          "Questions 32–35. Do the following statements agree with the views of the writer in Reading Passage 3? In boxes 32–35, write: YES if the statement agrees with the claims of the writer, NO if the statement contradicts the claims of the writer, NOT GIVEN if it is impossible to say what the writer thinks about this.",
+          "Questions 32–35. Do the following statements agree with the views of the writer in the passage? In boxes 32–35, write: YES if the statement agrees with the claims of the writer, NO if the statement contradicts the claims of the writer, NOT GIVEN if it is impossible to say what the writer thinks about this.",
         questions: [
           {
             id: "q32",
