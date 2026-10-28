@@ -751,3 +751,34 @@ html:not(.dark) .writing-chart {
   --series-4: #eda100;
   --series-5: #e87ba4;
 }
+
+/* "Show me where" evidence highlights (EvidenceViewer). */
+.evidence-sentence {
+  background-color: rgb(99 102 241 / 0.18);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0.05em 0;
+}
+.evidence-match {
+  background-color: rgb(250 204 21 / 0.32);
+  color: #fef9c3;
+  border-radius: 3px;
+  padding: 0.05em 0;
+  box-shadow: 0 1px 0 rgb(250 204 21 / 0.8);
+}
+.evidence-paragraph {
+  background-color: rgb(99 102 241 / 0.1);
+  box-shadow: inset 3px 0 0 rgb(129 140 248);
+}
+html:not(.dark) .evidence-sentence {
+  background-color: rgb(99 102 241 / 0.12);
+}
+html:not(.dark) .evidence-match {
+  background-color: #fde68a;
+  color: #1e293b;
+  box-shadow: 0 1px 0 #d97706;
+}
+html:not(.dark) .evidence-paragraph {
+  background-color: rgb(99 102 241 / 0.07);
+  box-shadow: inset 3px 0 0 #4f46e5;
+}

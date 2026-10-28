@@ -14,11 +14,14 @@ import {
   History,
   Bot,
   Share2,
+  MapPin,
 } from "lucide-react";
 import AIChatPanel from "@/components/ai/AIChatPanel";
 import Link from "next/link";
 import { addMissedQuestionsToReviewQueue, formatAnswer, getReviewQueue, isAnswerCorrect } from "@/lib/reading/answer-review";
 import { renumberInstructions } from "@/lib/reading/question-numbering.mjs";
+import { locateEvidence } from "@/lib/reading/evidence-locator.mjs";
+import EvidenceViewer from "@/components/reading/EvidenceViewer";
 
 function allQuestions(passage) {
   return passage.questionGroups.flatMap((g) => g.questions);
@@ -56,6 +59,12 @@ export default function ReadingTestResults({
   const [reviewQueueMessage, setReviewQueueMessage] = useState("");
   const [missedQuestionsSaved, setMissedQuestionsSaved] = useState(false);
   const [shareMessage, setShareMessage] = useState("");
+  const [evidenceQuestionId, setEvidenceQuestionId] = useState(null);
+  const evidenceLocations = useMemo(
+    () => new Map(questions.map((question) => [question.id, locateEvidence(passage, question)])),
+    [passage, questions],
+  );
+  const evidenceQuestion = evidenceQuestionId ? questions.find((question) => question.id === evidenceQuestionId) : null;
 
   const correctCount = questions.filter((q) =>
     isAnswerCorrect(q, answers[q.id]),
@@ -693,6 +702,16 @@ export default function ReadingTestResults({
                               <Bot size={14} />
                               Ask AI Coach
                             </button>
+                            {evidenceLocations.get(q.id) && (
+                              <button
+                                type="button"
+                                onClick={() => setEvidenceQuestionId(q.id)}
+                                className="flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-lg transition-all duration-300 bg-amber-400/10 border border-amber-400/30 text-amber-200 hover:bg-amber-400/20"
+                              >
+                                <MapPin size={14} aria-hidden="true" />
+                                Show me where
+                              </button>
+                            )}
                           </div>
 
                           {expandedExplanation === q.id && (
@@ -741,6 +760,15 @@ export default function ReadingTestResults({
           Try Again
         </button>
       </div>
+
+      <EvidenceViewer
+        passage={passage}
+        question={evidenceQuestion}
+        questionNumber={evidenceQuestion ? questionNumbers.get(evidenceQuestion.id) : null}
+        location={evidenceQuestion ? evidenceLocations.get(evidenceQuestion.id) : null}
+        correctAnswer={evidenceQuestion ? formatAnswer(evidenceQuestion, evidenceQuestion.answer, passage) : ""}
+        onClose={() => setEvidenceQuestionId(null)}
+      />
 
       <AIChatPanel
         isOpen={aiChatOpen}

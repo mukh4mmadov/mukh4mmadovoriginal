@@ -14,7 +14,9 @@ import ReportPassageIssueButton from "@/components/shared/ReportPassageIssueButt
 import { useTextHighlight } from "@/hooks/useTextHighlight";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import { renumberInstructions } from "@/lib/reading/question-numbering.mjs";
-import { ArrowLeft, LogOut, Type } from "lucide-react";
+import { locateEvidence } from "@/lib/reading/evidence-locator.mjs";
+import EvidenceViewer from "@/components/reading/EvidenceViewer";
+import { ArrowLeft, LogOut, MapPin, Type } from "lucide-react";
 
 const DURATION = 60 * 60;
 const MOCK_TEXT_SIZE_CLASSES = { small: "text-sm", medium: "text-base", large: "text-lg" };
@@ -46,6 +48,7 @@ export default function FullMockPage() {
   const [fontSize, setFontSize] = useState("medium");
   const [questionFontSize, setQuestionFontSize] = useState("medium");
   const [result, setResult] = useState(null);
+  const [evidenceItem, setEvidenceItem] = useState(null);
   const [showSubmit, setShowSubmit] = useState(false);
   const [showConsent, setShowConsent] = useState(false);
   const [showRepeatConfirm, setShowRepeatConfirm] = useState(false);
@@ -204,7 +207,7 @@ export default function FullMockPage() {
       else stats.wrong += 1;
       typeMap.set(item.question.type, stats);
     });
-    const history = { id: crypto.randomUUID(), variantId: selectedVariant?.id, passageTitles: passages.map((passage) => passage.title), completedAt: new Date().toISOString(), rawScore: score, total: questions.length, band: getMockBand(score), elapsedSeconds, autoSubmitted: autoSubmit, autoSubmitReason: autoSubmitReason || null, sections, questionTypes: [...typeMap.values()], answers: checkedQuestions.map(({ number, passageNumber, passageTitle, question, userAnswer, correct }) => ({ number, passageNumber, passageTitle, type: question.type, prompt: question.prompt || question.paragraphLabel || `${question.before || ""} ___ ${question.after || ""}`, userAnswer: formatAnswer(question, userAnswer, passages[passageNumber - 1]), correctAnswer: formatAnswer(question, question.answer, passages[passageNumber - 1]), explanation: question.explanation || "", correct })) };
+    const history = { id: crypto.randomUUID(), variantId: selectedVariant?.id, passageTitles: passages.map((passage) => passage.title), completedAt: new Date().toISOString(), rawScore: score, total: questions.length, band: getMockBand(score), elapsedSeconds, autoSubmitted: autoSubmit, autoSubmitReason: autoSubmitReason || null, sections, questionTypes: [...typeMap.values()], answers: checkedQuestions.map(({ number, passageNumber, passageTitle, question, userAnswer, correct }) => ({ number, passageNumber, passageTitle, questionId: question.id, type: question.type, prompt: question.prompt || question.paragraphLabel || `${question.before || ""} ___ ${question.after || ""}`, userAnswer: formatAnswer(question, userAnswer, passages[passageNumber - 1]), correctAnswer: formatAnswer(question, question.answer, passages[passageNumber - 1]), explanation: question.explanation || "", correct })) };
     try {
       const previous = readSaved();
       const results = [...(previous?.results || []), history].slice(-20);
@@ -296,6 +299,13 @@ export default function FullMockPage() {
   const skippedCount = result
     ? Math.max(0, Number(result.total || result.answers?.length || 40) - (result.answers || []).filter((item) => item.userAnswer && item.userAnswer !== "Skipped").length)
     : 0;
+  // Evidence is looked up from the passages of this mock; older saved results without question IDs get no button.
+  const evidenceFor = (item) => {
+    const passage = passages[item.passageNumber - 1];
+    const question = passage?.questionGroups.flatMap((group) => group.questions).find((candidate) => candidate.id === item.questionId);
+    const location = question ? locateEvidence(passage, question) : null;
+    return location ? { passage, question, location, number: item.number, correctAnswer: item.correctAnswer } : null;
+  };
   if (result) return <main className="mock-experience min-h-screen bg-slate-950 px-4 py-10 text-slate-100 sm:px-6">
     <Link href="/reading" className="inline-flex items-center gap-2 text-sm text-brand-300"><ArrowLeft size={16}/>Back to practice</Link>
     <section className="mt-6 rounded-3xl border border-white/10 bg-slate-900 p-6 sm:p-10">
@@ -304,7 +314,8 @@ export default function FullMockPage() {
       <p className="mt-5 rounded-xl bg-amber-300/10 p-4 text-sm text-amber-100">This conversion is approximate practice guidance. It is not an official IELTS result; official band boundaries can vary by test.</p>{result.autoSubmitted&&<p role="status" className="mt-3 rounded-xl bg-amber-300/10 p-4 text-sm text-amber-100">This mock was submitted automatically.</p>}
       <h2 className="mt-8 text-xl font-bold">Section analysis</h2><div className="mt-3 grid gap-3 md:grid-cols-3">{result.sections.map((section) => <article key={section.title} className="rounded-xl border border-white/10 p-4"><p className="text-xs uppercase text-slate-400">{section.difficulty} · {section.answered}/{section.total} answered</p><h3 className="mt-2 font-semibold">{section.title}</h3><p className="mt-3 text-2xl font-bold">{section.correct}/{section.total}</p></article>)}</div>
       <h2 className="mt-8 text-xl font-bold">Question-type analysis</h2><div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{result.questionTypes.map((item)=><article key={item.type} className="rounded-xl border border-white/10 p-4"><h3 className="font-semibold capitalize">{item.type.replace(/-/g," ")}</h3><p className="mt-2 text-sm text-slate-300">{item.correct}/{item.total} correct · {item.wrong} incorrect · {item.skipped} skipped</p>{item.total-item.skipped>0&&<p className="mt-1 text-xs text-slate-400">Accuracy among answered: {Math.round(item.correct/(item.total-item.skipped)*100)}%</p>}</article>)}</div>
-      <h2 className="mt-8 text-xl font-bold">Question review</h2><div className="mt-3 space-y-3">{result.answers.map((item) => <article key={`${item.passageNumber}-${item.number}`} className="rounded-xl border border-white/10 p-4"><div className="flex flex-wrap justify-between gap-2"><p className="font-semibold">Q{item.number} · Passage {item.passageNumber}: {item.prompt}</p><span className={item.correct ? "text-emerald-300" : !item.userAnswer || item.userAnswer === "Skipped" ? "text-amber-200" : "text-rose-300"}>{item.correct ? "Correct" : !item.userAnswer || item.userAnswer === "Skipped" ? "Skipped" : "Incorrect"}</span></div><p className="mt-2 text-sm text-slate-300">Your answer: {item.userAnswer || "Not answered"} · Correct answer: {item.correctAnswer}</p>{item.explanation && <p className="mt-2 text-sm text-slate-400">{item.explanation}</p>}</article>)}</div>
+      <h2 className="mt-8 text-xl font-bold">Question review</h2><div className="mt-3 space-y-3">{result.answers.map((item) => <article key={`${item.passageNumber}-${item.number}`} className="rounded-xl border border-white/10 p-4"><div className="flex flex-wrap justify-between gap-2"><p className="font-semibold">Q{item.number} · Passage {item.passageNumber}: {item.prompt}</p><span className={item.correct ? "text-emerald-300" : !item.userAnswer || item.userAnswer === "Skipped" ? "text-amber-200" : "text-rose-300"}>{item.correct ? "Correct" : !item.userAnswer || item.userAnswer === "Skipped" ? "Skipped" : "Incorrect"}</span></div><p className="mt-2 text-sm text-slate-300">Your answer: {item.userAnswer || "Not answered"} · Correct answer: {item.correctAnswer}</p>{item.explanation && <p className="mt-2 text-sm text-slate-400">{item.explanation}</p>}{evidenceFor(item) && <button type="button" onClick={() => setEvidenceItem(evidenceFor(item))} className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 text-xs font-semibold text-amber-200 hover:bg-amber-400/20"><MapPin size={14} aria-hidden="true" />Show me where</button>}</article>)}</div>
+      <EvidenceViewer passage={evidenceItem?.passage} question={evidenceItem?.question} questionNumber={evidenceItem?.number} location={evidenceItem?.location} correctAnswer={evidenceItem?.correctAnswer} onClose={() => setEvidenceItem(null)} />
       <p className="mt-5 text-sm text-slate-400">Variant passages: {(result.passageTitles || []).join(" · ")}</p><button onClick={startFresh} className="mt-8 min-h-12 rounded-xl bg-brand-500 px-5 font-semibold text-white">Start another mock</button>
     </section>
   </main>;
