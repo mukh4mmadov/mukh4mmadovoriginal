@@ -7,6 +7,7 @@ import readingTestsModule from "@/data/readingTests_new";
 import { buildDrillPool, DRILL_TYPES, getDrillType, pickDrillRound } from "@/lib/reading/question-drills.mjs";
 import { segmentParagraph } from "@/lib/reading/evidence-locator.mjs";
 import { formatAnswer, isAnswerCorrect } from "@/lib/reading/answer-review";
+import { recordDrillRound } from "@/lib/missions/daily-missions.mjs";
 
 const ROUND_SIZE = 10;
 const CHOICES = {
@@ -76,6 +77,9 @@ export default function QuestionDrill({ type }) {
   };
 
   const next = () => {
+    if (index + 1 >= round.length) {
+      recordDrillRound(window.localStorage, { type, correct: results.filter((result) => result.correct).length, total: results.length, completedAt: new Date().toISOString() });
+    }
     setIndex((value) => value + 1);
     setAnswer("");
     setChecked(false);

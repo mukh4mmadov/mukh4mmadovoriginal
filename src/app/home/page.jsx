@@ -17,6 +17,7 @@ import {
   PenLine,
 } from "lucide-react";
 import DailyInspiration from "@/components/shared/DailyInspiration";
+import DailyMissionsCard from "@/components/shared/DailyMissionsCard";
 import { getAllProgress } from "@/lib/progressTracker";
 import { useAuth } from "@/contexts/AuthContext";
 import readingTestsModule from "@/data/readingTests_new";
@@ -246,6 +247,8 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      <DailyMissionsCard />
 
       <section className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8" aria-labelledby="practice-modes-title">
         <h2 id="practice-modes-title" className="mb-4 font-display text-2xl font-bold text-slate-100">Choose how to practise</h2>
