@@ -10,6 +10,7 @@ import {
   Filter,
   CheckCircle2,
   ClipboardList,
+  BookMarked,
   CalendarDays,
   Flame,
 } from "lucide-react";
@@ -17,6 +18,7 @@ import { useState, useMemo, useEffect } from "react";
 import { getAllProgress } from "@/lib/progressTracker";
 import { useAuth } from "@/contexts/AuthContext";
 import { getReviewQueue } from "@/lib/reading/answer-review";
+import { readVocabulary } from "@/lib/vocabulary/vocabulary-notebook.mjs";
 import { getPracticeSummary, getQuestionTypeAccuracy } from "@/lib/reading/practice-summary";
 
 export default function ReadingListPage() {
@@ -30,10 +32,12 @@ export default function ReadingListPage() {
   const [progressData, setProgressData] = useState({});
   const [progressLoaded, setProgressLoaded] = useState(false);
   const [reviewQueueCount, setReviewQueueCount] = useState(0);
+  const [vocabularyCount, setVocabularyCount] = useState(0);
   const [draftData, setDraftData] = useState({});
 
   useEffect(() => {
     setReviewQueueCount(getReviewQueue(user?.id).length);
+    setVocabularyCount(readVocabulary(window.localStorage, user?.id).length);
   }, [user?.id]);
 
   useEffect(() => {
@@ -208,13 +212,20 @@ export default function ReadingListPage() {
         <Link href="/readingmock" className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-brand-500 px-5 font-semibold text-white">Open reading full mock</Link>
       </section>
 
-      {reviewQueueCount > 0 && (
-        <Link href="/review" className="mb-8 inline-flex min-h-11 items-center gap-2 rounded-xl border border-amber-400/20 bg-amber-400/10 px-4 py-2 text-sm font-semibold text-amber-200 transition hover:bg-amber-400/20">
-          <ClipboardList size={17} aria-hidden="true" />
-          Review {reviewQueueCount} saved mistake{reviewQueueCount === 1 ? "" : "s"}
+      <div className="mb-8 flex flex-wrap gap-3">
+        {reviewQueueCount > 0 && (
+          <Link href="/review" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-amber-400/20 bg-amber-400/10 px-4 py-2 text-sm font-semibold text-amber-200 transition hover:bg-amber-400/20">
+            <ClipboardList size={17} aria-hidden="true" />
+            Review {reviewQueueCount} saved mistake{reviewQueueCount === 1 ? "" : "s"}
+            <ArrowRight size={15} aria-hidden="true" />
+          </Link>
+        )}
+        <Link href="/vocabulary" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/5">
+          <BookMarked size={17} aria-hidden="true" />
+          {vocabularyCount > 0 ? `Vocabulary notebook (${vocabularyCount} ${vocabularyCount === 1 ? "word" : "words"})` : "Vocabulary notebook"}
           <ArrowRight size={15} aria-hidden="true" />
         </Link>
-      )}
+      </div>
 
       {progressLoaded && dailyPassage && (
         <section className="mb-6 rounded-2xl border border-brand-500/20 bg-gradient-to-r from-brand-500/10 to-white/[0.02] p-5 sm:p-6" aria-labelledby="daily-practice-title">

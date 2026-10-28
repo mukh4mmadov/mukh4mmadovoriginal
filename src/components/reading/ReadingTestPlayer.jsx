@@ -12,6 +12,8 @@ import {
   Bot,
 } from "lucide-react";
 import HighlightablePassage from "@/components/reading/HighlightablePassage";
+import { useVocabulary } from "@/hooks/useVocabulary";
+import { sentenceContaining } from "@/lib/vocabulary/vocabulary-notebook.mjs";
 import HighlightableText from "@/components/reading/HighlightableText";
 import { useTextHighlight } from "@/hooks/useTextHighlight";
 import ReadingTestResults from "@/components/reading/ReadingTestResults";
@@ -473,6 +475,8 @@ export default function ReadingTestPlayer({ passage }) {
     handleHighlight,
     handleHighlightRemove,
   );
+  const { items: vocabulary, saveWord } = useVocabulary({ sync: false });
+  const savedTermIds = useMemo(() => new Set(vocabulary.map((item) => item.id)), [vocabulary]);
 
   const setAnswer = (id, value) => {
     if (submitted) return;
@@ -820,6 +824,13 @@ export default function ReadingTestPlayer({ passage }) {
               paragraphs={passage.paragraphs}
               fontSize={fontSize}
               highlightState={highlightState}
+              savedTermIds={savedTermIds}
+              onSaveWord={({ term, paragraphText }) => saveWord({
+                term,
+                sentence: sentenceContaining(paragraphText, term),
+                passageSlug: passage.slug,
+                passageTitle: passage.title,
+              })}
             />
             <button
               type="button"
