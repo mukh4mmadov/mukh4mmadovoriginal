@@ -13,6 +13,7 @@ import { formatAggregateTime, getMyReadingMetrics } from '@/lib/reading/metrics.
 import { requestOpenMigrationPrompt } from '@/lib/reading/migration-prompt-events.mjs';
 import DataLoadingStatus from '@/components/shared/DataLoadingStatus';
 import { ListeningStatsSection } from '@/components/listening/ListeningProgress';
+import OverallBandCard from '@/components/progress/OverallBandCard';
 
 const LOCAL_STUDY_GOAL_KEY = 'ielts-reading-study-goal-v1';
 const DEFAULT_STUDY_GOAL = { target_band: '6.5', exam_date: '', study_days_per_week: 4 };
@@ -350,6 +351,8 @@ export default function StatisticsPage() {
             <p className="text-3xl font-bold text-white">{stats?.total_questions_answered ? `${stats.accuracy_rate}%` : '—'}</p>
           </div>
         </div>
+
+        <OverallBandCard />
 
         <section aria-labelledby="question-progress-title" className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-6">
           <div className="mb-5">
