@@ -11,7 +11,9 @@ export class GeminiProvider {
     personality,
     onChunk
   ) {
-    const systemPrompt = buildSystemPrompt(personality, context);
+    // Server code can supply its own system prompt (e.g. Writing feedback);
+    // it comes from provider config, never from the request body.
+    const systemPrompt = this.config.systemPrompt || buildSystemPrompt(personality, context);
     
     const contents = messages.reduce((history, message) => {
       const role = message.role === 'assistant' ? 'model' : 'user';
@@ -42,7 +44,8 @@ export class GeminiProvider {
           systemInstruction: { parts: [{ text: systemPrompt }] },
           contents,
           generationConfig: {
-            temperature: 0.7,
+            temperature: this.config.temperature ?? 0.7,
+            ...(this.config.responseMimeType ? { responseMimeType: this.config.responseMimeType } : {}),
           },
         }),
       });
