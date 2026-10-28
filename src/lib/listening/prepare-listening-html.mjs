@@ -525,6 +525,56 @@ function makeSectionScript(test) {
     const observer = new MutationObserver(() => { syncDialogs(); updateUnansweredCount(); });
     observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
     syncDialogs();
+
+    // Report the finished result to the site so it can be saved. Tests 2-4
+    // expose computeResults(); test 1 renders .result-row elements instead.
+    const emptyAnswers = ['', '(blank)', '(not selected)', '(none)', '-', '—', 'no answer', 'not answered'];
+    const collectResults = () => {
+      const answers = [];
+      if (typeof window.computeResults === 'function') {
+        try {
+          const computed = window.computeResults() || {};
+          Object.keys(computed).forEach((key) => {
+            const item = computed[key] || {};
+            const user = String(item.userAnswer ?? '').trim();
+            answers.push({
+              number: Number(key), label: key, section: Number(item.part) || null, type: item.type || null,
+              prompt: item.prompt || '', userAnswer: emptyAnswers.includes(user.toLowerCase()) ? '' : user,
+              correctAnswer: Array.isArray(item.answer) ? item.answer.join(' / ') : (item.answer ?? ''),
+              score: item.correct ? 1 : 0, max: 1,
+            });
+          });
+        } catch (error) {
+          answers.length = 0;
+        }
+      }
+      if (!answers.length) {
+        document.querySelectorAll('#resultsModal .result-row').forEach((row) => {
+          const label = (row.querySelector('.q-num')?.textContent || '').trim();
+          const number = parseInt(label, 10);
+          const user = (row.querySelector('.user-ans')?.textContent || '').trim();
+          answers.push({
+            number, label,
+            section: typeof window.sectionForQuestion === 'function' && number ? window.sectionForQuestion(number) : null,
+            type: null, prompt: '', userAnswer: emptyAnswers.includes(user.toLowerCase()) ? '' : user,
+            correctAnswer: (row.querySelector('.correct-ans')?.textContent || '').trim(),
+            score: Number(row.dataset.score) || 0, max: Number(row.dataset.maxScore) || 1,
+          });
+        });
+      }
+      return answers.length ? { answers } : null;
+    };
+    if (typeof window.showResultsModal === 'function') {
+      const originalShowResults = window.showResultsModal;
+      window.showResultsModal = function (...args) {
+        const result = originalShowResults.apply(this, args);
+        window.setTimeout(() => {
+          const payload = collectResults();
+          if (payload) window.parent.postMessage({ type: 'listening:results', ...payload }, '*');
+        }, 0);
+        return result;
+      };
+    }
   })();</script>`;
 }
 
