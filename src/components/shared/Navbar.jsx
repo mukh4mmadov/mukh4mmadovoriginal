@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { href: "/reading", label: "Reading" },
   { href: "/readingmock", label: "Mock test" },
   { href: "/listening", label: "Listening" },
+  { href: "/writing", label: "Writing" },
   { href: "/changelog", label: "Changelog" },
   { href: "/roadmap", label: "Roadmap" },
 ];
@@ -214,7 +215,7 @@ export default function Navbar() {
                     getUserInitials()
                   )}
                 </div>
-                <span className="hidden sm:block">{getDisplayName()}</span>
+                <span className="hidden max-w-[8rem] truncate sm:block">{getDisplayName()}</span>
                 <ChevronDown size={16} aria-hidden="true" className={`transition-transform ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 

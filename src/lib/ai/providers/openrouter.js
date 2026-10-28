@@ -11,7 +11,9 @@ export class OpenRouterProvider {
     personality,
     onChunk
   ) {
-    const systemPrompt = buildSystemPrompt(personality, context);
+    // Server code can supply its own system prompt (e.g. Writing feedback);
+    // it comes from provider config, never from the request body.
+    const systemPrompt = this.config.systemPrompt || buildSystemPrompt(personality, context);
     
     const response = await fetch(`${this.config.baseUrl || 'https://openrouter.ai/api/v1'}/chat/completions`, {
       method: 'POST',
@@ -28,7 +30,7 @@ export class OpenRouterProvider {
           ...messages.map(m => ({ role: m.role, content: m.content }))
         ],
         stream: !!onChunk,
-        temperature: 0.7,
+        temperature: this.config.temperature ?? 0.7,
       }),
     });
 

@@ -14,6 +14,7 @@ import {
   Headphones,
   ClipboardCheck,
   MessageSquare,
+  PenLine,
 } from "lucide-react";
 import DailyInspiration from "@/components/shared/DailyInspiration";
 import { getAllProgress } from "@/lib/progressTracker";
@@ -140,7 +141,13 @@ export default function Home() {
       href: "/listening",
       icon: Headphones,
       title: "Listening tests",
-      body: "Four-section listening tests with built-in audio controls and answer review.",
+      body: "Four-section listening tests with built-in audio controls and saved results.",
+    },
+    {
+      href: "/writing",
+      icon: PenLine,
+      title: "Writing practice",
+      body: "Task 1 reports and Task 2 essays with AI feedback on the four official criteria.",
     },
   ];
 
@@ -242,7 +249,7 @@ export default function Home() {
 
       <section className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8" aria-labelledby="practice-modes-title">
         <h2 id="practice-modes-title" className="mb-4 font-display text-2xl font-bold text-slate-100">Choose how to practise</h2>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {practiceModes.map(({ href, icon: Icon, title, body }) => (
             <Link key={href} href={href} className="surface-card group flex flex-col hover:border-brand-500/30">
               <Icon className="mb-3 text-brand-400" size={26} aria-hidden="true" />

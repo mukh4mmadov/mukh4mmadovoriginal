@@ -11,7 +11,9 @@ export class ClaudeProvider {
     personality,
     onChunk
   ) {
-    const systemPrompt = buildSystemPrompt(personality, context);
+    // Server code can supply its own system prompt (e.g. Writing feedback);
+    // it comes from provider config, never from the request body.
+    const systemPrompt = this.config.systemPrompt || buildSystemPrompt(personality, context);
     
     const response = await fetch(`${this.config.baseUrl || 'https://api.anthropic.com'}/v1/messages`, {
       method: 'POST',

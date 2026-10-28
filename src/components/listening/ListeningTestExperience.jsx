@@ -5,7 +5,8 @@ import Link from "next/link";
 import { ArrowLeft, CheckCircle2, Flag, Headphones, Volume2, X } from "lucide-react";
 import { requestHelpDialog } from "@/lib/help-dialog";
 import { useAuth } from "@/contexts/AuthContext";
-import { getListeningAccountUserId, saveListeningAttemptToAccount } from "@/hooks/useListeningHistory";
+import { saveListeningAttemptToAccount } from "@/hooks/useListeningHistory";
+import { getAccountUserId } from "@/lib/auth/account";
 import { buildListeningAttempt, listeningResultSignature, saveListeningAttemptLocally } from "@/lib/listening/listening-results.mjs";
 import { makeAttemptUuid } from "@/lib/reading/reading-attempt-outbox.mjs";
 
@@ -16,7 +17,7 @@ export default function ListeningTestExperience({ test, html }) {
   const [playbackRate, setPlaybackRate] = useState(1);
   const [savedResult, setSavedResult] = useState(null);
   const { user, profile, isLoading } = useAuth();
-  const accountUserId = getListeningAccountUserId(user, profile, isLoading);
+  const accountUserId = getAccountUserId(user, profile, isLoading);
   const accountUserIdRef = useRef(accountUserId);
   const startedAtRef = useRef(Date.now());
   const lastResultSignatureRef = useRef("");

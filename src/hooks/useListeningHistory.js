@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { listeningAttemptsRepository } from "@/lib/supabase/repositories/listening-attempts.repository";
 import { mergeListeningHistory, readListeningHistory } from "@/lib/listening/listening-results.mjs";
+import { getAccountUserId } from "@/lib/auth/account";
 
 // Several components read the history at once (test cards, recent results),
 // so share one account request per user.
@@ -21,13 +22,9 @@ function loadAccountHistory(userId, force = false) {
   return accountRequests.get(userId);
 }
 
-export function getListeningAccountUserId(user, profile, isLoading) {
-  return !isLoading && user?.id && profile && !profile.is_guest && !user.is_anonymous ? user.id : null;
-}
-
 export function useListeningHistory() {
   const { user, profile, isLoading } = useAuth();
-  const accountUserId = getListeningAccountUserId(user, profile, isLoading);
+  const accountUserId = getAccountUserId(user, profile, isLoading);
   const [localHistory, setLocalHistory] = useState([]);
   const [accountHistory, setAccountHistory] = useState([]);
   const [accountState, setAccountState] = useState("idle");

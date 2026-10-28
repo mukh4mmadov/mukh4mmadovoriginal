@@ -724,3 +724,30 @@ html:not(.dark) :is(.auth-experience, .premium-results-card) :is(.text-slate-400
 html:not(.dark) :is(.auth-experience, .premium-results-card) :is([class^="bg-surface"], [class*=" bg-surface"]) {
   background-color: rgb(15 23 42 / 0.6) !important;
 }
+
+/* Writing Task 1 charts: categorical slots validated for each surface
+   (light #ffffff, dark #0f172a). */
+.writing-chart {
+  --chart-surface: #0f172a;
+  --chart-text: #e2e8f0;
+  --chart-muted: #94a3b8;
+  --chart-grid: rgb(148 163 184 / 0.18);
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  background-color: var(--chart-surface);
+}
+
+html:not(.dark) .writing-chart {
+  --chart-surface: #ffffff;
+  --chart-text: #1e293b;
+  --chart-muted: #64748b;
+  --chart-grid: rgb(100 116 139 / 0.2);
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+}

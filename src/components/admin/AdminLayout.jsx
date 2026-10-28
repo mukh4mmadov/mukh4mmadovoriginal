@@ -17,6 +17,7 @@ import {
   HeartHandshake,
   ExternalLink,
   Headphones,
+  PenLine,
   Moon,
   Sun,
 } from 'lucide-react';
@@ -183,6 +184,7 @@ export default function AdminLayout({ children }) {
     { name: 'Users', href: '/admin/users', icon: Users },
     { name: 'Reading Mock Results', href: '/admin/readingmock-results', icon: ClipboardList },
     { name: 'Listening Results', href: '/admin/listening-results', icon: Headphones },
+    { name: 'Writing Submissions', href: '/admin/writing', icon: PenLine },
     { name: 'Support inbox', href: '/admin/support', icon: MessageSquare },
     { name: 'Donation inbox', href: '/admin/donations', icon: HeartHandshake },
     { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
