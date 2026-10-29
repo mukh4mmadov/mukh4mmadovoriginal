@@ -41,3 +41,18 @@ test("rejects malformed or out-of-range feedback", () => {
   assert.equal(parseWritingFeedback(JSON.stringify({ criteria: criteria(10, 6, 6, 6) })), null);
   assert.equal(parseWritingFeedback(JSON.stringify({ criteria: criteria("six", 6, 6, 6) })), null);
 });
+
+test("combines both tasks with Task 2 counting twice", async () => {
+  const { combinedWritingBand } = await import("./writing-feedback.mjs");
+  assert.equal(combinedWritingBand(6, 7), 6.5);
+  assert.equal(combinedWritingBand(5, 6), 5.5);
+  assert.equal(combinedWritingBand(7, 6), 6.5);
+  assert.equal(combinedWritingBand(null, 6), null);
+});
+
+test("picks one Task 1 and one Task 2", async () => {
+  const { pickWritingTestPair } = await import("./writing-feedback.mjs");
+  const tasks = [{ slug: "a", task: 1 }, { slug: "b", task: 1 }, { slug: "c", task: 2 }];
+  assert.deepEqual(pickWritingTestPair(tasks, () => 0.99).map((task) => task.slug), ["b", "c"]);
+  assert.equal(pickWritingTestPair([{ slug: "a", task: 1 }]), null);
+});
