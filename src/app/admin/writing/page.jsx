@@ -1,8 +1,9 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useState } from "react";
-import { ChevronDown, ChevronUp, PenLine, RefreshCw } from "lucide-react";
+import { ChevronDown, ChevronUp, PenLine, Download, RefreshCw } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
+import { exportQuery } from "@/lib/admin/export";
 import { AdminPageError, AdminPageLoading } from "@/components/admin/AdminPageStatus";
 import WritingFeedback from "@/components/writing/WritingFeedback";
 import writingTasks from "@/data/writingTasks";
@@ -56,8 +57,8 @@ export default function AdminWritingPage() {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-slate-300">{total.toLocaleString()} {total === 1 ? "submission" : "submissions"}</p>
         <button type="button" onClick={() => void load()} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-white/10 px-3 text-sm text-slate-200 hover:bg-white/5">
-          <RefreshCw size={15} className={loading ? "animate-spin" : ""} aria-hidden="true" />Refresh
-        </button>
+          <RefreshCw size={15} className={loading ? "animate-spin" : ""} aria-hidden="true" />Refresh</button>
+        <button type="button" onClick={() => exportQuery("writing-submissions", supabase.from("writing_submissions").select("task_slug, task_number, word_count, time_spent_seconds, overall_band, essay, created_at, user:profiles!writing_submissions_user_id_fkey(full_name, email)").order("created_at", { ascending: false }), [{ label: "Learner", value: (r) => r.user?.full_name }, { label: "Email", value: (r) => r.user?.email }, { label: "Task", value: (r) => r.task_slug }, { label: "Task number", value: (r) => r.task_number }, { label: "Words", value: (r) => r.word_count }, { label: "Band", value: (r) => r.overall_band }, { label: "Essay", value: (r) => r.essay }, { label: "Submitted", value: (r) => r.created_at }]).catch((e) => window.alert(e.message))} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-white/10 px-3 text-sm text-slate-200 hover:bg-white/5"><Download size={15} aria-hidden="true" />Export CSV</button>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/[0.03]">

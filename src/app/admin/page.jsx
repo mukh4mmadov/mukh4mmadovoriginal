@@ -5,6 +5,7 @@ import { Users, UserX, Activity, MessageSquare, TrendingUp, Target, Clock, Bot, 
 import { supabase } from '@/lib/supabase/client';
 import ActivityFeed from '@/components/admin/ActivityFeed';
 import SystemHealth from '@/components/admin/SystemHealth';
+import EverythingOverview from '@/components/admin/EverythingOverview';
 import { AdminPageLoading } from '@/components/admin/AdminPageStatus';
 import { formatAggregateTime } from '@/lib/reading/metrics.mjs';
 
@@ -127,6 +128,7 @@ export default function AdminDashboard() {
           </div>
         ))}
       </div>
+      <EverythingOverview />
       <div className="grid gap-6 lg:grid-cols-2"><ActivityFeed /><SystemHealth /></div>
     </div>
   );

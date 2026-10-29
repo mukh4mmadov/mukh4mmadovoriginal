@@ -19,6 +19,8 @@ import {
   Headphones,
   PenLine,
   Sparkles,
+  Trophy,
+  Megaphone,
   Moon,
   Sun,
 } from 'lucide-react';
@@ -187,6 +189,8 @@ export default function AdminLayout({ children }) {
     { name: 'Listening Results', href: '/admin/listening-results', icon: Headphones },
     { name: 'Writing Submissions', href: '/admin/writing', icon: PenLine },
     { name: 'AI Premium Writing', href: '/admin/writing-premium', icon: Sparkles },
+    { name: 'Full Mock Results', href: '/admin/full-mocks', icon: Trophy },
+    { name: 'Announcements', href: '/admin/announcements', icon: Megaphone },
     { name: 'Support inbox', href: '/admin/support', icon: MessageSquare },
     { name: 'Donation inbox', href: '/admin/donations', icon: HeartHandshake },
     { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
