@@ -34,6 +34,8 @@ export const EXAM_SHORTCUTS = [
   ["Alt + →", "Next question"],
   ["Alt + ←", "Previous question"],
   ["Alt + F", "Flag or unflag the current question"],
+  ["Alt + H", "Highlight the selected passage text"],
+  ["Double-click", "Highlight one word"],
   ["?", "Show this help"],
 ];
 

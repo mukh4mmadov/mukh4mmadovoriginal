@@ -209,6 +209,7 @@ export default function ReadingTestPlayer({ passage }) {
           restoredRemaining = Math.ceil(restoredRemainingMs / 1000);
           setAnswers(restoredAnswers);
           setFlags(Array.isArray(parsed.flags) ? parsed.flags.filter(Number.isInteger) : []);
+          if (typeof parsed.activeQuestionId === "string") setActiveQ(parsed.activeQuestionId);
           remainingSecondsRef.current = restoredRemaining;
           remainingMillisecondsRef.current = restoredRemainingMs;
           setRemainingSeconds(restoredRemaining);
@@ -250,6 +251,7 @@ export default function ReadingTestPlayer({ passage }) {
         timerVersion: 2,
         answers,
         flags,
+        activeQuestionId: activeQ,
         remainingSeconds: getRemainingSeconds(savedAt),
         remainingMilliseconds: getRemainingMilliseconds(savedAt),
         timerRunning: timerRunningRef.current,
@@ -264,7 +266,7 @@ export default function ReadingTestPlayer({ passage }) {
     } catch (e) {
       setDraftSaveStatus("Draft could not be saved on this device");
     }
-  }, [answers, flags, timeSpent, timerRunning, submitted, passage.slug, draftRestored]);
+  }, [answers, flags, activeQ, timeSpent, timerRunning, submitted, passage.slug, draftRestored]);
 
   useEffect(() => {
     if (!draftRestored || !timerRunning || typeof window === "undefined") return;
@@ -551,6 +553,10 @@ export default function ReadingTestPlayer({ passage }) {
 
   return (
     <PracticeExamScreen
+      // Rendered straight away (the passage stays in the pre-rendered page),
+      // then opened again on the saved question once the draft is read.
+      key={`${passage.slug}-${draftRestored ? "restored" : "initial"}`}
+      initialCurrent={Math.max(1, questions.findIndex((question) => question.id === activeQ) + 1)}
       passage={passage}
       answers={answers}
       onAnswer={setAnswer}
