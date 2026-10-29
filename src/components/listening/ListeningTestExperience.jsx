@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, Flag, Headphones, Volume2, X } from "lucide-react";
+import { CheckCircle2, Flag, Headphones, LogOut, Volume2, X } from "lucide-react";
+import ExamShell from "@/components/exam/ExamShell";
+import ExamTopBar from "@/components/exam/ExamTopBar";
+import { useExamSettings } from "@/hooks/useExamSettings";
 import { requestHelpDialog } from "@/lib/help-dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { saveListeningAttemptToAccount } from "@/hooks/useListeningHistory";
@@ -21,6 +24,9 @@ export default function ListeningTestExperience({ test, html }) {
   const accountUserIdRef = useRef(accountUserId);
   const startedAtRef = useRef(Date.now());
   const lastResultSignatureRef = useRef("");
+  const [settings, updateSettings] = useExamSettings();
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
 
   useEffect(() => {
     accountUserIdRef.current = accountUserId;
@@ -58,9 +64,18 @@ export default function ListeningTestExperience({ test, html }) {
   }, []);
 
   const sendThemeToFrame = useCallback(() => {
+    const frame = frameRef.current?.contentWindow;
+    if (!frame) return;
     const theme = document.documentElement.classList.contains("dark") ? "dark" : "light";
-    frameRef.current?.contentWindow?.postMessage({ type: "listening:set-theme", theme }, "*");
+    frame.postMessage({ type: "listening:set-theme", theme }, "*");
+    // The exam colours and text size apply inside the test page too.
+    const { scheme, textSize } = settingsRef.current;
+    frame.postMessage({ type: "listening:set-exam", scheme, textSize }, "*");
   }, []);
+
+  useEffect(() => {
+    sendThemeToFrame();
+  }, [settings.scheme, settings.textSize, sendThemeToFrame]);
 
   useEffect(() => {
     const handleFrameMessage = (event) => {
@@ -109,72 +124,73 @@ export default function ListeningTestExperience({ test, html }) {
     syncFrameSettings();
   };
 
+  const report = (target) => requestHelpDialog(target, {
+    category: "incorrect_answer",
+    subject: `Listening content: ${test.title}`.slice(0, 200),
+    body: `Please describe the issue you found in “${test.title}”.\n\nQuestion number (if relevant):\nWhat seems incorrect or unclear:\n\n`,
+  });
+
   return (
-    <main className="fixed inset-0 z-[90] flex h-[100dvh] flex-col overflow-hidden bg-surface text-slate-100">
-      <header className="z-10 shrink-0 border-b border-white/10 bg-surface/95 px-3 py-2 shadow-lg backdrop-blur-sm sm:px-5 sm:py-3">
-        <div className="mx-auto flex max-w-[1600px] items-center gap-3">
-          <Link href="/listening" className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 text-sm font-semibold text-slate-300 transition hover:bg-white/10 hover:text-white" aria-label="Back to listening tests">
-            <ArrowLeft size={18} aria-hidden="true" /> <span className="hidden sm:inline">All tests</span>
-          </Link>
-          <span className="h-6 w-px shrink-0 bg-white/10" aria-hidden="true" />
-          <div className="min-w-0 flex-1">
-            <p className="mb-0.5 truncate text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-400">IELTS Listening practice</p>
-            <h1 className="truncate font-display text-base font-semibold leading-snug sm:text-xl">{test.title}</h1>
-            <p className="text-[11px] text-slate-400">4 sections · {test.questionCount} questions · {test.durationMinutes} minutes</p>
-          </div>
-          <button ref={reportRef} type="button" onClick={(event) => requestHelpDialog(event.currentTarget, { category: "incorrect_answer", subject: `Listening content: ${test.title}`.slice(0, 200), body: `Please describe the issue you found in “${test.title}”.\n\nQuestion number (if relevant):\nWhat seems incorrect or unclear:\n\n` })} className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-lg border border-white/10 px-3 text-xs font-semibold text-slate-300 transition hover:bg-white/10 hover:text-white sm:text-sm">
-            <Flag size={16} aria-hidden="true" /><span className="hidden sm:inline">Report issue</span>
-          </button>
-        </div>
+    <ExamShell settings={settings}>
+      <ExamTopBar
+        title="IELTS Listening"
+        subtitle={`${test.title} · 4 parts · ${test.questionCount} questions · ${test.durationMinutes} minutes`}
+        settings={settings}
+        onSettingsChange={updateSettings}
+        helpText="Play the recording and answer the questions as you listen. The timer, the parts and Submit are inside the test below. Settings change the text size and colours of the whole test."
+      >
+        <button ref={reportRef} type="button" className="exam-btn hidden sm:inline-flex" onClick={(event) => report(event.currentTarget)} aria-label="Report an issue with this test">
+          <Flag size={16} aria-hidden="true" /><span className="exam-btn-label">Report issue</span>
+        </button>
+        <Link href="/listening" className="exam-btn" aria-label="Exit to all Listening tests">
+          <LogOut size={16} aria-hidden="true" /><span className="exam-btn-label">Exit</span>
+        </Link>
+      </ExamTopBar>
 
-        {!test.audioInsideTest && (
-        <div className="mx-auto mt-2 flex w-full max-w-[1600px] flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] p-2 sm:mt-3 sm:flex-nowrap sm:gap-3 sm:p-2.5">
-            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-white/10 bg-surface/80 px-2 sm:px-3">
-              <Volume2 size={16} className="hidden shrink-0 text-brand-300 sm:block" aria-hidden="true" />
-              <audio ref={audioRef} controls preload="metadata" className="h-11 min-w-0 flex-1" aria-label={`Audio for ${test.title}`} onLoadedMetadata={syncFrameSettings} onVolumeChange={syncFrameSettings} onRateChange={syncFrameSettings}>
-                <source src={test.audioPath} type="audio/mpeg" />
-                Your browser cannot play this audio file.
-              </audio>
-            </div>
-            <label className="flex h-11 shrink-0 items-center gap-2 rounded-xl border border-white/10 bg-surface/80 px-3 text-xs font-medium text-slate-300">
-              <Headphones size={15} aria-hidden="true" />
-              <span className="sr-only">Audio speed</span>
-              <select value={playbackRate} onChange={changePlaybackRate} className="bg-transparent text-sm text-slate-100 outline-none" aria-label="Audio playback speed">
-                {[0.75, 1, 1.25, 1.5, 2].map((rate) => <option key={rate} value={rate} className="bg-slate-900">{rate === 1 ? "Normal" : `${rate}×`}</option>)}
-              </select>
-            </label>
-          </div>
-        )}
-      </header>
-
-      {savedResult && (
-        <div role="status" className="shrink-0 border-b border-emerald-400/20 bg-emerald-500/10 px-3 py-2 sm:px-5">
-          <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-3 gap-y-1 text-sm text-emerald-200">
-            <CheckCircle2 size={18} className="shrink-0 text-emerald-300" aria-hidden="true" />
-            <p className="min-w-0 flex-1">
-              <strong>{savedResult.attempt.score}/{savedResult.attempt.total}</strong>
-              {savedResult.attempt.band != null && <> · approximate band <strong>{savedResult.attempt.band.toFixed(1)}</strong></>}
-              {" · "}
-              {savedResult.where === "account"
-                ? "Saved to your account."
-                : savedResult.where === "browser"
-                  ? accountUserId ? "Saved in this browser; account sync failed." : "Saved in this browser. Sign in to keep results across devices."
-                  : "This result could not be saved."}
-            </p>
-            <Link href="/listening#listening-history" className="font-semibold underline underline-offset-2">View history</Link>
-            <button type="button" onClick={() => setSavedResult(null)} className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-white/10" aria-label="Dismiss result message">
-              <X size={16} aria-hidden="true" />
-            </button>
-          </div>
+      {!test.audioInsideTest && (
+        <div className="exam-part-strip flex flex-wrap items-center gap-2 sm:flex-nowrap sm:gap-3">
+          <Volume2 size={18} className="hidden shrink-0 sm:block" aria-hidden="true" />
+          <audio ref={audioRef} controls preload="metadata" className="h-10 min-w-0 flex-1" aria-label={`Audio for ${test.title}`} onLoadedMetadata={syncFrameSettings} onVolumeChange={syncFrameSettings} onRateChange={syncFrameSettings}>
+            <source src={test.audioPath} type="audio/mpeg" />
+            Your browser cannot play this audio file.
+          </audio>
+          <label className="exam-btn shrink-0">
+            <Headphones size={15} aria-hidden="true" />
+            <span className="sr-only">Audio speed</span>
+            <select value={playbackRate} onChange={changePlaybackRate} className="bg-transparent outline-none" aria-label="Audio playback speed" style={{ color: "inherit" }}>
+              {[0.75, 1, 1.25, 1.5, 2].map((rate) => <option key={rate} value={rate} style={{ color: "#111", background: "#fff" }}>{rate === 1 ? "Normal speed" : `${rate}× speed`}</option>)}
+            </select>
+          </label>
         </div>
       )}
 
-      <div className="min-h-0 flex-1 overflow-hidden bg-surface px-2 py-2 sm:px-4 sm:py-4 lg:px-6 lg:py-5">
+      {savedResult && (
+        <div role="status" className="exam-notice flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-left">
+          <CheckCircle2 size={18} className="shrink-0" aria-hidden="true" />
+          <p className="min-w-0">
+            <strong>{savedResult.attempt.score}/{savedResult.attempt.total}</strong>
+            {savedResult.attempt.band != null && <> · approximate band <strong>{savedResult.attempt.band.toFixed(1)}</strong></>}
+            {" · "}
+            {savedResult.where === "account"
+              ? "Saved to your account."
+              : savedResult.where === "browser"
+                ? accountUserId ? "Saved in this browser; account sync failed." : "Saved in this browser. Sign in to keep results across devices."
+                : "This result could not be saved."}
+          </p>
+          <Link href="/listening#listening-history" className="font-semibold underline underline-offset-2">View history</Link>
+          <button type="button" onClick={() => setSavedResult(null)} className="exam-btn" aria-label="Dismiss result message">
+            <X size={16} aria-hidden="true" />
+          </button>
+        </div>
+      )}
+
+      <div className="min-h-0 flex-1 overflow-hidden">
         <iframe
           ref={frameRef}
           srcDoc={html}
           title={`${test.title} practice test`}
-          className="mx-auto block h-full min-h-0 w-full max-w-[1600px] rounded-2xl border border-white/10 bg-surface shadow-[0_10px_40px_rgba(0,0,0,0.16)]"
+          className="block h-full min-h-0 w-full border-0"
+          style={{ background: "var(--exam-bg)" }}
           onLoad={() => {
             // A retake reloads the test page, which starts a new attempt.
             startedAtRef.current = Date.now();
@@ -187,6 +203,6 @@ export default function ListeningTestExperience({ test, html }) {
           loading="eager"
         />
       </div>
-    </main>
+    </ExamShell>
   );
 }
