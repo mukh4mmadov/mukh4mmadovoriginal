@@ -199,7 +199,7 @@ export async function POST(request) {
     const providerModels = {
       openai: process.env.OPENAI_MODEL || "gpt-4o-mini",
       claude: process.env.ANTHROPIC_MODEL || "claude-3-haiku-20240307",
-      gemini: process.env.GOOGLE_MODEL || "gemini-3.8-flash",
+      gemini: process.env.GOOGLE_MODEL || "gemini-3.5-flash-lite",
       openrouter: process.env.OPENROUTER_MODEL || "openai/gpt-4o-mini",
     };
 
@@ -208,7 +208,7 @@ export async function POST(request) {
       model: providerModels[validatedProvider],
       fallbackModels:
         validatedProvider === "gemini"
-          ? [process.env.GOOGLE_FALLBACK_MODEL || "gemini-3.5-flash-lite"]
+          ? [process.env.GOOGLE_FALLBACK_MODEL || "gemini-3.8-flash"]
           : [],
     });
 

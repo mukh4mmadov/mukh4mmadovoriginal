@@ -15,8 +15,10 @@ const DAILY_LIMIT = Math.max(1, Number(process.env.WRITING_DAILY_LIMIT) || 5);
 // Fallback counter for when the submissions table is not available yet.
 const memoryCounts = new Map();
 
+// gemini-3.5-flash-lite answers in about 7 seconds on production; gemini-3.8-flash
+// did not answer within 45 seconds, so it is only the fallback.
 const PROVIDERS = [
-  { name: "gemini", key: "GOOGLE_API_KEY", model: process.env.GOOGLE_MODEL || "gemini-3.8-flash", fallback: process.env.GOOGLE_FALLBACK_MODEL || "gemini-3.5-flash-lite", baseUrl: process.env.GOOGLE_API_BASE_URL },
+  { name: "gemini", key: "GOOGLE_API_KEY", model: process.env.GOOGLE_MODEL || "gemini-3.5-flash-lite", fallback: process.env.GOOGLE_FALLBACK_MODEL || "gemini-3.8-flash", baseUrl: process.env.GOOGLE_API_BASE_URL },
   { name: "openai", key: "OPENAI_API_KEY", model: process.env.OPENAI_MODEL || "gpt-4o-mini" },
   { name: "claude", key: "ANTHROPIC_API_KEY", model: process.env.ANTHROPIC_MODEL || "claude-3-haiku-20240307" },
   { name: "openrouter", key: "OPENROUTER_API_KEY", model: process.env.OPENROUTER_MODEL || "openai/gpt-4o-mini" },
