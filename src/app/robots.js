@@ -14,6 +14,7 @@ export default function robots() {
         "/forgot-password",
         "/login",
         "/my-feedback",
+        "/writing/premium",
         "/profile",
         "/review",
         "/signup",

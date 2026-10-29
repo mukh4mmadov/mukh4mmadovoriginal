@@ -37,7 +37,10 @@ const list = (value, maxItems, limit) => (Array.isArray(value) ? value : [])
   .filter(Boolean)
   .slice(0, maxItems);
 
-export function parseWritingFeedback(raw) {
+const FREE_LIMITS = { comment: 700, summary: 600, strengths: 4, improvements: 5, corrections: 5 };
+const PREMIUM_LIMITS = { comment: 1600, summary: 1000, strengths: 5, improvements: 6, corrections: 40 };
+
+export function parseWritingFeedback(raw, limits = FREE_LIMITS) {
   const data = extractJson(raw);
   if (!data || typeof data !== "object") return null;
 
@@ -48,7 +51,7 @@ export function parseWritingFeedback(raw) {
     const band = Number(criterion?.band);
     if (!Number.isFinite(band) || band < 0 || band > 9) return null;
     bands[key] = roundToHalfBand(band);
-    comments[key] = clampText(criterion?.comment, 700);
+    comments[key] = clampText(criterion?.comment, limits.comment);
   }
 
   const corrections = (Array.isArray(data.corrections) ? data.corrections : [])
@@ -58,16 +61,38 @@ export function parseWritingFeedback(raw) {
       reason: clampText(item?.reason, 200),
     }))
     .filter((item) => item.original && item.improved)
-    .slice(0, 5);
+    .slice(0, limits.corrections);
 
   return {
     bands,
     comments,
     overall: overallWritingBand(bands),
-    summary: clampText(data.summary, 600),
-    strengths: list(data.strengths, 4, 300),
-    improvements: list(data.improvements, 5, 300),
+    summary: clampText(data.summary, limits.summary),
+    strengths: list(data.strengths, limits.strengths, 300),
+    improvements: list(data.improvements, limits.improvements, 300),
     corrections,
+  };
+}
+
+// AI Premium feedback: the free fields with more room, plus a Band 8+
+// rewrite of the response and a short study plan. The rewrite keeps its
+// paragraph breaks.
+export function parsePremiumFeedback(raw) {
+  const base = parseWritingFeedback(raw, PREMIUM_LIMITS);
+  if (!base) return null;
+  const data = extractJson(raw);
+  const rewrite = String(data.rewrite ?? "")
+    .replace(/\r\n?/g, "\n")
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+    .join("\n\n")
+    .slice(0, 5000);
+  return {
+    ...base,
+    premium: true,
+    rewrite,
+    studyPlan: list(data.studyPlan, 3, 400),
   };
 }
 

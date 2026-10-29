@@ -18,6 +18,7 @@ import {
   ExternalLink,
   Headphones,
   PenLine,
+  Sparkles,
   Moon,
   Sun,
 } from 'lucide-react';
@@ -185,6 +186,7 @@ export default function AdminLayout({ children }) {
     { name: 'Reading Mock Results', href: '/admin/readingmock-results', icon: ClipboardList },
     { name: 'Listening Results', href: '/admin/listening-results', icon: Headphones },
     { name: 'Writing Submissions', href: '/admin/writing', icon: PenLine },
+    { name: 'AI Premium Writing', href: '/admin/writing-premium', icon: Sparkles },
     { name: 'Support inbox', href: '/admin/support', icon: MessageSquare },
     { name: 'Donation inbox', href: '/admin/donations', icon: HeartHandshake },
     { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
@@ -232,7 +234,7 @@ export default function AdminLayout({ children }) {
           <nav aria-label="Admin navigation" className="flex-1 p-4 space-y-1 overflow-y-auto">
             {navigation.map((item) => {
               const Icon = item.icon;
-              const isActive = item.href === '/admin' ? pathname === '/admin' : pathname?.startsWith(item.href);
+              const isActive = item.href === '/admin' ? pathname === '/admin' : (pathname === item.href || pathname?.startsWith(`${item.href}/`));
               return (
                 <Link
                   key={item.name}

@@ -38,3 +38,32 @@ export function buildWritingUserMessage(task, essay) {
   const visual = task.chart ? `\n\nData shown in the visual:\n${describeWritingChart(task.chart)}` : "";
   return `Task ${task.task} (${task.type}) question:\n${task.prompt}\n${task.instructions}${visual}\n\nLearner's response:\n"""\n${essay}\n"""`;
 }
+
+const PREMIUM_INSTRUCTIONS = `This is an AI Premium check, so be more thorough than a quick review:
+- Give each criterion a detailed comment of 4-6 sentences that quotes examples from the response.
+- List every sentence or phrase that has a mistake, in the order it appears, in "corrections" (up to 40).
+- Write "rewrite": the learner's own response rewritten at Band 8-9. Keep their ideas, position and paragraph plan, improve language and development, and separate paragraphs with a blank line.
+- Write "studyPlan": the three most important things to practise next, each with one concrete exercise.
+
+Reply with JSON only, in exactly this shape:
+{
+  "summary": "three or four sentences on the overall performance",
+  "criteria": {
+    "task": { "band": 6.5, "comment": "detailed comment" },
+    "coherence": { "band": 6, "comment": "detailed comment" },
+    "lexical": { "band": 6, "comment": "detailed comment" },
+    "grammar": { "band": 6, "comment": "detailed comment" }
+  },
+  "strengths": ["up to 5 points"],
+  "improvements": ["up to 6 actionable points"],
+  "corrections": [{ "original": "exact phrase from the response", "improved": "corrected version", "reason": "short reason" }],
+  "rewrite": "Band 8-9 version of the response",
+  "studyPlan": ["1. ...", "2. ...", "3. ..."]
+}`;
+
+// One block of text an administrator can paste into Claude to mark a
+// premium request by hand.
+export function buildPremiumPrompt(task, essay) {
+  const examiner = buildWritingSystemPrompt(task).split("\n\nReply with JSON only")[0];
+  return `${examiner}\n\n${PREMIUM_INSTRUCTIONS}\n\n${buildWritingUserMessage(task, essay)}`;
+}
