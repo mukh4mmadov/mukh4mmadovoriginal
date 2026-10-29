@@ -15,6 +15,7 @@ import {
   ClipboardCheck,
   MessageSquare,
   PenLine,
+  Trophy,
 } from "lucide-react";
 import DailyInspiration from "@/components/shared/DailyInspiration";
 import DailyMissionsCard from "@/components/shared/DailyMissionsCard";
@@ -126,6 +127,12 @@ export default function Home() {
     { icon: Target, label: "Accuracy", value: todayStats.accuracy === null ? "—" : `${todayStats.accuracy}%` },
   ];
   const practiceModes = [
+    {
+      href: "/full-mock",
+      icon: Trophy,
+      title: "Full IELTS mock",
+      body: "Listening, Reading and Writing in exam-day order, with an estimated overall band.",
+    },
     {
       href: "/reading",
       icon: BookOpen,
@@ -252,7 +259,7 @@ export default function Home() {
 
       <section className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8" aria-labelledby="practice-modes-title">
         <h2 id="practice-modes-title" className="mb-4 font-display text-2xl font-bold text-slate-100">Choose how to practise</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {practiceModes.map(({ href, icon: Icon, title, body }) => (
             <Link key={href} href={href} className="surface-card group flex flex-col hover:border-brand-500/30">
               <Icon className="mb-3 text-brand-400" size={26} aria-hidden="true" />

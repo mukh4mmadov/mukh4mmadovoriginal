@@ -4,7 +4,7 @@ import writingTasks from "@/data/writingTasks";
 import { DRILL_TYPES } from "@/lib/reading/question-drills.mjs";
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://mukh4mmadovoriginal.vercel.app").replace(/\/$/, "");
-const staticRoutes = ["/home", "/reading", "/reading/practice", "/readingmock", "/listening", "/writing", "/writing/test", "/roadmap", "/changelog", "/support", "/privacy", "/terms", "/contact"];
+const staticRoutes = ["/home", "/reading", "/reading/practice", "/readingmock", "/full-mock", "/listening", "/writing", "/writing/test", "/roadmap", "/changelog", "/support", "/privacy", "/terms", "/contact"];
 
 export default function sitemap() {
   const staticPages = staticRoutes.map((route) => ({
