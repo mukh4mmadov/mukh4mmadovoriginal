@@ -12,6 +12,9 @@ import { saveWritingResultLocally } from "@/lib/writing/writing-history.mjs";
 import { makeAttemptUuid } from "@/lib/reading/reading-attempt-outbox.mjs";
 import WritingExamScreen from "@/components/writing/WritingExamScreen";
 import WritingFeedback from "@/components/writing/WritingFeedback";
+import { PremiumRequestSaved } from "@/components/writing/PremiumPayment";
+import { premiumEssays } from "@/lib/writing/premium.mjs";
+import { createPremiumRequest } from "@/lib/writing/premium-requests";
 
 const DRAFT_KEY = "ielts-writing-test-draft-v1";
 const DURATION = 60 * 60;
@@ -43,6 +46,7 @@ export default function WritingTest() {
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
   const [results, setResults] = useState([]);
+  const [premiumRequest, setPremiumRequest] = useState(null);
 
   useEffect(() => {
     const draft = readDraft();
@@ -70,9 +74,22 @@ export default function WritingTest() {
     setStage("writing");
   };
 
-  const submit = async ({ essays, elapsed }) => {
+  const submit = async ({ essays, elapsed, mode }) => {
     setStage("marking");
     setError("");
+    if (mode === "premium") {
+      try {
+        setPremiumRequest(await createPremiumRequest(accountUserId, premiumEssays(pair, essays, countWords)));
+        try { window.localStorage.removeItem(DRAFT_KEY); } catch { /* fine */ }
+        setStage("premium");
+        window.scrollTo({ top: 0 });
+      } catch (cause) {
+        setError(cause.message);
+        setInitial({ essays, elapsed });
+        setStage("writing");
+      }
+      return;
+    }
     const marked = [];
     for (const [index, task] of pair.entries()) {
       const essay = essays[task.slug] || "";
@@ -117,6 +134,8 @@ export default function WritingTest() {
 
   if (!pair) return null;
 
+  if (stage === "premium" && premiumRequest) return <PremiumRequestSaved request={premiumRequest} />;
+
   if (stage === "writing" || stage === "marking") {
     const blockedReason = isLoading
       ? "Checking your account…"
@@ -135,6 +154,7 @@ export default function WritingTest() {
         submitting={stage === "marking"}
         blockedReason={blockedReason}
         exitLabel="Save & exit"
+        premium
       >
         {progress && <p role="status" className="exam-toast">{progress}</p>}
         {error && !progress && <p role="alert" className="exam-toast" style={{ borderColor: "var(--exam-flag)" }}>{error}</p>}
@@ -165,7 +185,7 @@ export default function WritingTest() {
           <section key={item.task.slug} className="mt-8" aria-labelledby={`writing-test-part-${index}`}>
             <h2 id={`writing-test-part-${index}`} className="mb-3 text-xl font-bold text-white">Part {index + 1}: {item.task.title}</h2>
             {item.result
-              ? <WritingFeedback feedback={item.result.feedback} taskNumber={item.task.task} wordCount={item.result.wordCount} />
+              ? <WritingFeedback feedback={item.result.feedback} taskNumber={item.task.task} wordCount={item.result.wordCount} headingId={`writing-feedback-title-${index}`} />
               : <p className="rounded-xl border border-amber-400/20 bg-amber-500/10 p-4 text-sm text-amber-200">{item.skipped}</p>}
             {item.essay && (
               <details className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] p-4">

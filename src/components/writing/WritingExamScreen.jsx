@@ -12,10 +12,15 @@ import { useExamShortcuts, useTimerWarning } from "@/hooks/useExamShortcuts";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import { countWords, WRITING_TASK_RULES } from "@/data/writingTasks";
 import { formatTimeLeft } from "@/lib/exam/exam-settings.mjs";
+import { formatUzs, PREMIUM_MIN_WORDS, premiumPrice } from "@/lib/writing/premium.mjs";
 
-function SubmitDialog({ open, tasks, essays, remainingSeconds, onClose, onSubmit, canSubmit, blockedReason }) {
+function SubmitDialog({ open, tasks, essays, remainingSeconds, onClose, onSubmit, canSubmit, blockedReason, premium }) {
   const dialogRef = useModalAccessibility(open, onClose);
+  const [mode, setMode] = useState("free");
   if (!open) return null;
+  const premiumCount = tasks.filter((task) => countWords(essays[task.slug] || "") >= PREMIUM_MIN_WORDS).length;
+  const premiumAmount = premiumPrice(premiumCount);
+  const chosePremium = premium && mode === "premium";
   return (
     <div className="exam-dialog-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <section ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="writing-submit-title" className="exam-dialog">
@@ -33,10 +38,32 @@ function SubmitDialog({ open, tasks, essays, remainingSeconds, onClose, onSubmit
           })}
         </ul>
         {remainingSeconds != null && remainingSeconds > 0 && <p className="text-sm">You still have {formatTimeLeft(remainingSeconds).replace(" left", "")}.</p>}
+        {premium && (
+          <div className="mt-4" role="radiogroup" aria-label="How should your writing be checked?">
+            <p className="mb-2 text-sm font-bold">How should your writing be checked?</p>
+            <div className="exam-options">
+              <button type="button" role="radio" aria-checked={mode === "free"} aria-pressed={mode === "free"} className="exam-option" onClick={() => setMode("free")}>
+                <span className="exam-option-key" aria-hidden="true">1</span>
+                <span><b>AI check · free</b><br />Instant feedback and an estimated band for each criterion.</span>
+              </button>
+              <button type="button" role="radio" aria-checked={mode === "premium"} aria-pressed={mode === "premium"} className="exam-option" onClick={() => setMode("premium")} disabled={premiumCount === 0}>
+                <span className="exam-option-key" aria-hidden="true">2</span>
+                <span>
+                  <b>AI Premium · {formatUzs(premiumPrice(Math.max(1, premiumCount)))}</b><br />
+                  Line-by-line corrections, a Band 8+ rewrite of your answer, a deeper report on each criterion and a personal study plan. Pay on Telegram; the result comes after your payment is confirmed.
+                  {premiumCount === 0 && <><br /><i>Write at least {PREMIUM_MIN_WORDS} words first.</i></>}
+                  {premiumCount > 0 && premiumCount < tasks.length && <><br /><i>Only parts with at least {PREMIUM_MIN_WORDS} words are included.</i></>}
+                </span>
+              </button>
+            </div>
+          </div>
+        )}
         {blockedReason && <p className="mt-2 text-sm font-semibold" role="alert">{blockedReason}</p>}
         <div className="mt-5 flex flex-wrap justify-end gap-2">
           <button type="button" className="exam-btn" onClick={onClose}>Keep writing</button>
-          <button type="button" className="exam-btn exam-btn-primary" onClick={onSubmit} disabled={!canSubmit}>Submit for feedback</button>
+          <button type="button" className="exam-btn exam-btn-primary" onClick={() => onSubmit(chosePremium ? "premium" : "free")} disabled={!canSubmit || (chosePremium && premiumCount === 0)}>
+            {chosePremium ? `Request AI Premium (${formatUzs(premiumAmount)})` : "Submit for feedback"}
+          </button>
         </div>
       </section>
     </div>
@@ -51,7 +78,7 @@ function SubmitDialog({ open, tasks, essays, remainingSeconds, onClose, onSubmit
  */
 export default function WritingExamScreen({
   tasks, title, durationSeconds, initialEssays = {}, initialElapsed = 0, startOnType = false,
-  onDraftChange, onSubmit, submitting = false, blockedReason, exitHref = "/writing", exitLabel = "Exit", children,
+  onDraftChange, onSubmit, submitting = false, blockedReason, exitHref = "/writing", exitLabel = "Exit", premium = false, children,
 }) {
   const [settings, updateSettings] = useExamSettings();
   const [essays, setEssays] = useState(initialEssays);
@@ -207,7 +234,8 @@ export default function WritingExamScreen({
         onClose={() => setSubmitOpen(false)}
         canSubmit={anyText && !blockedReason}
         blockedReason={blockedReason || (anyText ? "" : "Write your answer before submitting.")}
-        onSubmit={() => { setSubmitOpen(false); setRunning(false); onSubmit({ essays, elapsed }); }}
+        premium={premium}
+        onSubmit={(mode) => { setSubmitOpen(false); setRunning(false); onSubmit({ essays, elapsed, mode }); }}
       />
       {children}
     </ExamShell>

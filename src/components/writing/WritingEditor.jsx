@@ -5,12 +5,15 @@ import Link from "next/link";
 import { ArrowLeft, RotateCcw } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAccountUserId } from "@/lib/auth/account";
-import { WRITING_TASK_RULES } from "@/data/writingTasks";
+import { countWords, WRITING_TASK_RULES } from "@/data/writingTasks";
 import { saveWritingResultLocally, writingDraftKey } from "@/lib/writing/writing-history.mjs";
 import { makeAttemptUuid } from "@/lib/reading/reading-attempt-outbox.mjs";
 import WritingExamScreen from "@/components/writing/WritingExamScreen";
 import WritingFeedback from "@/components/writing/WritingFeedback";
 import { requestWritingFeedback } from "@/lib/writing/request-feedback";
+import { premiumEssays } from "@/lib/writing/premium.mjs";
+import { createPremiumRequest } from "@/lib/writing/premium-requests";
+import { PremiumRequestSaved } from "@/components/writing/PremiumPayment";
 
 export default function WritingEditor({ task }) {
   const rules = WRITING_TASK_RULES[task.task];
@@ -21,6 +24,7 @@ export default function WritingEditor({ task }) {
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
   const [attempt, setAttempt] = useState(0);
+  const [premiumRequest, setPremiumRequest] = useState(null);
 
   useEffect(() => {
     let saved = null;
@@ -42,11 +46,19 @@ export default function WritingEditor({ task }) {
     }
   }, [task.slug]);
 
-  const submit = async ({ essays, elapsed }) => {
+  const submit = async ({ essays, elapsed, mode }) => {
     const essay = essays[task.slug] || "";
     setError("");
     setStatus("loading");
     try {
+      if (mode === "premium") {
+        const request = await createPremiumRequest(accountUserId, premiumEssays([task], essays, countWords));
+        window.localStorage.removeItem(writingDraftKey(task.slug));
+        setPremiumRequest(request);
+        setStatus("premium");
+        window.scrollTo({ top: 0 });
+        return;
+      }
       const data = await requestWritingFeedback(task.slug, essay, elapsed);
       const saved = {
         id: data.submission?.id || makeAttemptUuid(),
@@ -76,6 +88,8 @@ export default function WritingEditor({ task }) {
     setDraft(null);
     setAttempt((value) => value + 1);
   };
+
+  if (status === "premium" && premiumRequest) return <PremiumRequestSaved request={premiumRequest} />;
 
   if (status === "done" && result) {
     return (
@@ -123,6 +137,7 @@ export default function WritingEditor({ task }) {
       onSubmit={submit}
       submitting={status === "loading"}
       blockedReason={blockedReason}
+      premium
     >
       {status === "loading" && <p role="status" className="exam-toast">Marking your answer… this takes about 20 seconds.</p>}
       {error && <p role="alert" className="exam-toast" style={{ borderColor: "var(--exam-flag)" }}>{error}</p>}

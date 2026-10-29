@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, BarChart3, ChevronDown, ChevronUp, FileText, History, PenLine } from "lucide-react";
+import { ArrowRight, BarChart3, ChevronDown, ChevronUp, FileText, History, PenLine, Sparkles } from "lucide-react";
 import writingTasks, { WRITING_TASK_RULES } from "@/data/writingTasks";
 import { useWritingHistory } from "@/hooks/useWritingHistory";
 import { summarizeWritingHistory } from "@/lib/writing/writing-history.mjs";
 import WritingFeedback from "@/components/writing/WritingFeedback";
+import { formatUzs, PREMIUM_PRICE_UZS } from "@/lib/writing/premium.mjs";
 
 const FILTERS = [
   { id: "all", label: "All tasks" },
@@ -51,6 +52,15 @@ export default function WritingPage() {
           <p className="mt-1 text-sm text-slate-300">Write both tasks in the exam layout and get an overall Writing band.</p>
         </div>
         <Link href="/writing/test" className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-brand-500 px-5 font-semibold text-white">Start a full Writing test</Link>
+      </section>
+
+      <section className="mb-8 flex flex-col justify-between gap-4 rounded-2xl border border-amber-400/20 bg-amber-500/[0.06] p-5 sm:flex-row sm:items-center" aria-labelledby="writing-premium-promo">
+        <div>
+          <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-300"><Sparkles size={14} aria-hidden="true" /> AI Premium · {formatUzs(PREMIUM_PRICE_UZS)} per task</p>
+          <h2 id="writing-premium-promo" className="mt-1 text-lg font-bold text-white">A deeper check of your writing</h2>
+          <p className="mt-1 text-sm text-slate-300">Line-by-line corrections, a Band 8+ rewrite of your answer, a detailed report on each criterion and a personal study plan. Choose it when you submit; pay on Telegram.</p>
+        </div>
+        <Link href="/writing/premium" className="btn-secondary shrink-0">My AI Premium checks</Link>
       </section>
 
       <div role="group" aria-label="Filter writing tasks" className="mb-5 flex flex-wrap gap-2">
