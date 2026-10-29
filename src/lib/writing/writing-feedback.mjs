@@ -70,3 +70,21 @@ export function parseWritingFeedback(raw) {
     corrections,
   };
 }
+
+// Overall Writing band from both tasks: Task 2 counts twice as much as
+// Task 1, rounded to the nearest half band (practice estimate).
+export function combinedWritingBand(task1Band, task2Band) {
+  if (task1Band == null || task2Band == null) return null;
+  const first = Number(task1Band);
+  const second = Number(task2Band);
+  if (!Number.isFinite(first) || !Number.isFinite(second)) return null;
+  return Math.min(9, Math.floor(((first + 2 * second) / 3) * 2 + 0.5 + 1e-9) / 2);
+}
+
+// One Task 1 and one Task 2 for a full Writing test.
+export function pickWritingTestPair(tasks, random = Math.random) {
+  const pick = (list) => list[Math.floor(random() * list.length)] || null;
+  const first = pick(tasks.filter((task) => task.task === 1));
+  const second = pick(tasks.filter((task) => task.task === 2));
+  return first && second ? [first, second] : null;
+}

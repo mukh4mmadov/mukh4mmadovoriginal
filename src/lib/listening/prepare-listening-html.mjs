@@ -198,6 +198,39 @@ const sharedTheme = `
     .result-row > :nth-child(3)::before { content: "Correct answer: "; color: var(--muted); font-weight: 700; }
     .result-row > :nth-child(4) { grid-column: 2; }
   }
+  /* Exam look (computer-delivered IELTS): flat panels, square corners, one
+     font, and the three exam colour options, set from the parent page. */
+  html[data-exam-scheme] body, html[data-exam-scheme] body * { font-family: Arial, "Helvetica Neue", Helvetica, sans-serif !important; }
+  html[data-exam-scheme] .question-card, html[data-exam-scheme] .notes-card, html[data-exam-scheme] .note-card,
+  html[data-exam-scheme] .qgroup, html[data-exam-scheme] .question-block, html[data-exam-scheme] .section-banner,
+  html[data-exam-scheme] .part-banner, html[data-exam-scheme] .site-section-heading, html[data-exam-scheme] button,
+  html[data-exam-scheme] select, html[data-exam-scheme] input, html[data-exam-scheme] textarea,
+  html[data-exam-scheme] .fillbox, html[data-exam-scheme] .opt-box, html[data-exam-scheme] .mc-option,
+  html[data-exam-scheme] .modal, html[data-exam-scheme] .modal-content { border-radius: 3px !important; box-shadow: none !important; }
+  html[data-exam-scheme="standard"] {
+    color-scheme: light !important;
+    --bg: #ffffff !important; --panel: #ffffff !important; --panel-2: #f2f3f5 !important; --section: #e8ecf2 !important;
+    --border: #c9ced6 !important; --text: #111111 !important; --muted: #4a4f57 !important;
+    --accent: #1d4f91 !important; --accent-2: #1d4f91 !important; --timer: #ffffff !important;
+    --input-bg: #ffffff !important; --input-border: #6b7280 !important;
+  }
+  html[data-exam-scheme="inverse"] {
+    color-scheme: dark !important;
+    --bg: #000000 !important; --panel: #000000 !important; --panel-2: #141414 !important; --section: #1c1c1c !important;
+    --border: #5c5c5c !important; --text: #ffffff !important; --muted: #d4d4d4 !important;
+    --accent: #ffffff !important; --accent-2: #333333 !important; --timer: #000000 !important;
+    --input-bg: #000000 !important; --input-border: #a3a3a3 !important;
+  }
+  html[data-exam-scheme="yellow"] {
+    color-scheme: dark !important;
+    --bg: #000000 !important; --panel: #000000 !important; --panel-2: #141414 !important; --section: #1c1c1c !important;
+    --border: #8a7c00 !important; --text: #ffe600 !important; --muted: #ffe600 !important;
+    --accent: #ffe600 !important; --accent-2: #3d3700 !important; --timer: #000000 !important;
+    --input-bg: #000000 !important; --input-border: #ffe600 !important; --input-correct: #ffe600 !important;
+  }
+  html[data-exam-scheme="yellow"] body *:not(mark) { color: var(--text) !important; }
+  html[data-exam-text="large"] body { zoom: 1.12; }
+  html[data-exam-text="xlarge"] body { zoom: 1.25; }
 </style>`;
 
 function makeSectionScript(test) {
@@ -272,6 +305,14 @@ function makeSectionScript(test) {
         document.querySelectorAll('#themeRow [data-theme]').forEach((button) => {
           button.classList.toggle('active', button.dataset.theme === event.data.theme);
         });
+      }
+      if (event.data?.type === 'listening:set-exam') {
+        const { scheme, textSize } = event.data;
+        if (['standard', 'inverse', 'yellow'].includes(scheme)) {
+          root.setAttribute('data-exam-scheme', scheme);
+          root.setAttribute('data-theme', scheme === 'standard' ? 'light' : 'dark');
+        }
+        if (['standard', 'large', 'xlarge'].includes(textSize)) root.setAttribute('data-exam-text', textSize);
       }
       if (event.data?.type === 'listening:audio-state') {
         const { rate, volume, muted } = event.data;

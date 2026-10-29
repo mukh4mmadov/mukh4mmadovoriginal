@@ -44,6 +44,15 @@ export default function WritingPage() {
         ))}
       </div>
 
+      <section className="mb-8 flex flex-col justify-between gap-4 rounded-2xl border border-brand-400/20 bg-brand-500/10 p-5 sm:flex-row sm:items-center" aria-labelledby="writing-test-promo">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-brand-300">Full exam simulation</p>
+          <h2 id="writing-test-promo" className="mt-1 text-lg font-bold text-white">Task 1 + Task 2 · 60 minutes</h2>
+          <p className="mt-1 text-sm text-slate-300">Write both tasks in the exam layout and get an overall Writing band.</p>
+        </div>
+        <Link href="/writing/test" className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-brand-500 px-5 font-semibold text-white">Start a full Writing test</Link>
+      </section>
+
       <div role="group" aria-label="Filter writing tasks" className="mb-5 flex flex-wrap gap-2">
         {FILTERS.map((item) => (
           <button
