@@ -7,7 +7,8 @@ import { parseWritingFeedback } from "@/lib/writing/writing-feedback.mjs";
 import { getTashkentTodayRange } from "@/lib/reading/metrics.mjs";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+// Marking a full essay can take the AI model well over a minute.
+export const maxDuration = 120;
 
 const MIN_WORDS_FOR_FEEDBACK = 50;
 const DAILY_LIMIT = Math.max(1, Number(process.env.WRITING_DAILY_LIMIT) || 5);
@@ -88,10 +89,12 @@ export async function POST(request) {
   const messages = [{ role: "user", content: buildWritingUserMessage(task, essay) }];
 
   let feedback = null;
+  const startedAt = Date.now();
   try {
     for (let attempt = 0; attempt < 2 && !feedback; attempt += 1) {
       feedback = parseWritingFeedback(await ai.sendMessage(messages, null, "friendly"));
     }
+    console.info(`Writing feedback from ${provider.name} took ${Date.now() - startedAt} ms`);
   } catch (error) {
     // Provider errors can include upstream response bodies; log, don't return.
     console.error("Writing feedback provider error:", error);
