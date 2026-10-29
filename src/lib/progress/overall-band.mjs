@@ -4,7 +4,7 @@
 export const SKILLS = [
   { id: "reading", label: "Reading", source: "full Reading mock", cta: "Take a full Reading mock", href: "/readingmock" },
   { id: "listening", label: "Listening", source: "Listening test", cta: "Take a Listening test", href: "/listening" },
-  { id: "writing", label: "Writing", source: "Writing feedback", cta: "Write a task for feedback", href: "/writing" },
+  { id: "writing", label: "Writing", source: "Writing feedback", cta: "Take a full Writing test", href: "/writing/test" },
 ];
 
 // IELTS rounds the average to the nearest half band; .25 and .75 round up.
