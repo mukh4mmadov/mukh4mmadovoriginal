@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LogOut } from "lucide-react";
 import ExamShell from "@/components/exam/ExamShell";
 import ExamTopBar from "@/components/exam/ExamTopBar";
@@ -23,13 +23,21 @@ const isAnswered = (value) => String(value ?? "").trim() !== "";
  * timer and draft saving stay with the page; this screen handles layout,
  * navigation, flags and the review screen.
  */
-export default function MockExamScreen({ passages, questions, answers, onAnswer, remaining, highlightStates, flags, onToggleFlag, focusWarning, onExit, onSubmit }) {
+export default function MockExamScreen({ passages, questions, answers, onAnswer, remaining, highlightStates, flags, onToggleFlag, focusWarning, onExit, onSubmit, initialCurrent = 1, onCurrentChange }) {
   const [settings, updateSettings] = useExamSettings();
-  const [current, setCurrent] = useState(1);
+  const [current, setCurrent] = useState(() => clampQuestion(initialCurrent, questions.length));
   const [mobileTab, setMobileTab] = useState("left");
   const [reviewOpen, setReviewOpen] = useState(false);
   const [pickedHeading, setPickedHeading] = useState(null);
   const timerWarning = useTimerWarning(remaining, settings.timerWarnings);
+
+  // Saved with the draft so a resumed mock opens on the same question.
+  useEffect(() => { onCurrentChange?.(current); }, [current, onCurrentChange]);
+  useEffect(() => {
+    if (initialCurrent > 1) document.getElementById(`mock-q-${current}`)?.scrollIntoView({ block: "center" });
+    // Only when the screen opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const keyFor = (question) => questions.find((item) => item.question === question)?.key;
   const currentItem = questions[current - 1];

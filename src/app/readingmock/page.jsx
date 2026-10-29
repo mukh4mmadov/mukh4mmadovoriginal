@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { findFullMockVariant, findFullMockVariants, getMockBand, hasUsedFullMockVariant, MOCK_STORAGE_KEY } from "@/lib/reading/mock-test";
 import { isAnswerCorrect, formatAnswer } from "@/lib/reading/answer-review";
@@ -36,6 +36,8 @@ export default function FullMockPage() {
   const [answers, setAnswers] = useState({});
   const [flags, setFlags] = useState([]);
   const flagsRef = useRef([]);
+  const [position, setPosition] = useState(1);
+  const positionRef = useRef(1);
   const [remaining, setRemaining] = useState(DURATION);
   const [result, setResult] = useState(null);
   const [evidenceItem, setEvidenceItem] = useState(null);
@@ -110,7 +112,7 @@ export default function FullMockPage() {
       if (finishedRef.current) return;
       try {
         const current = readSaved() || {};
-        current.draft = { answers: answersRef.current, flags: flagsRef.current, deadline: deadlineRef.current, startedAt: startedAtRef.current, exitAttemptAt: null, variantId: selectedVariant?.id, mockVersion: 2 };
+        current.draft = { answers: answersRef.current, flags: flagsRef.current, position: positionRef.current, deadline: deadlineRef.current, startedAt: startedAtRef.current, exitAttemptAt: null, variantId: selectedVariant?.id, mockVersion: 2 };
         localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(current));
       } catch { /* the in-memory attempt is still protected during this page session */ }
     };
@@ -133,13 +135,18 @@ export default function FullMockPage() {
     if (!started || result) return;
     try {
       const current = readSaved() || {};
-      const next = { ...current, draft: { answers, flags, deadline: deadlineRef.current, startedAt: startedAtRef.current, exitAttemptAt: null, variantId: selectedVariant?.id, mockVersion: 2 } };
+      const next = { ...current, draft: { answers, flags, position, deadline: deadlineRef.current, startedAt: startedAtRef.current, exitAttemptAt: null, variantId: selectedVariant?.id, mockVersion: 2 } };
       localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(next));
       setSaved(next);
     } catch { /* keep working if local storage is unavailable */ }
-  }, [started, result, answers, flags, remaining]);
+  }, [started, result, answers, flags, position, remaining]);
 
   const questions = useMemo(() => passages?.flatMap((passage, passageIndex) => passage.questionGroups.flatMap((group) => group.questions.map((question) => ({ passage, passageIndex, group, question, key: answerKey(passage, question) })))) || [], [passages]);
+
+  const handlePosition = useCallback((number) => {
+    positionRef.current = number;
+    setPosition(number);
+  }, []);
 
   function handleToggleFlag(number) {
     setFlags((current) => {
@@ -166,6 +173,9 @@ export default function FullMockPage() {
     const currentFlags = Array.isArray(prior?.draft?.flags) ? prior.draft.flags : [];
     setFlags(currentFlags);
     flagsRef.current = currentFlags;
+    const currentPosition = Number.isInteger(prior?.draft?.position) ? prior.draft.position : 1;
+    setPosition(currentPosition);
+    positionRef.current = currentPosition;
     const left = prior?.draft?.deadline ? Math.max(0, Math.ceil((prior.draft.deadline - Date.now()) / 1000)) : DURATION;
     setRemaining(left);
     deadlineRef.current = Date.now() + left * 1000;
@@ -340,6 +350,8 @@ export default function FullMockPage() {
       onToggleFlag={handleToggleFlag}
       focusWarning={focusWarning}
       onExit={exitMock}
+      initialCurrent={position}
+      onCurrentChange={handlePosition}
       onSubmit={() => void finish(false)}
     />
   );

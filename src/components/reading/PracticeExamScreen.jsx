@@ -79,10 +79,10 @@ function ToolsMenu({ timerRunning, onOpenCoach, onPauseTimer, onResumeTimer, onR
  */
 export default function PracticeExamScreen({
   passage, answers, onAnswer, remainingSeconds, timerRunning, onPauseTimer, onResumeTimer, onResetTimer,
-  highlightState, savedTermIds, onSaveWord, flags, onToggleFlag, onSubmit, onOpenCoach, onActiveQuestion, statusText, children,
+  highlightState, savedTermIds, onSaveWord, flags, onToggleFlag, onSubmit, onOpenCoach, onActiveQuestion, statusText, children, initialCurrent = 1,
 }) {
   const [settings, updateSettings] = useExamSettings();
-  const [current, setCurrent] = useState(1);
+  const [current, setCurrent] = useState(Math.max(1, initialCurrent));
   const [mobileTab, setMobileTab] = useState("left");
   const [reviewOpen, setReviewOpen] = useState(false);
   const [pickedHeading, setPickedHeading] = useState(null);
@@ -102,6 +102,12 @@ export default function PracticeExamScreen({
       document.getElementById(`reading-q-${next}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
     }));
   };
+
+  useEffect(() => {
+    if (initialCurrent > 1) document.getElementById(`reading-q-${initialCurrent}`)?.scrollIntoView({ block: "center" });
+    // Only when the screen opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useExamShortcuts({
     onNext: () => goTo(current + 1),

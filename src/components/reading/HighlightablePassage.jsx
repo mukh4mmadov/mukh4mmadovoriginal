@@ -84,6 +84,24 @@ export default function HighlightablePassage({
     setNotes(readNotes(window.localStorage, notesKey));
   }, [notesKey]);
 
+  // Alt+H highlights the current selection in the chosen colour.
+  useEffect(() => {
+    const onKey = (event) => {
+      if (!event.altKey || event.ctrlKey || event.metaKey || event.code !== "KeyH") return;
+      for (const element of containerRef.current?.querySelectorAll("p[data-paragraph-key]") || []) {
+        const keys = selectedTokenKeys(element);
+        if (keys.length === 0) continue;
+        event.preventDefault();
+        applyToTokens(element.dataset.paragraphKey, keys, [], eraseMode ? { erase: true } : {});
+        setMenu(null);
+        window.getSelection()?.removeAllRanges();
+        return;
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [applyToTokens, eraseMode]);
+
   const saveNotes = (next) => {
     setNotes(next);
     if (notesKey) writeNotes(window.localStorage, notesKey, next);
@@ -320,6 +338,7 @@ export default function HighlightablePassage({
             <div key={paragraphKey}>
               {renderBeforeParagraph?.(p, paragraphIndex)}
               <p
+                data-paragraph-key={paragraphKey}
                 className="mb-6 overflow-wrap-anywhere break-words last:mb-0"
                 onMouseUp={onSelectionEnd}
                 onTouchEnd={onSelectionEnd}
