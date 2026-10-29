@@ -1,8 +1,9 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useState } from "react";
-import { ChevronDown, ChevronUp, ClipboardList, RefreshCw } from "lucide-react";
+import { ChevronDown, ChevronUp, ClipboardList, Download, RefreshCw } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
+import { exportQuery } from "@/lib/admin/export";
 import { AdminPageError, AdminPageLoading } from "@/components/admin/AdminPageStatus";
 
 const PAGE_SIZE = 25;
@@ -54,6 +55,7 @@ export default function AdminReadingMockResultsPage() {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-slate-300">{total.toLocaleString()} {total === 1 ? "attempt" : "attempts"}</p>
         <button type="button" onClick={() => void loadResults()} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-white/10 px-3 text-sm text-slate-200 hover:bg-white/5"><RefreshCw size={15} className={loading ? "animate-spin" : ""} aria-hidden="true" />Refresh</button>
+        <button type="button" onClick={() => exportQuery("reading-mock-results", supabase.from("reading_mock_attempts").select("result_data, completed_at, user:profiles!reading_mock_attempts_user_id_fkey(full_name, email)").order("completed_at", { ascending: false }), [{ label: "Learner", value: (r) => r.user?.full_name }, { label: "Email", value: (r) => r.user?.email }, { label: "Score", value: (r) => r.result_data?.rawScore }, { label: "Band", value: (r) => r.result_data?.band }, { label: "Time (s)", value: (r) => r.result_data?.elapsedSeconds }, { label: "Finished", value: (r) => r.completed_at }]).catch((e) => window.alert(e.message))} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-white/10 px-3 text-sm text-slate-200 hover:bg-white/5"><Download size={15} aria-hidden="true" />Export CSV</button>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/[0.03]">

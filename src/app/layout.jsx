@@ -1,6 +1,7 @@
 import "./globals.css";
 import Script from "next/script";
 import Navbar from "@/components/shared/Navbar";
+import SiteAnnouncement from "@/components/shared/SiteAnnouncement";
 import Footer from "@/components/shared/Footer";
 import { AuthProvider } from "@/contexts/AuthContext";
 import MigrationPrompt from "@/components/auth/MigrationPrompt";
@@ -76,6 +77,7 @@ export default function RootLayout({
             Skip to content
           </a>
           <Navbar />
+          <SiteAnnouncement />
           <MigrationPrompt />
           <div id="main-content" tabIndex={-1} className="min-h-screen outline-none">
             {children}

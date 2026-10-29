@@ -1,8 +1,9 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useState } from "react";
-import { ChevronDown, ChevronUp, Headphones, RefreshCw } from "lucide-react";
+import { ChevronDown, ChevronUp, Headphones, Download, RefreshCw } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
+import { exportQuery } from "@/lib/admin/export";
 import { AdminPageError, AdminPageLoading } from "@/components/admin/AdminPageStatus";
 import { formatAggregateTime } from "@/lib/reading/metrics.mjs";
 
@@ -56,8 +57,8 @@ export default function AdminListeningResultsPage() {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-slate-300">{total.toLocaleString()} {total === 1 ? "attempt" : "attempts"}</p>
         <button type="button" onClick={() => void loadResults()} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-white/10 px-3 text-sm text-slate-200 hover:bg-white/5">
-          <RefreshCw size={15} className={loading ? "animate-spin" : ""} aria-hidden="true" />Refresh
-        </button>
+          <RefreshCw size={15} className={loading ? "animate-spin" : ""} aria-hidden="true" />Refresh</button>
+        <button type="button" onClick={() => exportQuery("listening-results", supabase.from("listening_attempts").select("test_slug, score, total, result_data, completed_at, user:profiles!listening_attempts_user_id_fkey(full_name, email)").order("completed_at", { ascending: false }), [{ label: "Learner", value: (r) => r.user?.full_name }, { label: "Email", value: (r) => r.user?.email }, { label: "Test", value: (r) => r.test_slug }, { label: "Score", value: (r) => r.score }, { label: "Total", value: (r) => r.total }, { label: "Band", value: (r) => r.result_data?.band }, { label: "Finished", value: (r) => r.completed_at }]).catch((e) => window.alert(e.message))} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-white/10 px-3 text-sm text-slate-200 hover:bg-white/5"><Download size={15} aria-hidden="true" />Export CSV</button>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/[0.03]">

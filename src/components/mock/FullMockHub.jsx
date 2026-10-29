@@ -12,6 +12,7 @@ import { findFullMockVariants, hasUsedFullMockVariant, MOCK_STORAGE_KEY } from "
 import { readListeningHistory } from "@/lib/listening/listening-results.mjs";
 import { combinedWritingBand, pickWritingTestPair } from "@/lib/writing/writing-feedback.mjs";
 import { listMyPremiumRequests } from "@/lib/writing/premium-requests";
+import { supabase } from "@/lib/supabase/client";
 import {
   createFullMock, FULL_MOCK_KEY, FULL_MOCK_PARTS, fullMockOverall, readFullMock, recordPartResult, writeFullMock,
 } from "@/lib/mock/full-mock.mjs";
@@ -131,6 +132,26 @@ export default function FullMockHub() {
     }).catch(() => { /* try again next visit */ });
     return () => { active = false; };
   }, [accountUserId, state, refresh]);
+
+  // Finished mocks are copied to the account (and so to the admin panel).
+  useEffect(() => {
+    if (!accountUserId || !supabase || !state?.history.length) return;
+    const band = (value) => (value == null || !Number.isFinite(Number(value)) ? null : Number(value));
+    const rows = state.history.map((session) => ({
+      id: session.id,
+      user_id: accountUserId,
+      overall_band: fullMockOverall(session).overall,
+      listening_band: band(session.results.listening?.band),
+      reading_band: band(session.results.reading?.band),
+      writing_band: band(session.results.writing?.band),
+      result_data: session,
+      started_at: session.startedAt,
+      completed_at: session.completedAt || session.startedAt,
+    }));
+    supabase.from("full_mock_results").upsert(rows, { onConflict: "user_id,id" }).then(({ error }) => {
+      if (error) console.warn("Full mock results could not be synced:", error.message);
+    });
+  }, [accountUserId, state]);
 
   if (!state) return null;
   const { active, history } = state;
