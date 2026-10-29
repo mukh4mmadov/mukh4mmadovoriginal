@@ -19,7 +19,7 @@ function NumberList({ numbers, onJump, label }) {
 
 // "Check your answers" screen before submitting: unanswered and flagged
 // questions, each one a shortcut back to the question.
-export default function ExamReviewDialog({ open, onClose, onSubmit, total, unanswered, flagged, remainingSeconds, onJump, itemLabel = "questions", submitLabel = "Submit test" }) {
+export default function ExamReviewDialog({ open, onClose, onSubmit, total, unanswered, flagged, remainingSeconds, onJump, itemLabel = "questions", submitLabel = "Submit test", submitDisabled = false }) {
   const dialogRef = useModalAccessibility(open, onClose);
   if (!open) return null;
   const answered = total - unanswered.length;
@@ -38,7 +38,7 @@ export default function ExamReviewDialog({ open, onClose, onSubmit, total, unans
         {unanswered.length > 0 && <p className="mt-4 text-sm">Unanswered questions will be marked as wrong.</p>}
         <div className="mt-5 flex flex-wrap justify-end gap-2">
           <button type="button" className="exam-btn" onClick={onClose}>Keep working</button>
-          <button type="button" className="exam-btn exam-btn-primary" onClick={onSubmit}>{submitLabel}</button>
+          <button type="button" className="exam-btn exam-btn-primary" onClick={onSubmit} disabled={submitDisabled}>{submitLabel}</button>
         </div>
       </section>
     </div>

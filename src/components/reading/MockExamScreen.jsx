@@ -7,51 +7,15 @@ import ExamTopBar from "@/components/exam/ExamTopBar";
 import ExamQuestionBar from "@/components/exam/ExamQuestionBar";
 import ExamReviewDialog from "@/components/exam/ExamReviewDialog";
 import SplitPane from "@/components/exam/SplitPane";
+import ReadingQuestionList from "@/components/exam/ReadingQuestionList";
 import HighlightablePassage from "@/components/reading/HighlightablePassage";
 import FullscreenToggle from "@/components/shared/FullscreenToggle";
 import ReportPassageIssueButton from "@/components/shared/ReportPassageIssueButton";
 import { useExamSettings } from "@/hooks/useExamSettings";
 import { useExamShortcuts, useTimerWarning } from "@/hooks/useExamShortcuts";
-import { renumberInstructions } from "@/lib/reading/question-numbering.mjs";
 import { clampQuestion } from "@/lib/exam/exam-settings.mjs";
 
-const ANSWER_OPTIONS = {
-  "true-false-not-given": ["TRUE", "FALSE", "NOT GIVEN"],
-  "yes-no-not-given": ["YES", "NO", "NOT GIVEN"],
-};
 const isAnswered = (value) => String(value ?? "").trim() !== "";
-
-function QuestionInput({ question, passage, number, value, onChange }) {
-  if (ANSWER_OPTIONS[question.type]) {
-    return (
-      <div className="exam-options-inline" role="group" aria-label={`Answer for question ${number}`}>
-        {ANSWER_OPTIONS[question.type].map((option) => (
-          <button key={option} type="button" className="exam-option" aria-pressed={value === option} onClick={() => onChange(option)}>{option}</button>
-        ))}
-      </div>
-    );
-  }
-  if (question.type === "multiple-choice") {
-    return (
-      <div className="exam-options" role="group" aria-label={`Answer for question ${number}`}>
-        {question.options.map((option) => (
-          <button key={option.key} type="button" className="exam-option" aria-pressed={value === option.key} onClick={() => onChange(option.key)}>
-            <span className="exam-option-key" aria-hidden="true">{option.key}</span><span>{option.text}</span>
-          </button>
-        ))}
-      </div>
-    );
-  }
-  if (question.type === "matching-headings") {
-    return (
-      <select aria-label={`Choose a heading for question ${number}`} value={value} onChange={(event) => onChange(event.target.value)} className="exam-input exam-select mt-1">
-        <option value="">Choose a heading</option>
-        {passage.headingBank?.map((heading) => <option key={heading.id} value={heading.id}>{heading.id}. {heading.text}</option>)}
-      </select>
-    );
-  }
-  return null;
-}
 
 /**
  * The full Reading mock in the computer-delivered exam layout. Answers,
@@ -65,6 +29,7 @@ export default function MockExamScreen({ passages, questions, answers, onAnswer,
   const [reviewOpen, setReviewOpen] = useState(false);
   const timerWarning = useTimerWarning(remaining, settings.timerWarnings);
 
+  const keyFor = (question) => questions.find((item) => item.question === question)?.key;
   const currentItem = questions[current - 1];
   const passageIndex = currentItem?.passageIndex ?? 0;
   const passage = passages[passageIndex];
@@ -138,68 +103,16 @@ export default function MockExamScreen({ passages, questions, answers, onAnswer,
           </div>
         )}
         right={(
-          <div className="exam-questions">
-            {passage.questionGroups.map((group, groupIndex) => {
-              const firstNumber = questions.findIndex((item) => item.passage === passage && item.question === group.questions[0]) + 1;
-              const lastNumber = firstNumber + group.questions.length - 1;
-              return (
-                <section key={`${passage.slug}-group-${groupIndex}`} className="exam-group" aria-label={`Questions ${firstNumber}–${lastNumber}`}>
-                  <p className="exam-group-title">Questions {firstNumber}{lastNumber > firstNumber ? `–${lastNumber}` : ""}</p>
-                  <p className="exam-instructions">{renumberInstructions(group.instructions, firstNumber)}</p>
-                  {group.wordBank?.length > 0 && (
-                    <div className="exam-box">
-                      <p className="exam-box-title">List of words</p>
-                      <div className="grid grid-cols-2 gap-1 sm:grid-cols-3">{group.wordBank.map((word) => <p key={word.id}><b>{word.id}</b> {word.text}</p>)}</div>
-                    </div>
-                  )}
-                  {group.questions[0]?.type === "matching-headings" && passage.headingBank && (
-                    <div className="exam-box">
-                      <p className="exam-box-title">List of headings</p>
-                      <div className="grid gap-1">{passage.headingBank.map((heading) => <p key={heading.id}><b>{heading.id}</b> {heading.text}</p>)}</div>
-                    </div>
-                  )}
-                  {group.questions.map((question, questionIndex) => {
-                    const number = firstNumber + questionIndex;
-                    const key = questions[number - 1].key;
-                    const value = answers[key] ?? "";
-                    const set = (next) => onAnswer(key, next);
-                    return (
-                      <div
-                        key={key}
-                        id={`mock-q-${number}`}
-                        className="exam-question"
-                        data-current={number === current}
-                        data-flagged={flags.includes(number)}
-                        onFocusCapture={() => goTo(number, { scroll: false })}
-                        onClick={() => setCurrent(number)}
-                      >
-                        <span className="exam-qnum" aria-hidden="true">{number}</span>
-                        <div className="min-w-0 flex-1">
-                          {question.type === "sentence-completion" ? (
-                            <p>
-                              {question.before}{" "}
-                              <input
-                                aria-label={`Answer for question ${number}, maximum ${question.maxWords || 1} word${(question.maxWords || 1) === 1 ? "" : "s"}`}
-                                maxLength={120}
-                                className="exam-input"
-                                placeholder={group.wordBank?.length ? "letter" : undefined}
-                                value={value}
-                                onChange={(event) => { const next = event.target.value; if (next.trim().split(/\s+/).filter(Boolean).length <= (question.maxWords || 1)) set(next); }}
-                              />{" "}
-                              {question.after}
-                            </p>
-                          ) : (
-                            <p>{question.type === "matching-headings" ? question.paragraphLabel : question.prompt}</p>
-                          )}
-                          <QuestionInput question={question} passage={passage} number={number} value={value} onChange={set} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </section>
-              );
-            })}
-          </div>
+          <ReadingQuestionList
+            passage={passage}
+            firstNumber={ranges[passageIndex].first}
+            getValue={(question) => answers[keyFor(question)]}
+            onAnswer={(question, value) => onAnswer(keyFor(question), value)}
+            current={current}
+            flags={flags}
+            onFocusQuestion={setCurrent}
+            idPrefix="mock-q"
+          />
         )}
       />
 

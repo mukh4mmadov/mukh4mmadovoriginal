@@ -899,6 +899,8 @@ html:not(.dark) .evidence-paragraph {
 }
 
 .exam-passage { font-size: var(--exam-passage-font); line-height: 1.75; }
+/* One exam font throughout, like the real test (passage components set a display font inline). */
+.exam-root :is(.exam-passage, .exam-questions) * { font-family: inherit !important; }
 .exam-passage h2 { font-size: calc(var(--exam-passage-font) + 4px); font-weight: 700; margin-bottom: 12px; }
 .exam-questions { font-size: var(--exam-font); line-height: 1.6; }
 .exam-group { margin-bottom: 28px; }
