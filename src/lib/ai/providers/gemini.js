@@ -33,6 +33,12 @@ export class GeminiProvider {
       ...(this.config.fallbackModels || []),
     ];
 
+    // Newer Gemini models think before answering, which can take longer
+    // than a page will wait. Ask for light thinking; if a model rejects the
+    // setting, the same model is asked again without it.
+    const thinkingLevel = this.config.thinkingLevel ?? process.env.GOOGLE_THINKING_LEVEL ?? 'low';
+    let useThinking = Boolean(thinkingLevel) && thinkingLevel !== 'off';
+
     for (let index = 0; index < models.length; index += 1) {
       const model = models[index];
       const response = await fetch(`${this.config.baseUrl || 'https://generativelanguage.googleapis.com'}/v1beta/models/${model}:generateContent?key=${this.config.apiKey}`, {
@@ -46,12 +52,18 @@ export class GeminiProvider {
           generationConfig: {
             temperature: this.config.temperature ?? 0.7,
             ...(this.config.responseMimeType ? { responseMimeType: this.config.responseMimeType } : {}),
+            ...(useThinking ? { thinkingConfig: { thinkingLevel } } : {}),
           },
         }),
       });
 
       if (!response.ok) {
         const error = await response.text();
+        if (response.status === 400 && useThinking && /thinking/i.test(error)) {
+          useThinking = false;
+          index -= 1;
+          continue;
+        }
         if (response.status === 503 && index < models.length - 1) continue;
         throw new Error(`Gemini API error: ${response.status} - ${error}`);
       }
