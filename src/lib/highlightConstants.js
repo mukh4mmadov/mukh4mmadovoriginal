@@ -10,6 +10,8 @@ export const fontSizeMap = {
   small: "text-[15px] sm:text-[16px]",
   medium: "text-[16px] sm:text-[17px]",
   large: "text-[17px] sm:text-[18px]",
+  // Exam screens set the size on a parent element.
+  inherit: "",
 };
 
 export function tokenize(text) {

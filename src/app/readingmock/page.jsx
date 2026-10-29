@@ -7,23 +7,16 @@ import { findFullMockVariant, findFullMockVariants, getMockBand, hasUsedFullMock
 import { isAnswerCorrect, formatAnswer } from "@/lib/reading/answer-review";
 import { supabase } from "@/lib/supabase/client";
 import { readingMockAttemptsRepository } from "@/lib/supabase/repositories/reading-mock-attempts.repository";
-import HighlightablePassage from "@/components/reading/HighlightablePassage";
 import FullMockPicker from "@/components/reading/FullMockPicker";
-import FullscreenToggle from "@/components/shared/FullscreenToggle";
-import ReportPassageIssueButton from "@/components/shared/ReportPassageIssueButton";
 import { useTextHighlight } from "@/hooks/useTextHighlight";
 import { useModalAccessibility } from "@/hooks/useModalAccessibility";
-import { renumberInstructions } from "@/lib/reading/question-numbering.mjs";
 import { locateEvidence } from "@/lib/reading/evidence-locator.mjs";
 import EvidenceViewer from "@/components/reading/EvidenceViewer";
-import { ArrowLeft, LogOut, MapPin, Type } from "lucide-react";
+import MockExamScreen from "@/components/reading/MockExamScreen";
+import { toggleFlag } from "@/lib/exam/exam-settings.mjs";
+import { ArrowLeft, MapPin } from "lucide-react";
 
 const DURATION = 60 * 60;
-const MOCK_TEXT_SIZE_CLASSES = { small: "text-sm", medium: "text-base", large: "text-lg" };
-const ANSWER_OPTIONS = {
-  "true-false-not-given": ["TRUE", "FALSE", "NOT GIVEN"],
-  "yes-no-not-given": ["YES", "NO", "NOT GIVEN"],
-};
 const answerKey = (passage, question) => `${passage.slug}:${question.id}`;
 const readSaved = () => {
   try { return JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) || "null"); } catch { return null; }
@@ -40,16 +33,12 @@ export default function FullMockPage() {
   const highlightThree = useTextHighlight(`mock-${passages?.[2]?.slug || "empty"}`);
   const highlightStates = [highlightOne, highlightTwo, highlightThree];
   const [started, setStarted] = useState(false);
-  const [selectedPassageIndex, setSelectedPassageIndex] = useState(0);
-  const [activeQuestionNumber, setActiveQuestionNumber] = useState(1);
-  const [navigatorGroup, setNavigatorGroup] = useState(0);
   const [answers, setAnswers] = useState({});
+  const [flags, setFlags] = useState([]);
+  const flagsRef = useRef([]);
   const [remaining, setRemaining] = useState(DURATION);
-  const [fontSize, setFontSize] = useState("medium");
-  const [questionFontSize, setQuestionFontSize] = useState("medium");
   const [result, setResult] = useState(null);
   const [evidenceItem, setEvidenceItem] = useState(null);
-  const [showSubmit, setShowSubmit] = useState(false);
   const [showConsent, setShowConsent] = useState(false);
   const [showRepeatConfirm, setShowRepeatConfirm] = useState(false);
   const [resumeAfterConsent, setResumeAfterConsent] = useState(false);
@@ -66,7 +55,6 @@ export default function FullMockPage() {
   const answersRef = useRef({});
   const repeatDialogRef = useModalAccessibility(showRepeatConfirm, () => setShowRepeatConfirm(false));
   const consentDialogRef = useModalAccessibility(showConsent, () => setShowConsent(false));
-  const submitDialogRef = useModalAccessibility(showSubmit, () => setShowSubmit(false));
 
   useEffect(() => {
     const record = readSaved();
@@ -122,7 +110,7 @@ export default function FullMockPage() {
       if (finishedRef.current) return;
       try {
         const current = readSaved() || {};
-        current.draft = { answers: answersRef.current, deadline: deadlineRef.current, startedAt: startedAtRef.current, exitAttemptAt: null, variantId: selectedVariant?.id, mockVersion: 2 };
+        current.draft = { answers: answersRef.current, flags: flagsRef.current, deadline: deadlineRef.current, startedAt: startedAtRef.current, exitAttemptAt: null, variantId: selectedVariant?.id, mockVersion: 2 };
         localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(current));
       } catch { /* the in-memory attempt is still protected during this page session */ }
     };
@@ -145,13 +133,21 @@ export default function FullMockPage() {
     if (!started || result) return;
     try {
       const current = readSaved() || {};
-      const next = { ...current, draft: { answers, deadline: deadlineRef.current, startedAt: startedAtRef.current, exitAttemptAt: null, variantId: selectedVariant?.id, mockVersion: 2 } };
+      const next = { ...current, draft: { answers, flags, deadline: deadlineRef.current, startedAt: startedAtRef.current, exitAttemptAt: null, variantId: selectedVariant?.id, mockVersion: 2 } };
       localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(next));
       setSaved(next);
     } catch { /* keep working if local storage is unavailable */ }
-  }, [started, result, answers, remaining]);
+  }, [started, result, answers, flags, remaining]);
 
   const questions = useMemo(() => passages?.flatMap((passage, passageIndex) => passage.questionGroups.flatMap((group) => group.questions.map((question) => ({ passage, passageIndex, group, question, key: answerKey(passage, question) })))) || [], [passages]);
+
+  function handleToggleFlag(number) {
+    setFlags((current) => {
+      const next = toggleFlag(current, number);
+      flagsRef.current = next;
+      return next;
+    });
+  }
 
   function setAnswer(key, value) {
     setAnswers((current) => {
@@ -167,6 +163,9 @@ export default function FullMockPage() {
     const currentAnswers = prior?.draft?.answers || {};
     setAnswers(currentAnswers);
     answersRef.current = currentAnswers;
+    const currentFlags = Array.isArray(prior?.draft?.flags) ? prior.draft.flags : [];
+    setFlags(currentFlags);
+    flagsRef.current = currentFlags;
     const left = prior?.draft?.deadline ? Math.max(0, Math.ceil((prior.draft.deadline - Date.now()) / 1000)) : DURATION;
     setRemaining(left);
     deadlineRef.current = Date.now() + left * 1000;
@@ -217,7 +216,6 @@ export default function FullMockPage() {
     } catch { /* keep the result available on screen */ }
     setResult(history);
     setStarted(false);
-    setShowSubmit(false);
     document.body.classList.remove("ielts-mock-active");
   }
 
@@ -237,7 +235,7 @@ export default function FullMockPage() {
   }
 
   const startFresh = () => {
-    setAnswers({}); answersRef.current = {}; setResult(null); setShowSubmit(false);
+    setAnswers({}); answersRef.current = {}; setFlags([]); flagsRef.current = []; setResult(null);
     try {
       const current = readSaved() || {};
       current.draft = null;
@@ -322,144 +320,27 @@ export default function FullMockPage() {
 
   if (!started) return <main className="mock-experience min-h-screen bg-slate-950 px-4 py-12 text-slate-100 sm:px-6"><Link href="/reading" className="inline-flex items-center gap-2 text-sm text-brand-300"><ArrowLeft size={16}/>Passage practice</Link><section className="mt-5 rounded-3xl border border-white/10 bg-white/[0.04] p-6 sm:p-10"><p className="text-xs font-bold uppercase tracking-[.2em] text-brand-300">IELTS Reading</p><h1 className="mt-3 text-4xl font-black text-white">Full mock test</h1><p className="mt-3 max-w-2xl text-slate-300">Three passages · 40 questions · 60 minutes. {variants.length} numbered full mock tests are available below. Choose any mock; completed ones stay marked. The timer cannot be paused. Your guest draft and results stay in this browser until you choose to sync them.</p><FullMockPicker variants={variants} selectedVariantId={selectedVariant?.id} history={historyForDisplay} onSelect={setSelectedVariant} /><div className="mt-7 grid gap-3 sm:grid-cols-3">{passages.map((passage, index) => <article key={passage.slug} className="rounded-2xl border border-white/10 bg-slate-950/40 p-4"><p className="text-xs font-bold uppercase tracking-wider text-brand-300">Passage {index + 1} · {passage.difficulty ? `${passage.difficulty[0].toUpperCase()}${passage.difficulty.slice(1)}` : `Passage ${index + 1}`}</p><h2 className="mt-2 font-semibold text-white">{passage.title}</h2><p className="mt-2 text-sm text-slate-400">{passage.questionGroups.flatMap((group) => group.questions).length} questions</p></article>)}</div><p className="mt-6 text-sm text-slate-400">Before starting: this is a 60-minute test. Switching tabs will not submit your answers; the timer continues running.</p>{startError&&<p role="alert" className="mt-4 rounded-lg border border-rose-400/30 bg-rose-500/10 p-3 text-sm text-rose-100">{startError}</p>}{savedDraft && <button onClick={() => void requestMockStart(true)} className="mt-6 mr-3 min-h-12 rounded-xl border border-brand-300/40 px-5 font-semibold text-brand-200">Resume saved mock</button>}<button onClick={() => void requestMockStart(false)} className="mt-6 min-h-12 rounded-xl bg-brand-500 px-6 font-bold text-white">Start Mock {selectedMockNumber} - 60 minutes</button>{historyForDisplay.length>0&&<section className="mt-8 border-t border-white/10 pt-5"><h2 className="font-bold text-white">Saved mock history</h2><p className="mt-1 text-sm text-slate-400">{accountUserId?"Account mock history syncs across your signed-in devices.":"Guest results stay in this browser. Sign in, then choose sync to move these results to your account."}</p>{!accountUserId&&<Link href="/login?next=%2Freadingmock" className="mt-2 inline-block text-sm text-brand-300 underline">Sign in to sync your history</Link>}{accountUserId&&cloudLoaded&&cloudImportNeeded&&<button disabled={cloudSaving} onClick={()=>void saveToAccount(accountUserId,localResults)} className="mt-3 min-h-10 rounded-lg border border-brand-300/30 px-4 text-sm font-semibold text-brand-200 disabled:opacity-50">{cloudSaving?"Saving…":"Save browser results to my account"}</button>}{cloudMessage&&<p role="status" className="mt-2 text-sm text-slate-300">{cloudMessage}</p>}<div className="mt-3 space-y-2">{historyForDisplay.slice(0,5).map((item)=><button type="button" key={item.id} onClick={()=>setResult(item)} className="block w-full rounded-lg bg-white/5 p-3 text-left text-sm text-slate-300">{new Date(item.completedAt).toLocaleString()} · {item.rawScore}/40 · approximate band {getMockBand(Number(item.rawScore)) == null ? "estimate unavailable" : Number(getMockBand(Number(item.rawScore))).toFixed(1)} · Review results</button>)}</div></section>}</section>{showConsent&&<div className="fixed inset-0 z-[110] grid place-items-center bg-black/80 p-4"><section ref={consentDialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="mock-consent-title" className="w-full max-w-lg rounded-2xl border border-white/10 bg-slate-900 p-6"><h2 id="mock-consent-title" className="text-2xl font-bold text-white">Before you start</h2><p className="mt-3 text-slate-200">The 60-minute timer cannot be paused. You may leave the tab, but the timer keeps running.</p><ul className="mt-3 space-y-2 text-sm leading-6 text-slate-300"><li>· You can start in a normal browser window; fullscreen is not required.</li><li>· Switching tabs does not submit your attempt. Submit manually when you are finished, or the timer submits when it reaches zero.</li><li>· Your answers are saved as a draft. Refreshing or reopening the mock resumes it while time remains.</li></ul><p className="mt-4 text-sm font-semibold text-amber-200">If you choose “I do not agree”, you cannot start or resume this mock.</p><div className="mt-6 flex flex-wrap justify-end gap-3"><button type="button" onClick={()=>setShowConsent(false)} className="min-h-11 rounded-lg border border-white/20 px-4 text-sm text-slate-200">I do not agree</button><button type="button" onClick={()=>void acceptMockRules()} className="min-h-11 rounded-lg bg-brand-500 px-4 text-sm font-bold text-white">I understand and start</button></div></section></div>}</main>;
 
-  const answeredCount = Object.values(answers).filter((value) => String(value ?? "").trim() !== "").length;
-  const selectedPassage = passages[selectedPassageIndex];
-  const questionRanges = passages.map((passage, passageIndex) => {
-    const first = questions.findIndex((item) => item.passageIndex === passageIndex) + 1;
-    const total = questions.filter((item) => item.passageIndex === passageIndex).length;
-    return { first, last: first + total - 1, total };
-  });
-  const mobileQuestionRanges = questionRanges.map((range) => ({ ...range, label: `${range.first}–${range.last}` }));
-
   function exitMock() {
     // The draft is saved on every change; leaving keeps it resumable while
     // the deadline-based timer keeps running, as the start rules explain.
-    setShowSubmit(false);
     setStarted(false);
     setFocusWarning(false);
     window.scrollTo({ top: 0 });
   }
 
-  function selectPassage(index) {
-    setSelectedPassageIndex(index);
-    setActiveQuestionNumber(questionRanges[index].first);
-    const panel = document.getElementById("mock-question-panel");
-    if (panel) panel.scrollTop = 0;
-  }
-
-  function selectQuestion(number) {
-    const item = questions[number - 1];
-    if (!item) return;
-    setSelectedPassageIndex(item.passageIndex);
-    setActiveQuestionNumber(number);
-    const rangeIndex = mobileQuestionRanges.findIndex((range) => number >= range.first && number <= range.last);
-    if (rangeIndex >= 0) setNavigatorGroup(rangeIndex);
-    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
-      document.getElementById(`mock-q-${number}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }));
-  }
-
-  function renderNavigatorButton(item, index) {
-    const number = index + 1;
-    const answered = String(answers[item.key] ?? "").trim() !== "";
-    const active = activeQuestionNumber === number;
-    return <button
-      type="button"
-      key={item.key}
-      onClick={() => selectQuestion(number)}
-      aria-current={active ? "step" : undefined}
-      aria-label={`Question ${number}, ${active ? "active, " : ""}${answered ? "answered" : "unanswered"}`}
-      title={`Question ${number}: ${active ? "active, " : ""}${answered ? "answered" : "unanswered"}`}
-      className={`flex h-9 min-w-0 items-center justify-center gap-0.5 rounded-md border px-1 text-xs font-semibold focus-visible:z-10 ${active ? "border-sky-300 bg-sky-900 text-white ring-2 ring-sky-300" : answered ? "border-emerald-300/70 bg-emerald-950 text-emerald-100" : "border-slate-500 bg-slate-800 text-slate-100"}`}
-    >
-      <span>{number}</span><span aria-hidden="true" className="text-[10px]">{active ? "▶" : answered ? "✓" : "–"}</span>
-    </button>;
-  }
-
-  return <main className="mock-experience mock-shell fixed inset-0 z-[100] flex h-[100dvh] flex-col overflow-hidden bg-slate-950 text-slate-100">
-    <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-white/15 bg-slate-950 px-3 py-2.5 sm:px-5">
-      <div className="min-w-0">
-        <p className="text-sm font-bold text-sky-200">IELTS Reading Mock</p>
-        <p className="text-xs text-slate-300">40 questions · {answeredCount} answered</p>
-      </div>
-      <div className="flex w-full min-w-0 flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end sm:gap-3">
-        <Type size={17} aria-hidden="true" />
-        <label className="flex items-center gap-1 text-xs font-semibold text-slate-300" htmlFor="mock-font-size">Passage
-          <select id="mock-font-size" aria-label="Passage text size" value={fontSize} onChange={(event) => setFontSize(event.target.value)} className="min-h-10 rounded-lg border border-slate-500 bg-slate-900 px-2 text-sm text-slate-100">
-            <option value="small">A−</option><option value="medium">A</option><option value="large">A+</option>
-          </select>
-        </label>
-        <label className="flex items-center gap-1 text-xs font-semibold text-slate-300" htmlFor="mock-question-font-size">Questions
-          <select id="mock-question-font-size" aria-label="Question text size" value={questionFontSize} onChange={(event) => setQuestionFontSize(event.target.value)} className="min-h-10 rounded-lg border border-slate-500 bg-slate-900 px-2 text-sm text-slate-100">
-            <option value="small">A−</option><option value="medium">A</option><option value="large">A+</option>
-          </select>
-        </label>
-        <div aria-label={`${Math.floor(remaining / 60)} minutes ${remaining % 60} seconds remaining`} className={`min-w-[5.5rem] rounded-lg px-2 py-2 text-center font-mono text-lg font-bold tabular-nums ${remaining < 300 ? "bg-red-950 text-red-100" : "bg-slate-800 text-white"}`}>
-          {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}
-        </div>
-        <FullscreenToggle className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-slate-500 bg-slate-900 text-slate-100 transition hover:bg-slate-800" />
-        {selectedPassage && <ReportPassageIssueButton passageTitle={selectedPassage.title} className="border-slate-500 bg-slate-900 text-slate-100 hover:bg-slate-800" />}
-        <button type="button" onClick={exitMock} title="Save your answers and leave. The timer keeps running." className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-500 bg-slate-900 px-3 text-sm text-slate-100 transition hover:bg-slate-800"><LogOut size={16} aria-hidden="true" /><span className="hidden sm:inline">Save &amp; exit</span><span className="sr-only sm:hidden">Save and exit</span></button>
-        <button type="button" onClick={() => setShowSubmit(true)} className="min-h-10 rounded-lg bg-sky-500 px-3 text-sm font-bold text-slate-950 hover:bg-sky-400 sm:px-4">Submit</button>
-      </div>
-    </header>
-
-    <div role="tablist" aria-label="Passages" className="flex shrink-0 gap-2 overflow-x-auto border-b border-white/10 bg-slate-900 px-3 py-2">
-      {passages.map((passage, index) => {
-        const selected = index === selectedPassageIndex;
-        const range = questionRanges[index];
-        return <button key={passage.slug} type="button" role="tab" aria-selected={selected} aria-controls="mock-reading-panel" onClick={() => selectPassage(index)} className={`min-h-10 shrink-0 rounded-lg border px-3 text-left text-sm ${selected ? "border-sky-300 bg-sky-950 text-white" : "border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700"}`}>
-          Passage {index + 1}<span className="ml-2 text-xs">Q{range.first}–{range.last} · {range.total}</span>
-        </button>;
-      })}
-    </div>
-
-    {focusWarning && <div role="status" className="shrink-0 border-b border-amber-300/50 bg-amber-950 px-3 py-2 text-center text-sm text-amber-100">The timer kept running while this tab was hidden. Your answers have not been submitted.</div>}
-
-    <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,0.8fr)_minmax(0,1.2fr)] gap-3 overflow-hidden p-3 lg:grid-cols-2 lg:grid-rows-1 lg:gap-4 lg:p-4">
-      <section id="mock-reading-panel" role="tabpanel" aria-label={`Passage ${selectedPassageIndex + 1}: ${selectedPassage.title}`} className="min-h-0 overflow-y-auto overscroll-contain rounded-xl border border-white/15 bg-slate-900 p-3 sm:p-5">
-        <h1 className="mb-3 text-lg font-bold text-white sm:text-xl">{selectedPassage.title}</h1>
-        <HighlightablePassage paragraphs={selectedPassage.paragraphs} fontSize={fontSize} highlightState={highlightStates[selectedPassageIndex]} highContrastHighlights />
-      </section>
-
-      <section id="mock-question-panel" aria-label={`Questions for passage ${selectedPassageIndex + 1}`} className="min-h-0 overflow-y-auto overscroll-contain rounded-xl border border-white/15 bg-slate-900 p-3 sm:p-4">
-        <h2 className="sticky -top-3 z-10 -mx-3 -mt-3 mb-3 border-b border-white/10 bg-slate-900 px-3 py-2 text-sm font-bold text-sky-100 sm:-top-4 sm:-mx-4 sm:-mt-4 sm:px-4">Questions {questionRanges[selectedPassageIndex].first}–{questionRanges[selectedPassageIndex].last}</h2>
-        <div className="space-y-3">
-          {selectedPassage.questionGroups.map((group, groupIndex) => <section key={`${selectedPassage.slug}-group-${groupIndex}`} className="rounded-xl border border-white/15 bg-slate-800 p-3 sm:p-4">
-            <p className={`mb-3 ${MOCK_TEXT_SIZE_CLASSES[questionFontSize]} leading-7 text-slate-200`}>{renumberInstructions(group.instructions, questions.findIndex((item) => item.key === answerKey(selectedPassage, group.questions[0])) + 1)}</p>
-            {group.wordBank?.length > 0 && <div className={`mb-4 rounded-lg border border-white/15 bg-slate-900 p-3 ${MOCK_TEXT_SIZE_CLASSES[questionFontSize]} text-slate-200`}><p className="mb-2 text-xs font-bold uppercase tracking-wider text-sky-200">List of words</p><div className="grid grid-cols-2 gap-1 sm:grid-cols-3">{group.wordBank.map((word) => <p key={word.id}><b>{word.id}</b> {word.text}</p>)}</div></div>}
-            {group.questions[0]?.type === "matching-headings" && selectedPassage.headingBank && <div className={`mb-4 grid gap-1 ${MOCK_TEXT_SIZE_CLASSES[questionFontSize]} text-slate-200 sm:grid-cols-2`}>{selectedPassage.headingBank.map((heading) => <p key={heading.id}><b>{heading.id}.</b> {heading.text}</p>)}</div>}
-            <div className="space-y-2">
-              {group.questions.map((question) => {
-                const key = answerKey(selectedPassage, question);
-                const value = answers[key] ?? "";
-                const number = questions.findIndex((item) => item.key === key) + 1;
-                const set = (next) => setAnswer(key, next);
-                return <div key={key} id={`mock-q-${number}`} onFocusCapture={() => setActiveQuestionNumber(number)} className="scroll-m-4 rounded-lg border border-white/15 bg-slate-900 p-3">
-                  <p className={`mb-3 ${MOCK_TEXT_SIZE_CLASSES[questionFontSize]} leading-7 text-slate-100`}><b className="mr-2 text-sky-200">{number}.</b>{question.type === "sentence-completion" ? <>{question.before} <input aria-label={`Answer for question ${number}, maximum ${question.maxWords || 1} word${(question.maxWords || 1) === 1 ? "" : "s"}`} maxLength={120} className={`mx-1 w-32 border-b border-sky-300 bg-slate-950 px-1 text-slate-100 ${MOCK_TEXT_SIZE_CLASSES[questionFontSize]}`} value={value} onChange={(event) => { const next = event.target.value; if (next.trim().split(/\s+/).filter(Boolean).length <= (question.maxWords || 1)) set(next); }} /> {question.after}</> : question.type === "matching-headings" ? question.paragraphLabel : question.prompt}</p>
-                  {ANSWER_OPTIONS[question.type] ? <div className="flex flex-wrap gap-2">{ANSWER_OPTIONS[question.type].map((option) => <button type="button" key={option} onClick={() => set(option)} aria-pressed={value === option} className={`min-h-10 rounded-lg border px-3 py-2 ${MOCK_TEXT_SIZE_CLASSES[questionFontSize]} ${value === option ? "border-sky-300 bg-sky-950 text-white" : "border-slate-500 bg-slate-700 text-slate-100 hover:bg-slate-600"}`}>{option}</button>)}</div> : question.type === "multiple-choice" ? <div className="grid gap-2">{question.options.map((option) => <button type="button" key={option.key} onClick={() => set(option.key)} aria-pressed={value === option.key} className={`min-h-10 rounded-lg border px-3 py-2 text-left ${MOCK_TEXT_SIZE_CLASSES[questionFontSize]} ${value === option.key ? "border-sky-300 bg-sky-950 text-white" : "border-slate-500 bg-slate-700 text-slate-100 hover:bg-slate-600"}`}>{option.key}. {option.text}</button>)}</div> : question.type === "matching-headings" ? <select aria-label={`Choose a heading for question ${number}`} value={value} onChange={(event) => set(event.target.value)} className={`min-h-10 max-w-full rounded-lg border border-slate-500 bg-slate-950 px-3 py-2 ${MOCK_TEXT_SIZE_CLASSES[questionFontSize]} text-slate-100`}><option value="">Choose a heading</option>{selectedPassage.headingBank?.map((heading) => <option key={heading.id} value={heading.id}>{heading.id}. {heading.text}</option>)}</select> : question.type === "sentence-completion" ? null : <input aria-label={`Answer for question ${number}`} value={value} onChange={(event) => set(event.target.value)} className={`min-h-10 w-full rounded-lg border border-slate-500 bg-slate-950 px-3 py-2 ${MOCK_TEXT_SIZE_CLASSES[questionFontSize]} text-slate-100`} />}
-                </div>;
-              })}
-            </div>
-          </section>)}
-        </div>
-      </section>
-    </div>
-
-    <nav aria-label="Question navigator" className="shrink-0 border-t border-white/15 bg-slate-950 px-2 py-2 sm:px-3">
-      <div className="hidden grid-cols-[repeat(40,minmax(0,1fr))] gap-1 xl:grid">
-        {questions.map((item, index) => renderNavigatorButton(item, index))}
-      </div>
-      <div className="xl:hidden">
-        <div role="tablist" aria-label="Question ranges" className="mb-2 flex gap-1">
-          {mobileQuestionRanges.map((range, index) => <button key={range.label} type="button" role="tab" aria-selected={navigatorGroup === index} onClick={() => setNavigatorGroup(index)} className={`min-h-8 flex-1 rounded-md border px-2 text-xs font-semibold ${navigatorGroup === index ? "border-sky-300 bg-sky-950 text-white" : "border-slate-600 bg-slate-800 text-slate-200"}`}>Questions {range.label}</button>)}
-        </div>
-        <div className="flex gap-1 overflow-x-auto pb-1" aria-label={`Questions ${mobileQuestionRanges[navigatorGroup].label}`}>
-          {questions.map((item, index) => ({ item, index })).filter(({ index }) => index + 1 >= mobileQuestionRanges[navigatorGroup].first && index + 1 <= mobileQuestionRanges[navigatorGroup].last).map(({ item, index }) => renderNavigatorButton(item, index))}
-        </div>
-      </div>
-    </nav>
-
-    {showSubmit && <div className="fixed inset-0 z-[120] grid place-items-center bg-black/80 p-4"><section ref={submitDialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="mock-submit-title" className="w-full max-w-md rounded-2xl border border-white/15 bg-slate-900 p-6 text-slate-100"><h2 id="mock-submit-title" className="text-xl font-bold text-white">Submit the mock test?</h2><p className="mt-2 text-slate-200">You answered {answeredCount} of 40 questions. Unanswered questions will be marked as skipped.</p><div className="mt-5 flex justify-end gap-3"><button type="button" onClick={() => setShowSubmit(false)} className="min-h-10 rounded-lg border border-slate-500 px-4 py-2 text-slate-100">Keep working</button><button type="button" onClick={() => void finish(false)} className="min-h-10 rounded-lg bg-sky-500 px-4 py-2 font-bold text-slate-950">Submit test</button></div></section></div>}
-  </main>;
+  return (
+    <MockExamScreen
+      passages={passages}
+      questions={questions}
+      answers={answers}
+      onAnswer={setAnswer}
+      remaining={remaining}
+      highlightStates={highlightStates}
+      flags={flags}
+      onToggleFlag={handleToggleFlag}
+      focusWarning={focusWarning}
+      onExit={exitMock}
+      onSubmit={() => void finish(false)}
+    />
+  );
 }
