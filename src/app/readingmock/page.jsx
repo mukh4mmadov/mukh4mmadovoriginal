@@ -13,6 +13,7 @@ import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 import { locateEvidence } from "@/lib/reading/evidence-locator.mjs";
 import EvidenceViewer from "@/components/reading/EvidenceViewer";
 import MockExamScreen from "@/components/reading/MockExamScreen";
+import ShareResultButton from "@/components/shared/ShareResultButton";
 import { toggleFlag } from "@/lib/exam/exam-settings.mjs";
 import { ArrowLeft, ArrowRight, MapPin } from "lucide-react";
 import { fullMockFor, saveFullMockResult } from "@/lib/mock/full-mock.mjs";
@@ -342,7 +343,7 @@ export default function FullMockPage() {
       </div>
     ) : <Link href="/reading" className="inline-flex items-center gap-2 text-sm text-brand-300"><ArrowLeft size={16}/>Back to practice</Link>}
     <section className="mt-6 rounded-3xl border border-white/10 bg-slate-900 p-6 sm:p-10">
-      <p className="text-xs font-bold uppercase tracking-[.2em] text-brand-300">Full Reading Mock · Practice result, not an official IELTS score</p>
+      <div className="flex flex-wrap items-start justify-between gap-3"><p className="text-xs font-bold uppercase tracking-[.2em] text-brand-300">Full Reading Mock · Practice result, not an official IELTS score</p><ShareResultButton card={{ kind: "IELTS Reading mock", band: resultBand, bandLabel: "Reading band", detail: `${result.rawScore}/40 correct` }} /></div>
       <div className="mt-5 flex flex-wrap items-end gap-6"><div><h1 className="text-5xl font-black">{result.rawScore}<span className="text-2xl text-slate-400">/40</span></h1><p className="mt-2 text-slate-300">Correct answers</p></div><div><p className="text-4xl font-bold">{resultBand == null ? "Band estimate unavailable" : `Band ${Number(resultBand).toFixed(1)}`}</p><p className="mt-2 text-slate-400">{resultBand == null ? "No supported band estimate for this score" : "Approximate Academic Reading conversion"}</p></div><div><p className="text-2xl font-bold">{skippedCount}</p><p className="mt-2 text-slate-400">Skipped</p></div><div><p className="text-2xl font-bold">{Math.floor(result.elapsedSeconds / 60)}:{String(result.elapsedSeconds % 60).padStart(2,"0")}</p><p className="mt-2 text-slate-400">Time used</p></div></div>
       <p className="mt-5 rounded-xl bg-amber-300/10 p-4 text-sm text-amber-100">This conversion is approximate practice guidance. It is not an official IELTS result; official band boundaries can vary by test.</p>{result.autoSubmitted&&<p role="status" className="mt-3 rounded-xl bg-amber-300/10 p-4 text-sm text-amber-100">This mock was submitted automatically.</p>}
       <h2 className="mt-8 text-xl font-bold">Section analysis</h2><div className="mt-3 grid gap-3 md:grid-cols-3">{result.sections.map((section) => <article key={section.title} className="rounded-xl border border-white/10 p-4"><p className="text-xs uppercase text-slate-400">{section.difficulty} · {section.answered}/{section.total} answered</p><h3 className="mt-2 font-semibold">{section.title}</h3><p className="mt-3 text-2xl font-bold">{section.correct}/{section.total}</p></article>)}</div>

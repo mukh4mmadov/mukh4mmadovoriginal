@@ -10,6 +10,7 @@ import { saveWritingResultLocally, writingDraftKey } from "@/lib/writing/writing
 import { makeAttemptUuid } from "@/lib/reading/reading-attempt-outbox.mjs";
 import WritingExamScreen from "@/components/writing/WritingExamScreen";
 import WritingFeedback from "@/components/writing/WritingFeedback";
+import ShareResultButton from "@/components/shared/ShareResultButton";
 import { requestWritingFeedback } from "@/lib/writing/request-feedback";
 import { premiumEssays } from "@/lib/writing/premium.mjs";
 import { createPremiumRequest } from "@/lib/writing/premium-requests";
@@ -105,6 +106,7 @@ export default function WritingEditor({ task }) {
           <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-300">{result.essay}</p>
         </details>
         <div className="mt-6 flex flex-wrap gap-3">
+          <ShareResultButton card={{ kind: `IELTS Writing Task ${task.task}`, band: result.overall, bandLabel: "Writing band", detail: task.title }} />
           <button type="button" onClick={startAgain} className="btn-secondary"><RotateCcw size={18} aria-hidden="true" /> Write it again</button>
           <Link href="/writing" className="btn-secondary">Choose another task</Link>
           <Link href="/writing/test" className="btn-primary">Try a full Writing test</Link>

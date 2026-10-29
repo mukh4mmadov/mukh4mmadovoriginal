@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import AIChatPanel from "@/components/ai/AIChatPanel";
 import Link from "next/link";
+import ShareResultButton from "@/components/shared/ShareResultButton";
 import { addMissedQuestionsToReviewQueue, formatAnswer, getReviewQueue, isAnswerCorrect } from "@/lib/reading/answer-review";
 import { renumberInstructions } from "@/lib/reading/question-numbering.mjs";
 import { locateEvidence } from "@/lib/reading/evidence-locator.mjs";
@@ -304,6 +305,7 @@ export default function ReadingTestResults({
             </h2>
             <p className="premium-text-muted mt-2 text-sm">Practice result only. This is not an official IELTS score or band.</p>
           </div>
+          <ShareResultButton card={{ kind: "IELTS Reading practice", headline: `${correctCount}/${questions.length}`, progress: questions.length ? correctCount / questions.length : 0, bandLabel: "correct answers", detail: passage.title }} />
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

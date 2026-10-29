@@ -12,6 +12,7 @@ import { saveWritingResultLocally } from "@/lib/writing/writing-history.mjs";
 import { makeAttemptUuid } from "@/lib/reading/reading-attempt-outbox.mjs";
 import WritingExamScreen from "@/components/writing/WritingExamScreen";
 import WritingFeedback from "@/components/writing/WritingFeedback";
+import ShareResultButton from "@/components/shared/ShareResultButton";
 import { PremiumRequestSaved } from "@/components/writing/PremiumPayment";
 import { premiumEssays } from "@/lib/writing/premium.mjs";
 import { createPremiumRequest } from "@/lib/writing/premium-requests";
@@ -218,6 +219,7 @@ export default function WritingTest() {
               : `Part 1: ${formatBand(first.result.overall)} · Part 2: ${formatBand(second.result.overall)}. Part 2 counts twice as much as Part 1, as in IELTS.`}
           </p>
           <p className="mt-1 text-xs text-slate-400">An AI estimate for practice, not an official IELTS score.</p>
+          {overall != null && <div className="mt-4"><ShareResultButton card={{ kind: "IELTS Writing test", band: overall, bandLabel: "Writing band", parts: [{ label: "Task 1", value: formatBand(first.result.overall) }, { label: "Task 2", value: formatBand(second.result.overall) }] }} /></div>}
         </section>
         {results.map((item, index) => (
           <section key={item.task.slug} className="mt-8" aria-labelledby={`writing-test-part-${index}`}>
