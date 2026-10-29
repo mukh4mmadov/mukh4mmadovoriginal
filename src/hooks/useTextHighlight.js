@@ -101,83 +101,31 @@ export function useTextHighlight(
     [toggleToken],
   );
 
+  // Highlights (or, with erase, clears) the selected words. The colour and
+  // erase mode default to the toolbar's, and can be given per call (the
+  // exam selection menu does that).
   const handleSelection = useCallback(
-    (containerKey, containerElement) => {
-      const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
-        return;
-      }
-
-      const range = selection.getRangeAt(0);
-      const containerRange = document.createRange();
-      containerRange.selectNodeContents(containerElement);
-
-      const isWithinContainer =
-        range.compareBoundaryPoints(Range.START_TO_START, containerRange) >=
-          0 &&
-        range.compareBoundaryPoints(Range.END_TO_END, containerRange) <= 0;
-
-      if (!isWithinContainer) return;
-
-      const selectedText = selection.toString().trim();
-      if (selectedText.length === 0) return;
-
-      const tokenElements = Array.from(
-        containerElement.querySelectorAll("[data-token-key]"),
-      );
-
-      const selectedKeys = [];
-
-      for (const tokenElement of tokenElements) {
-        const tokenRange = document.createRange();
-        tokenRange.selectNodeContents(tokenElement);
-
-        const startToEnd = range.compareBoundaryPoints(
-          Range.START_TO_END,
-          tokenRange,
-        );
-        const endToStart = range.compareBoundaryPoints(
-          Range.END_TO_START,
-          tokenRange,
-        );
-
-        const intersects = startToEnd >= 0 && endToStart <= 0;
-
-        if (intersects) {
-          const tokenKey = tokenElement.getAttribute("data-token-key");
-          if (tokenKey) {
-            selectedKeys.push(tokenKey);
-          }
-        }
-      }
-
-      const tokenTexts = [];
-      for (const key of selectedKeys) {
-        const el = containerElement.querySelector(
-          `[data-token-key="${key}"]`,
-        );
-        if (el) {
-          tokenTexts.push(el.textContent?.trim() || "");
-        }
-      }
+    (containerKey, containerElement, options = {}) => {
+      const selectedKeys = selectedTokenKeys(containerElement);
+      if (selectedKeys.length === 0) return;
+      const erase = options.erase ?? eraseMode;
+      const color = options.color ?? selectedColor;
+      const tokenTexts = selectedKeys.map((key) => containerElement.querySelector(`[data-token-key="${key}"]`)?.textContent?.trim() || "");
 
       setHighlights((prev) => {
         const next = { ...prev };
-        const container = next[containerKey] || {};
-        const current = { ...container };
+        const current = { ...(next[containerKey] || {}) };
 
         selectedKeys.forEach((key, idx) => {
           const tokenText = tokenTexts[idx];
-          if (eraseMode) {
+          if (erase) {
             if (current[key]) {
               delete current[key];
               onHighlightRemove?.(tokenText);
             }
-          } else {
-            if (!current[key]) {
-              current[key] = selectedColor;
-              onHighlight?.(tokenText);
-            }
+          } else if (current[key] !== color) {
+            if (!current[key]) onHighlight?.(tokenText);
+            current[key] = color;
           }
         });
 
@@ -188,7 +136,36 @@ export function useTextHighlight(
     [eraseMode, onHighlight, onHighlightRemove, selectedColor],
   );
 
+  // Same as handleSelection, for word keys captured earlier (the selection
+  // menu keeps them, since tapping a menu button can clear the selection).
+  const applyToTokens = useCallback(
+    (containerKey, tokenKeys, texts = [], options = {}) => {
+      if (!tokenKeys?.length) return;
+      const erase = options.erase ?? false;
+      const color = options.color ?? selectedColor;
+      setHighlights((prev) => {
+        const next = { ...prev };
+        const current = { ...(next[containerKey] || {}) };
+        tokenKeys.forEach((key, idx) => {
+          if (erase) {
+            if (current[key]) {
+              delete current[key];
+              onHighlightRemove?.(texts[idx] || "");
+            }
+          } else if (current[key] !== color) {
+            if (!current[key]) onHighlight?.(texts[idx] || "");
+            current[key] = color;
+          }
+        });
+        next[containerKey] = current;
+        return next;
+      });
+    },
+    [onHighlight, onHighlightRemove, selectedColor],
+  );
+
   return {
+    applyToTokens,
     highlights: currentHighlights,
     eraseMode,
     toggleEraseMode,
@@ -200,4 +177,32 @@ export function useTextHighlight(
     selectedColor,
     setSelectedColor,
   };
+}
+
+// Token keys of the words the current text selection touches, if the
+// selection lies inside containerElement.
+export function selectedTokenKeys(containerElement) {
+  const selection = typeof window !== "undefined" ? window.getSelection() : null;
+  if (!containerElement || !selection || selection.rangeCount === 0 || selection.isCollapsed) return [];
+  if (!selection.toString().trim()) return [];
+
+  const range = selection.getRangeAt(0);
+  const containerRange = document.createRange();
+  containerRange.selectNodeContents(containerElement);
+  const isWithinContainer =
+    range.compareBoundaryPoints(Range.START_TO_START, containerRange) >= 0 &&
+    range.compareBoundaryPoints(Range.END_TO_END, containerRange) <= 0;
+  if (!isWithinContainer) return [];
+
+  const keys = [];
+  for (const tokenElement of containerElement.querySelectorAll("[data-token-key]")) {
+    const tokenRange = document.createRange();
+    tokenRange.selectNodeContents(tokenElement);
+    const intersects =
+      range.compareBoundaryPoints(Range.START_TO_END, tokenRange) >= 0 &&
+      range.compareBoundaryPoints(Range.END_TO_START, tokenRange) <= 0;
+    const tokenKey = tokenElement.getAttribute("data-token-key");
+    if (intersects && tokenKey) keys.push(tokenKey);
+  }
+  return keys;
 }

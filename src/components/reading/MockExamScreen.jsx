@@ -8,6 +8,7 @@ import ExamQuestionBar from "@/components/exam/ExamQuestionBar";
 import ExamReviewDialog from "@/components/exam/ExamReviewDialog";
 import SplitPane from "@/components/exam/SplitPane";
 import ReadingQuestionList from "@/components/exam/ReadingQuestionList";
+import { HeadingDropZone, paragraphLetter } from "@/components/exam/HeadingDragDrop";
 import HighlightablePassage from "@/components/reading/HighlightablePassage";
 import FullscreenToggle from "@/components/shared/FullscreenToggle";
 import ReportPassageIssueButton from "@/components/shared/ReportPassageIssueButton";
@@ -27,6 +28,7 @@ export default function MockExamScreen({ passages, questions, answers, onAnswer,
   const [current, setCurrent] = useState(1);
   const [mobileTab, setMobileTab] = useState("left");
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [pickedHeading, setPickedHeading] = useState(null);
   const timerWarning = useTimerWarning(remaining, settings.timerWarnings);
 
   const keyFor = (question) => questions.find((item) => item.question === question)?.key;
@@ -64,6 +66,32 @@ export default function MockExamScreen({ passages, questions, answers, onAnswer,
       .map(({ item, number }) => ({ number, answered: isAnswered(answers[item.key]), flagged: flags.includes(number) })),
   }));
   const unanswered = questions.map((item, index) => (isAnswered(answers[item.key]) ? null : index + 1)).filter(Boolean);
+  const headingItems = passage?.headingBank?.length
+    ? questions.map((item, index) => ({ ...item, number: index + 1 })).filter((item) => item.passageIndex === passageIndex && item.question.type === "matching-headings")
+    : [];
+  const headingTools = headingItems.length > 0 ? {
+    picked: pickedHeading,
+    usedIds: new Set(headingItems.map((item) => answers[item.key]).filter(Boolean)),
+    onPick: (id) => {
+      setPickedHeading(id);
+      if (id && window.matchMedia("(max-width: 1023px)").matches) setMobileTab("left");
+    },
+  } : undefined;
+  const renderDropZone = (paragraph) => {
+    const item = headingItems.find((candidate) => paragraphLetter(candidate.question) === String(paragraph.label || "").toUpperCase());
+    if (!item) return null;
+    return (
+      <HeadingDropZone
+        number={item.number}
+        headingBank={passage.headingBank}
+        value={answers[item.key]}
+        picked={pickedHeading}
+        onPlace={(headingId) => { onAnswer(item.key, headingId); setPickedHeading(null); setCurrent(item.number); }}
+        onClear={() => onAnswer(item.key, "")}
+        onFocusQuestion={() => goTo(item.number)}
+      />
+    );
+  };
 
   return (
     <ExamShell settings={settings}>
@@ -99,7 +127,7 @@ export default function MockExamScreen({ passages, questions, answers, onAnswer,
         left={(
           <div className="exam-passage">
             <h2>{passage.title}</h2>
-            <HighlightablePassage paragraphs={passage.paragraphs} fontSize="inherit" highlightState={highlightStates[passageIndex]} highContrastHighlights={settings.scheme !== "standard"} />
+            <HighlightablePassage paragraphs={passage.paragraphs} fontSize="inherit" highlightState={highlightStates[passageIndex]} highContrastHighlights={settings.scheme !== "standard"} notesKey={`mock-${passage.slug}`} renderBeforeParagraph={headingTools ? renderDropZone : undefined} />
           </div>
         )}
         right={(
@@ -112,6 +140,7 @@ export default function MockExamScreen({ passages, questions, answers, onAnswer,
             flags={flags}
             onFocusQuestion={setCurrent}
             idPrefix="mock-q"
+            headingTools={headingTools}
           />
         )}
       />

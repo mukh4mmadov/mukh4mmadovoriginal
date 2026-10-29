@@ -9,6 +9,7 @@ import ExamQuestionBar from "@/components/exam/ExamQuestionBar";
 import ExamReviewDialog from "@/components/exam/ExamReviewDialog";
 import SplitPane from "@/components/exam/SplitPane";
 import ReadingQuestionList from "@/components/exam/ReadingQuestionList";
+import { HeadingDropZone, paragraphLetter } from "@/components/exam/HeadingDragDrop";
 import HighlightablePassage from "@/components/reading/HighlightablePassage";
 import HighlightableText from "@/components/reading/HighlightableText";
 import { useExamSettings } from "@/hooks/useExamSettings";
@@ -84,6 +85,7 @@ export default function PracticeExamScreen({
   const [current, setCurrent] = useState(1);
   const [mobileTab, setMobileTab] = useState("left");
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [pickedHeading, setPickedHeading] = useState(null);
   const timerWarning = useTimerWarning(timerRunning ? remainingSeconds : null, settings.timerWarnings);
   const questions = passage.questionGroups.flatMap((group) => group.questions);
 
@@ -113,6 +115,32 @@ export default function PracticeExamScreen({
     questions: questions.map((question, index) => ({ number: index + 1, answered: isAnswered(answers[question.id]), flagged: flags.includes(index + 1) })),
   }];
   const unanswered = questions.map((question, index) => (isAnswered(answers[question.id]) ? null : index + 1)).filter(Boolean);
+  const headingQuestions = passage.headingBank?.length ? questions.filter((question) => question.type === "matching-headings") : [];
+  const headingTools = headingQuestions.length > 0 ? {
+    picked: pickedHeading,
+    usedIds: new Set(headingQuestions.map((question) => answers[question.id]).filter(Boolean)),
+    onPick: (id) => {
+      setPickedHeading(id);
+      // On phones the paragraphs are on the other tab.
+      if (id && window.matchMedia("(max-width: 1023px)").matches) setMobileTab("left");
+    },
+  } : undefined;
+  const renderDropZone = (paragraph) => {
+    const question = headingQuestions.find((item) => paragraphLetter(item) === String(paragraph.label || "").toUpperCase());
+    if (!question) return null;
+    const number = questions.indexOf(question) + 1;
+    return (
+      <HeadingDropZone
+        number={number}
+        headingBank={passage.headingBank}
+        value={answers[question.id]}
+        picked={pickedHeading}
+        onPlace={(headingId) => { onAnswer(question.id, headingId); setPickedHeading(null); select(number); }}
+        onClear={() => onAnswer(question.id, "")}
+        onFocusQuestion={() => goTo(number)}
+      />
+    );
+  };
   const answeredCount = questions.length - unanswered.length;
 
   return (
@@ -162,6 +190,8 @@ export default function PracticeExamScreen({
               highContrastHighlights={settings.scheme !== "standard"}
               savedTermIds={savedTermIds}
               onSaveWord={onSaveWord}
+              notesKey={passage.slug}
+              renderBeforeParagraph={headingTools ? renderDropZone : undefined}
             />
           </div>
         )}
@@ -174,6 +204,7 @@ export default function PracticeExamScreen({
             flags={flags}
             onFocusQuestion={select}
             idPrefix="reading-q"
+            headingTools={headingTools}
             renderText={(text, key) => (text ? <HighlightableText fontSize="inherit" containerKey={key} highlightState={highlightState}>{text}</HighlightableText> : null)}
           />
         )}

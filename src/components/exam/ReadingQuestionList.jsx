@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { renumberInstructions } from "@/lib/reading/question-numbering.mjs";
+import { HeadingChips } from "@/components/exam/HeadingDragDrop";
 
 const CHOICES = {
   "true-false-not-given": ["TRUE", "FALSE", "NOT GIVEN"],
@@ -57,7 +58,7 @@ function QuestionInput({ question, passage, number, value, onChange }) {
  * firstNumber; answers are read and written through getValue / onAnswer.
  * renderText can wrap prompts (e.g. to make them highlightable).
  */
-export default function ReadingQuestionList({ passage, firstNumber = 1, getValue, onAnswer, current, flags = [], onFocusQuestion, idPrefix = "exam-q", renderText = plain }) {
+export default function ReadingQuestionList({ passage, firstNumber = 1, getValue, onAnswer, current, flags = [], onFocusQuestion, idPrefix = "exam-q", renderText = plain, headingTools }) {
   const [limitErrors, setLimitErrors] = useState({});
   let number = firstNumber - 1;
 
@@ -76,7 +77,10 @@ export default function ReadingQuestionList({ passage, firstNumber = 1, getValue
                 <div className="grid grid-cols-2 gap-1 sm:grid-cols-3">{group.wordBank.map((word) => <p key={word.id}><b>{word.id}</b> {word.text}</p>)}</div>
               </div>
             )}
-            {group.questions[0]?.type === "matching-headings" && passage.headingBank?.length > 0 && (
+            {group.questions[0]?.type === "matching-headings" && passage.headingBank?.length > 0 && headingTools && (
+              <HeadingChips headings={passage.headingBank} usedIds={headingTools.usedIds} picked={headingTools.picked} onPick={headingTools.onPick} />
+            )}
+            {group.questions[0]?.type === "matching-headings" && passage.headingBank?.length > 0 && !headingTools && (
               <div className="exam-box">
                 <p className="exam-box-title">List of headings</p>
                 <div className="grid gap-1">{passage.headingBank.map((heading) => <p key={heading.id}><b>{heading.id}</b> {heading.text}</p>)}</div>
