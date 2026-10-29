@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Clock, PenLine, RotateCcw, Shuffle } from "lucide-react";
+import { ArrowLeft, ArrowRight, Clock, PenLine, RotateCcw, Shuffle, Trophy } from "lucide-react";
 import writingTasks, { countWords, getWritingTask, WRITING_TASK_RULES } from "@/data/writingTasks";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAccountUserId } from "@/lib/auth/account";
@@ -15,6 +15,7 @@ import WritingFeedback from "@/components/writing/WritingFeedback";
 import { PremiumRequestSaved } from "@/components/writing/PremiumPayment";
 import { premiumEssays } from "@/lib/writing/premium.mjs";
 import { createPremiumRequest } from "@/lib/writing/premium-requests";
+import { fullMockFor, saveFullMockResult } from "@/lib/mock/full-mock.mjs";
 
 const DRAFT_KEY = "ielts-writing-test-draft-v1";
 const DURATION = 60 * 60;
@@ -47,12 +48,32 @@ export default function WritingTest() {
   const [error, setError] = useState("");
   const [results, setResults] = useState([]);
   const [premiumRequest, setPremiumRequest] = useState(null);
+  // Set when this test was opened as Part 3 of a full mock.
+  const [fullMock, setFullMock] = useState(null);
+  const [fullMockDone, setFullMockDone] = useState(false);
 
   useEffect(() => {
     const draft = readDraft();
+    const session = fullMockFor(window.localStorage, "writing", window.location.search);
+    const mockTasks = session?.writingSlugs.map(getWritingTask);
+    if (mockTasks?.length === 2 && mockTasks.every(Boolean)) {
+      setFullMock(session);
+      // Only resume a draft written for these same two tasks.
+      const sameTasks = draft && draft.taskSlugs.join() === session.writingSlugs.join();
+      setSavedDraft(sameTasks ? draft : null);
+      setPair(mockTasks);
+      return;
+    }
     setSavedDraft(draft);
     setPair(draft?.tasks || pickWritingTestPair(writingTasks));
   }, []);
+
+  const finishFullMock = (result) => {
+    if (!fullMock) return;
+    saveFullMockResult(window.localStorage, "writing", result);
+    setFullMock(null);
+    setFullMockDone(true);
+  };
 
   const saveDraft = useCallback(({ essays, elapsed }) => {
     if (!pair) return;
@@ -79,8 +100,10 @@ export default function WritingTest() {
     setError("");
     if (mode === "premium") {
       try {
-        setPremiumRequest(await createPremiumRequest(accountUserId, premiumEssays(pair, essays, countWords)));
+        const request = await createPremiumRequest(accountUserId, premiumEssays(pair, essays, countWords));
+        setPremiumRequest(request);
         try { window.localStorage.removeItem(DRAFT_KEY); } catch { /* fine */ }
+        finishFullMock({ band: null, pending: true, premiumRequestId: request.id });
         setStage("premium");
         window.scrollTo({ top: 0 });
       } catch (cause) {
@@ -127,6 +150,12 @@ export default function WritingTest() {
       return;
     }
     try { window.localStorage.removeItem(DRAFT_KEY); } catch { /* fine */ }
+    const [firstMarked, secondMarked] = marked;
+    finishFullMock({
+      band: combinedWritingBand(firstMarked?.result?.overall, secondMarked?.result?.overall),
+      task1: firstMarked?.result?.overall ?? null,
+      task2: secondMarked?.result?.overall ?? null,
+    });
     setResults(marked);
     setStage("done");
     window.scrollTo({ top: 0 });
@@ -134,7 +163,14 @@ export default function WritingTest() {
 
   if (!pair) return null;
 
-  if (stage === "premium" && premiumRequest) return <PremiumRequestSaved request={premiumRequest} />;
+  const fullMockLink = fullMockDone && (
+    <div role="status" className="mx-auto mt-6 flex max-w-4xl flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-400/40 bg-brand-500/15 p-4">
+      <p className="flex items-center gap-2 text-sm text-slate-100"><Trophy size={18} className="text-brand-300" aria-hidden="true" /><span><strong>Full mock finished!</strong> See your overall band.</span></p>
+      <Link href="/full-mock" className="btn-primary">See my full mock result <ArrowRight size={16} aria-hidden="true" /></Link>
+    </div>
+  );
+
+  if (stage === "premium" && premiumRequest) return <>{fullMockLink}<PremiumRequestSaved request={premiumRequest} /></>;
 
   if (stage === "writing" || stage === "marking") {
     const blockedReason = isLoading
@@ -145,7 +181,7 @@ export default function WritingTest() {
     return (
       <WritingExamScreen
         tasks={pair}
-        title="IELTS Academic Writing test"
+        title={fullMock ? "Full mock · Part 3 of 3: Writing" : "IELTS Academic Writing test"}
         durationSeconds={DURATION}
         initialEssays={initial.essays}
         initialElapsed={initial.elapsed}
@@ -154,6 +190,7 @@ export default function WritingTest() {
         submitting={stage === "marking"}
         blockedReason={blockedReason}
         exitLabel="Save & exit"
+        exitHref={fullMock ? "/full-mock" : "/writing"}
         premium
       >
         {progress && <p role="status" className="exam-toast">{progress}</p>}
@@ -167,6 +204,7 @@ export default function WritingTest() {
     const overall = combinedWritingBand(first?.result?.overall, second?.result?.overall);
     return (
       <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+        {fullMockLink && <div className="-mt-6 mb-6">{fullMockLink}</div>}
         <Link href="/writing" className="mb-4 inline-flex min-h-11 items-center gap-2 text-sm text-slate-400 hover:text-white">
           <ArrowLeft size={16} aria-hidden="true" /> Writing practice
         </Link>
@@ -211,7 +249,7 @@ export default function WritingTest() {
       <Link href="/writing" className="mb-4 inline-flex min-h-11 items-center gap-2 text-sm text-slate-400 hover:text-white">
         <ArrowLeft size={16} aria-hidden="true" /> Writing practice
       </Link>
-      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.28em] text-brand-400">Full Writing test</p>
+      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.28em] text-brand-400">{fullMock ? "Full mock · Part 3 of 3" : "Full Writing test"}</p>
       <h1 className="section-title mb-3">IELTS Academic Writing test</h1>
       <p className="section-subtitle mb-6 max-w-2xl">Two tasks in 60 minutes, in the same layout as the computer-delivered exam. When you submit, both tasks get AI feedback and you get an overall Writing band.</p>
 
@@ -224,7 +262,7 @@ export default function WritingTest() {
       <section className="surface-card mb-6" aria-labelledby="writing-test-tasks">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 id="writing-test-tasks" className="text-lg font-bold text-slate-100">{savedDraft ? "Your unfinished test" : "Your tasks"}</h2>
-          {!savedDraft && (
+          {!savedDraft && !fullMock && (
             <button type="button" className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-white/10 px-3 text-sm text-slate-300 hover:bg-white/5" onClick={() => setPair(pickWritingTestPair(writingTasks))}>
               <Shuffle size={15} aria-hidden="true" /> Different tasks
             </button>
@@ -245,7 +283,7 @@ export default function WritingTest() {
         {savedDraft ? (
           <>
             <button type="button" className="btn-primary" onClick={() => start(true)}>Resume test ({Math.ceil(draftLeft / 60)} minutes left)</button>
-            <button type="button" className="btn-secondary" onClick={() => { try { window.localStorage.removeItem(DRAFT_KEY); } catch { /* fine */ } setSavedDraft(null); setPair(pickWritingTestPair(writingTasks)); }}>Start a new test instead</button>
+            <button type="button" className="btn-secondary" onClick={() => { try { window.localStorage.removeItem(DRAFT_KEY); } catch { /* fine */ } setSavedDraft(null); if (!fullMock) setPair(pickWritingTestPair(writingTasks)); }}>Start a new test instead</button>
           </>
         ) : (
           <button type="button" className="btn-primary" onClick={() => start(false)}>Start the 60-minute test</button>

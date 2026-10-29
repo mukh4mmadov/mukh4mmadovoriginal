@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, Flag, Headphones, LogOut, Volume2, X } from "lucide-react";
+import { ArrowRight, CheckCircle2, Flag, Headphones, LogOut, Volume2, X } from "lucide-react";
 import ExamShell from "@/components/exam/ExamShell";
 import ExamTopBar from "@/components/exam/ExamTopBar";
 import { useExamSettings } from "@/hooks/useExamSettings";
@@ -12,6 +12,7 @@ import { saveListeningAttemptToAccount } from "@/hooks/useListeningHistory";
 import { getAccountUserId } from "@/lib/auth/account";
 import { buildListeningAttempt, listeningResultSignature, saveListeningAttemptLocally } from "@/lib/listening/listening-results.mjs";
 import { makeAttemptUuid } from "@/lib/reading/reading-attempt-outbox.mjs";
+import { fullMockFor, saveFullMockResult } from "@/lib/mock/full-mock.mjs";
 
 export default function ListeningTestExperience({ test, html }) {
   const audioRef = useRef(null);
@@ -19,6 +20,10 @@ export default function ListeningTestExperience({ test, html }) {
   const reportRef = useRef(null);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [savedResult, setSavedResult] = useState(null);
+  // Set when this test was opened as Part 1 of a full mock.
+  const [fullMock, setFullMock] = useState(null);
+  const [fullMockDone, setFullMockDone] = useState(false);
+  const fullMockRef = useRef(null);
   const { user, profile, isLoading } = useAuth();
   const accountUserId = getAccountUserId(user, profile, isLoading);
   const accountUserIdRef = useRef(accountUserId);
@@ -32,12 +37,24 @@ export default function ListeningTestExperience({ test, html }) {
     accountUserIdRef.current = accountUserId;
   }, [accountUserId]);
 
+  useEffect(() => {
+    const session = fullMockFor(window.localStorage, "listening", window.location.search);
+    const mine = session?.listeningSlug === test.slug ? session : null;
+    fullMockRef.current = mine;
+    setFullMock(mine);
+  }, [test.slug]);
+
   const saveResult = useCallback(async (payload) => {
     const signature = listeningResultSignature(payload);
     if (!signature || signature === lastResultSignatureRef.current) return;
     const attempt = buildListeningAttempt(test, payload, { id: makeAttemptUuid(), startedAt: startedAtRef.current });
     if (!attempt) return;
     lastResultSignatureRef.current = signature;
+    if (fullMockRef.current) {
+      saveFullMockResult(window.localStorage, "listening", { score: attempt.score, total: attempt.total, band: attempt.band, testTitle: test.title });
+      fullMockRef.current = null;
+      setFullMockDone(true);
+    }
     const savedLocally = saveListeningAttemptLocally(window.localStorage, attempt);
     const userId = accountUserIdRef.current;
     let where = savedLocally ? "browser" : "none";
@@ -133,7 +150,7 @@ export default function ListeningTestExperience({ test, html }) {
   return (
     <ExamShell settings={settings}>
       <ExamTopBar
-        title="IELTS Listening"
+        title={fullMock || fullMockDone ? "Full mock · Part 1 of 3: Listening" : "IELTS Listening"}
         subtitle={`${test.title} · 4 parts · ${test.questionCount} questions · ${test.durationMinutes} minutes`}
         settings={settings}
         onSettingsChange={updateSettings}
@@ -142,7 +159,7 @@ export default function ListeningTestExperience({ test, html }) {
         <button ref={reportRef} type="button" className="exam-btn hidden sm:inline-flex" onClick={(event) => report(event.currentTarget)} aria-label="Report an issue with this test">
           <Flag size={16} aria-hidden="true" /><span className="exam-btn-label">Report issue</span>
         </button>
-        <Link href="/listening" className="exam-btn" aria-label="Exit to all Listening tests">
+        <Link href={fullMock || fullMockDone ? "/full-mock" : "/listening"} className="exam-btn" aria-label={fullMock || fullMockDone ? "Exit to the full mock" : "Exit to all Listening tests"}>
           <LogOut size={16} aria-hidden="true" /><span className="exam-btn-label">Exit</span>
         </Link>
       </ExamTopBar>
@@ -161,6 +178,13 @@ export default function ListeningTestExperience({ test, html }) {
               {[0.75, 1, 1.25, 1.5, 2].map((rate) => <option key={rate} value={rate} style={{ color: "#111", background: "#fff" }}>{rate === 1 ? "Normal speed" : `${rate}× speed`}</option>)}
             </select>
           </label>
+        </div>
+      )}
+
+      {fullMockDone && (
+        <div role="status" className="exam-notice flex flex-wrap items-center justify-center gap-3">
+          <p><strong>Listening done.</strong> Next: Part 2, Reading (60 minutes).</p>
+          <Link href="/readingmock?fullmock=1" className="exam-btn exam-btn-primary">Continue to Reading <ArrowRight size={16} aria-hidden="true" /></Link>
         </div>
       )}
 
