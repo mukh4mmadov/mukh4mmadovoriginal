@@ -6,7 +6,8 @@ import { pathToFileURL, fileURLToPath } from "node:url";
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const projectDirectory = resolve(scriptDirectory, "..");
 const dataDirectory = resolve(projectDirectory, "src/data");
-const playerPath = resolve(projectDirectory, "src/components/reading/ReadingTestPlayer.jsx");
+// The exam screens (passages and the full mock) render questions through this component.
+const questionRendererPath = resolve(projectDirectory, "src/components/exam/ReadingQuestionList.jsx");
 const entryDataPath = resolve(dataDirectory, "readingTests_new.js");
 const relativeImportPattern = /from\s+(["'])(\.{1,2}\/[^"']+)\1/g;
 
@@ -70,13 +71,15 @@ async function loadAssembledReadingTests() {
 }
 
 function getRenderedQuestionTypes() {
-  const playerSource = readFileSync(playerPath, "utf8");
-  const types = new Set(
-    [...playerSource.matchAll(/\bq\.type\s*===\s*["']([^"']+)["']/g)]
-      .map((match) => match[1]),
-  );
+  const rendererSource = readFileSync(questionRendererPath, "utf8");
+  const types = new Set([
+    // Explicit branches: question.type === "multiple-choice"
+    ...[...rendererSource.matchAll(/\b(?:q|question)\.type\s*===\s*["']([^"']+)["']/g)].map((match) => match[1]),
+    // Button-choice types listed in the CHOICES table: "true-false-not-given": [...]
+    ...[...rendererSource.matchAll(/^\s*["']([a-z]+(?:-[a-z]+)+)["']\s*:\s*\[/gm)].map((match) => match[1]),
+  ]);
   if (types.size === 0) {
-    throw new Error("Could not find question type render branches in ReadingTestPlayer.jsx.");
+    throw new Error("Could not find question type render branches in ReadingQuestionList.jsx.");
   }
   return types;
 }
@@ -109,7 +112,7 @@ function validateReadingTests(readingTests, renderedTypes) {
           const type = question.type;
 
           if (!renderedTypes.has(type)) {
-            errors.push(`${location}: unsupported question type "${type || "(missing type)"}"; ReadingTestPlayer has no render branch for it.`);
+            errors.push(`${location}: unsupported question type "${type || "(missing type)"}"; ReadingQuestionList has no render branch for it.`);
           }
 
           if (type === "sentence-completion") {
