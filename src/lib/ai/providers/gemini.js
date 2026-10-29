@@ -29,7 +29,7 @@ export class GeminiProvider {
     }, []);
 
     const models = [
-      this.config.model || 'gemini-3.8-flash',
+      this.config.model || 'gemini-3.5-flash-lite',
       ...(this.config.fallbackModels || []),
     ];
 
