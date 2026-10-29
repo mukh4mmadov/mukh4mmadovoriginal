@@ -1,32 +1,18 @@
 "use client";
 
 import { useMemo, useState, useRef, useEffect } from "react";
-import Timer from "@/components/shared/Timer";
-import {
-  Check,
-  AlertTriangle,
-  Type,
-  MessageCircle,
-  Send,
-  GripVertical,
-  Bot,
-} from "lucide-react";
-import HighlightablePassage from "@/components/reading/HighlightablePassage";
+import PracticeExamScreen from "@/components/reading/PracticeExamScreen";
+import { toggleFlag } from "@/lib/exam/exam-settings.mjs";
 import { useVocabulary } from "@/hooks/useVocabulary";
 import { sentenceContaining } from "@/lib/vocabulary/vocabulary-notebook.mjs";
-import HighlightableText from "@/components/reading/HighlightableText";
 import { useTextHighlight } from "@/hooks/useTextHighlight";
 import ReadingTestResults from "@/components/reading/ReadingTestResults";
-import FullscreenToggle from "@/components/shared/FullscreenToggle";
-import ReportPassageIssueButton from "@/components/shared/ReportPassageIssueButton";
 import AIChatPanel from "@/components/ai/AIChatPanel";
 import { saveAttemptLocally, saveProgress } from "@/lib/progressTracker";
 import { useAuth } from "@/contexts/AuthContext";
 import { analyticsService } from "@/lib/analytics/analytics.service";
 import { isAnswerCorrect } from "@/lib/reading/answer-review";
 import { enqueueReadingAttempt, makeAttemptUuid } from "@/lib/reading/reading-attempt-outbox.mjs";
-import { renumberInstructions } from "@/lib/reading/question-numbering.mjs";
-import { useModalAccessibility } from "@/hooks/useModalAccessibility";
 
 function allQuestions(passage) {
   return passage.questionGroups.flatMap((g) => g.questions);
@@ -57,29 +43,18 @@ export default function ReadingTestPlayer({ passage }) {
   const [remainingSeconds, setRemainingSeconds] = useState(TIMER_DURATION_SECONDS);
   const [activeQ, setActiveQ] = useState(null);
   const [timeSpent, setTimeSpent] = useState(0);
-  const [showSubmitDialog, setShowSubmitDialog] = useState(false);
-  const [submitMessage, setSubmitMessage] = useState("");
-  const [answerErrors, setAnswerErrors] = useState({});
+  const [flags, setFlags] = useState([]);
   const [draftRestored, setDraftRestored] = useState(false);
   const [draftSaveStatus, setDraftSaveStatus] = useState("");
-  const [fontSize, setFontSize] = useState("medium");
-  const [panelWidth, setPanelWidth] = useState(65);
-  const [isResizing, setIsResizing] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(true);
   const [events, setEvents] = useState([]);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [aiPersonality, setAiPersonality] = useState("friendly");
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [mobilePanel, setMobilePanel] = useState("passage");
-  const [siteHeaderHeight, setSiteHeaderHeight] = useState(0);
-  const submitDialogRef = useModalAccessibility(showSubmitDialog, () => setShowSubmitDialog(false));
   const remainingSecondsRef = useRef(TIMER_DURATION_SECONDS);
   const remainingMillisecondsRef = useRef(TIMER_DURATION_MS);
   const timerDeadlineRef = useRef(Date.now() + TIMER_DURATION_MS);
   const timerRunningRef = useRef(true);
   const submittedRef = useRef(false);
   const expireHandlerRef = useRef(null);
-  const questionRefs = useRef({});
   const previousAnswersRef = useRef({});
   const restoredDraftSlugRef = useRef(null);
 
@@ -151,85 +126,9 @@ export default function ReadingTestPlayer({ passage }) {
   };
 
   useEffect(() => {
-    try {
-      const savedSize = window.localStorage.getItem("readingFontSize");
-      if (["small", "medium", "large"].includes(savedSize)) setFontSize(savedSize);
-    } catch {
-      // Keep the default size when storage is unavailable.
-    }
-  }, []);
-
-  const changeFontSize = (size) => {
-    setFontSize(size);
-    try {
-      window.localStorage.setItem("readingFontSize", size);
-    } catch {
-      // The size still applies for this visit.
-    }
-  };
-
-  useEffect(() => {
-    const media = window.matchMedia("(min-width: 1024px)");
-    const updateLayout = () => setIsDesktop(media.matches);
-    updateLayout();
-    media.addEventListener("change", updateLayout);
-    return () => media.removeEventListener("change", updateLayout);
-  }, []);
-
-  useEffect(() => {
-    const sync = () => setIsFullscreen(Boolean(document.fullscreenElement));
-    document.addEventListener("fullscreenchange", sync);
-    sync();
-    return () => document.removeEventListener("fullscreenchange", sync);
-  }, []);
-
-  // The test fills the viewport below the sticky site header, so measure it
-  // instead of hard-coding its height.
-  useEffect(() => {
-    const header = document.querySelector(".ielts-site-navbar");
-    if (!header) return;
-    const update = () => setSiteHeaderHeight(header.getBoundingClientRect().height);
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(header);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (!isResizing) return;
-
-    const handleMove = (event) => {
-      if (!isDesktop) return;
-      const container = document.getElementById("reading-shell");
-      if (!container) return;
-      const rect = container.getBoundingClientRect();
-      const next = ((event.clientX - rect.left) / rect.width) * 100;
-      const clamped = Math.min(78, Math.max(30, next));
-      setPanelWidth(clamped);
-    };
-
-    const stopResize = () => {
-      setIsResizing(false);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-    };
-
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-    window.addEventListener("mousemove", handleMove);
-    window.addEventListener("mouseup", stopResize);
-
-    return () => {
-      window.removeEventListener("mousemove", handleMove);
-      window.removeEventListener("mouseup", stopResize);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-    };
-  }, [isResizing, isDesktop]);
-
-  useEffect(() => {
     setDraftRestored(false);
     setAnswers({});
+    setFlags([]);
     setTimeSpent(0);
     setTimerRunning(true);
     setRemainingSeconds(TIMER_DURATION_SECONDS);
@@ -309,6 +208,7 @@ export default function ReadingTestPlayer({ passage }) {
           );
           restoredRemaining = Math.ceil(restoredRemainingMs / 1000);
           setAnswers(restoredAnswers);
+          setFlags(Array.isArray(parsed.flags) ? parsed.flags.filter(Number.isInteger) : []);
           remainingSecondsRef.current = restoredRemaining;
           remainingMillisecondsRef.current = restoredRemainingMs;
           setRemainingSeconds(restoredRemaining);
@@ -349,6 +249,7 @@ export default function ReadingTestPlayer({ passage }) {
       const saveData = {
         timerVersion: 2,
         answers,
+        flags,
         remainingSeconds: getRemainingSeconds(savedAt),
         remainingMilliseconds: getRemainingMilliseconds(savedAt),
         timerRunning: timerRunningRef.current,
@@ -363,29 +264,7 @@ export default function ReadingTestPlayer({ passage }) {
     } catch (e) {
       setDraftSaveStatus("Draft could not be saved on this device");
     }
-  }, [answers, timeSpent, timerRunning, submitted, passage.slug, draftRestored]);
-
-  const answeredCount = Object.keys(answers).filter((id) => answers[id]).length;
-  const remainingCount = questions.length - answeredCount;
-  const progress = (answeredCount / questions.length) * 100;
-  const activeQuestion =
-    (activeQ ? questions.find((question) => question.id === activeQ) : null) ??
-    questions[0];
-
-  const scrollToQuestion = (questionId) => {
-    const element = questionRefs.current[questionId];
-
-    if (element) {
-      setMobilePanel("questions");
-      setActiveQ(questionId);
-      // On phones the question list may be hidden behind the passage tab, so
-      // wait for it to render before scrolling.
-      window.requestAnimationFrame(() => {
-        element.scrollIntoView({ behavior: "smooth", block: "center" });
-        element.focus({ preventScroll: true });
-      });
-    }
-  };
+  }, [answers, flags, timeSpent, timerRunning, submitted, passage.slug, draftRestored]);
 
   useEffect(() => {
     if (!draftRestored || !timerRunning || typeof window === "undefined") return;
@@ -480,8 +359,6 @@ export default function ReadingTestPlayer({ passage }) {
 
   const setAnswer = (id, value) => {
     if (submitted) return;
-    setAnswerErrors((previous) => ({ ...previous, [id]: "" }));
-    setSubmitMessage("");
     const questionNumber = questionNumbers.get(id) ?? 1;
     const oldAnswer = previousAnswersRef.current[id];
 
@@ -520,24 +397,6 @@ export default function ReadingTestPlayer({ passage }) {
     previousAnswersRef.current = { ...previousAnswersRef.current, [id]: value };
   };
 
-  const handleSubmit = () => {
-    if (submittedRef.current) return;
-    if (getRemainingSeconds() === 0) {
-      performSubmit();
-      return;
-    }
-    if (answeredCount === 0) {
-      setSubmitMessage("Answer the questions before submitting your test.");
-      scrollToQuestion(questions[0]?.id);
-      return;
-    }
-    if (remainingCount > 0) {
-      setShowSubmitDialog(true);
-      return;
-    }
-    performSubmit();
-  };
-
   const performSubmit = async () => {
     if (submittedRef.current) return;
     submittedRef.current = true;
@@ -547,7 +406,6 @@ export default function ReadingTestPlayer({ passage }) {
     timerDeadlineRef.current = null;
     setSubmitted(true);
     setTimerRunning(false);
-    setShowSubmitDialog(false);
     window.scrollTo({ top: 0 });
 
     const correctCount = questions.filter((q) =>
@@ -642,8 +500,7 @@ export default function ReadingTestPlayer({ passage }) {
     setActiveQ(null);
     setTimeSpent(0);
     setRemainingSeconds(TIMER_DURATION_SECONDS);
-    setShowSubmitDialog(false);
-    setMobilePanel("passage");
+    setFlags([]);
     setEvents([{ type: "opened", timestamp: Date.now() }]);
     window.scrollTo({ top: 0 });
   };
@@ -672,8 +529,7 @@ export default function ReadingTestPlayer({ passage }) {
     setActiveQ(null);
     setTimeSpent(0);
     setRemainingSeconds(TIMER_DURATION_SECONDS);
-    setShowSubmitDialog(false);
-    setMobilePanel("passage");
+    setFlags([]);
     setEvents([{ type: "opened", timestamp: Date.now() }]);
     window.scrollTo({ top: 0 });
   };
@@ -694,552 +550,30 @@ export default function ReadingTestPlayer({ passage }) {
   }
 
   return (
-    <main
-      className="flex min-h-[100dvh] flex-col bg-surface text-slate-100 lg:min-h-0"
-      style={isDesktop ? { height: `calc(100dvh - ${siteHeaderHeight}px)` } : undefined}
+    <PracticeExamScreen
+      passage={passage}
+      answers={answers}
+      onAnswer={setAnswer}
+      remainingSeconds={remainingSeconds}
+      timerRunning={timerRunning}
+      onPauseTimer={handleTimerPause}
+      onResumeTimer={handleTimerResume}
+      onResetTimer={handleTimerReset}
+      highlightState={highlightState}
+      savedTermIds={savedTermIds}
+      onSaveWord={({ term, paragraphText }) => saveWord({
+        term,
+        sentence: sentenceContaining(paragraphText, term),
+        passageSlug: passage.slug,
+        passageTitle: passage.title,
+      })}
+      flags={flags}
+      onToggleFlag={(number) => setFlags((current) => toggleFlag(current, number))}
+      onSubmit={performSubmit}
+      onOpenCoach={() => setAiChatOpen(true)}
+      onActiveQuestion={setActiveQ}
+      statusText={[passage.provenanceLabel, draftRestored && draftSaveStatus].filter(Boolean).join(" · ")}
     >
-      <div className={`flex-shrink-0 border-b border-white/10 bg-surface/95 px-3 py-2 backdrop-blur-sm md:px-6 md:py-3${isFullscreen ? " hidden" : ""}`}>
-        <div className="mx-auto flex flex-col items-stretch gap-2 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
-          <div className="w-full min-w-0 lg:flex-1">
-            <p className="mb-0.5 hidden text-xs text-brand-400 sm:line-clamp-1">
-              {passage.subtitle}
-            </p>
-            <h1 className="break-words font-display text-lg font-semibold leading-snug sm:text-xl md:text-2xl">
-              {passage.title}
-            </h1>
-            <p className="mt-1 text-[11px] text-slate-400 sm:text-xs">
-              {passage.provenanceLabel}
-              {draftRestored && draftSaveStatus && <span role="status" className="text-slate-500"> · {draftSaveStatus}</span>}
-            </p>
-          </div>
-          <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:flex-shrink-0 lg:justify-end xl:gap-3">
-            <div className="hidden sm:flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-1" role="group" aria-label="Text size">
-              <Type size={14} className="text-slate-400" aria-hidden="true" />
-              {["small", "medium", "large"].map((size) => (
-                <button
-                  key={size}
-                  type="button"
-                  onClick={() => changeFontSize(size)}
-                  aria-label={`${size[0].toUpperCase()}${size.slice(1)} text`}
-                  aria-pressed={fontSize === size}
-                  className={`h-6 w-6 rounded-full text-[10px] font-semibold transition-all duration-200 sm:h-7 sm:w-7 sm:text-[11px] ${
-                    fontSize === size
-                      ? "bg-brand-500 text-white shadow-lg shadow-brand-500/20"
-                      : "text-slate-400 hover:bg-white/10 hover:text-slate-200"
-                  }`}
-                >
-                  {size === "small" ? "S" : size === "medium" ? "M" : "L"}
-                </button>
-              ))}
-            </div>
-
-            <Timer
-              remainingSeconds={remainingSeconds}
-              running={timerRunning}
-              onPause={handleTimerPause}
-              onResume={handleTimerResume}
-              onReset={handleTimerReset}
-            />
-            <button
-              type="button"
-              onClick={() => setAiChatOpen(true)}
-              className="flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/10 px-3 py-2 text-sm font-medium text-brand-300 transition-colors hover:bg-brand-500/20"
-              aria-label="Open AI Coach"
-              title="Open AI Coach"
-            >
-              <Bot size={16} aria-hidden="true" />
-              <span className="hidden sm:inline">AI Coach</span>
-            </button>
-            <FullscreenToggle className="hidden min-h-11 min-w-11 sm:inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/5 text-slate-200 transition hover:bg-white/10" />
-            <ReportPassageIssueButton passageTitle={passage.title} compact />
-            <button
-              type="button"
-              className="btn-primary ml-auto min-h-11 px-4 py-2 text-sm sm:text-base lg:ml-0"
-              onClick={handleSubmit}
-            >
-              Submit
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div
-        role="tablist"
-        aria-label="Test sections"
-        className="sticky z-30 flex gap-2 border-b border-white/10 bg-surface/95 px-3 py-2 backdrop-blur-sm lg:hidden"
-        style={{ top: siteHeaderHeight }}
-      >
-        {[
-          { id: "passage", label: "Passage" },
-          { id: "questions", label: `Questions · ${answeredCount}/${questions.length}` },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            id={`reading-tab-${tab.id}`}
-            aria-selected={mobilePanel === tab.id}
-            aria-controls={`reading-panel-${tab.id}`}
-            onClick={() => {
-              setMobilePanel(tab.id);
-              window.scrollTo({ top: 0 });
-            }}
-            className={`min-h-11 flex-1 rounded-xl border px-3 text-sm font-semibold transition ${
-              mobilePanel === tab.id
-                ? "border-brand-500/50 bg-brand-500/15 text-brand-200"
-                : "border-white/10 text-slate-300 hover:bg-white/5"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      <div
-        id="reading-shell"
-        className="flex flex-1 flex-col lg:flex-row lg:overflow-hidden"
-      >
-        <div
-          id="reading-panel-passage"
-          role={isDesktop ? undefined : "tabpanel"}
-          aria-labelledby={isDesktop ? undefined : "reading-tab-passage"}
-          className={`${mobilePanel === "passage" ? "" : "hidden lg:block "}flex-shrink-0 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.08),transparent_45%)] px-4 py-4 sm:px-6 sm:py-6 lg:overflow-y-auto lg:overscroll-contain lg:border-r lg:border-white/10 lg:px-8 lg:py-8`}
-          style={{ width: isDesktop ? `${panelWidth}%` : "100%" }}
-        >
-          <div className="mx-auto max-w-3xl">
-            <div className={`mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm${isFullscreen ? " hidden" : ""}`}>
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
-                  Reading passage
-                </p>
-                <p className="text-sm text-slate-400">
-                  Read carefully and highlight key ideas as you work.
-                </p>
-              </div>
-              <div className="rounded-full border border-white/10 bg-surface/60 px-3 py-1 text-xs font-medium text-slate-300">
-                {passage.wordCount ?? "—"} words
-              </div>
-            </div>
-            <HighlightablePassage
-              paragraphs={passage.paragraphs}
-              fontSize={fontSize}
-              highlightState={highlightState}
-              savedTermIds={savedTermIds}
-              onSaveWord={({ term, paragraphText }) => saveWord({
-                term,
-                sentence: sentenceContaining(paragraphText, term),
-                passageSlug: passage.slug,
-                passageTitle: passage.title,
-              })}
-            />
-            <button
-              type="button"
-              onClick={() => {
-                setMobilePanel("questions");
-                window.scrollTo({ top: 0 });
-              }}
-              className="btn-primary mt-6 w-full lg:hidden"
-            >
-              Go to questions
-            </button>
-          </div>
-        </div>
-
-        <div
-          className="hidden lg:flex h-full w-2 flex-shrink-0 cursor-col-resize items-center justify-center transition-colors duration-200 hover:bg-white/10"
-          onMouseDown={() => setIsResizing(true)}
-          onKeyDown={(event) => {
-            if (event.key === "ArrowLeft") setPanelWidth((width) => Math.max(30, width - 2));
-            if (event.key === "ArrowRight") setPanelWidth((width) => Math.min(78, width + 2));
-          }}
-          tabIndex={0}
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="Resize reading panels"
-          aria-valuemin={30}
-          aria-valuemax={78}
-          aria-valuenow={Math.round(panelWidth)}
-        >
-          <div className="h-16 w-1 rounded-full bg-white/20" />
-        </div>
-
-        <div
-          id="reading-panel-questions"
-          role={isDesktop ? undefined : "tabpanel"}
-          aria-labelledby={isDesktop ? undefined : "reading-tab-questions"}
-          className={`${mobilePanel === "questions" ? "" : "hidden lg:block "}flex-1 bg-surface/80 px-3 py-3 sm:px-4 sm:py-4 lg:overflow-y-auto lg:overscroll-contain lg:px-6 lg:py-6`}
-          style={{ width: isDesktop ? `${100 - panelWidth}%` : "100%" }}
-        >
-          <div className="mx-auto max-w-xl space-y-4 sm:space-y-5">
-            {submitMessage && (
-              <p
-                className="rounded-lg border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-200"
-                role="alert"
-                aria-live="assertive"
-              >
-                {submitMessage}
-              </p>
-            )}
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-3 shadow-[0_10px_40px_rgba(0,0,0,0.16)] backdrop-blur-sm sm:p-4">
-              <div className="mb-3 sm:mb-4">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400 sm:text-[11px]">
-                  Progress
-                </p>
-                <p className="text-xs text-slate-400 sm:text-sm">
-                  Keep pace and track your completion.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                <div className="rounded-xl border border-white/10 bg-surface/70 p-2 sm:p-3">
-                  <p className="text-[10px] uppercase tracking-[0.24em] text-slate-500 sm:text-[11px]">
-                    Answered
-                  </p>
-                  <p className="mt-1 text-base font-semibold text-slate-100 sm:text-lg">
-                    {answeredCount}
-                  </p>
-                </div>
-                <div className="rounded-xl border border-white/10 bg-surface/70 p-2 sm:p-3">
-                  <p className="text-[10px] uppercase tracking-[0.24em] text-slate-500 sm:text-[11px]">
-                    Remaining
-                  </p>
-                  <p className="mt-1 text-base font-semibold text-slate-100 sm:text-lg">
-                    {remainingCount}
-                  </p>
-                </div>
-                <div className="rounded-xl border border-white/10 bg-surface/70 p-2 sm:p-3">
-                  <p className="text-[10px] uppercase tracking-[0.24em] text-slate-500 sm:text-[11px]">
-                    Progress
-                  </p>
-                  <p className="mt-1 text-base font-semibold text-brand-300 sm:text-lg">
-                    {Math.round(progress)}%
-                  </p>
-                </div>
-              </div>
-
-              <div
-                className="mt-4 h-2 overflow-hidden rounded-full bg-white/10"
-                role="progressbar"
-                aria-label="Questions answered"
-                aria-valuemin={0}
-                aria-valuemax={questions.length}
-                aria-valuenow={answeredCount}
-              >
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-brand-500 via-cyan-400 to-accent-500 transition-all duration-500 ease-out"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-3 shadow-[0_10px_40px_rgba(0,0,0,0.12)] backdrop-blur-sm sm:p-4">
-              <div className="mb-2 flex items-center justify-between sm:mb-3">
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400 sm:text-[11px]">
-                    Question navigator
-                  </p>
-                  <p className="text-xs text-slate-400 sm:text-sm">
-                    Jump to any question quickly.
-                  </p>
-                </div>
-                <div className="rounded-full border border-white/10 bg-surface/60 px-2 py-0.5 text-[10px] font-medium text-slate-300 sm:px-3 sm:py-1 sm:text-[11px]">
-                  {answeredCount}/{questions.length} answered
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                {questions.map((q) => {
-                  const isAnswered = Boolean(answers[q.id]);
-                  const isActive = activeQ === q.id;
-                  const number = questionNumbers.get(q.id) ?? 1;
-                  let stateClass =
-                    "border-white/10 bg-white/5 text-slate-400 hover:border-white/20 hover:bg-white/10";
-
-                  if (isActive) {
-                    stateClass =
-                      "border-brand-500/40 bg-brand-500/20 text-white shadow-lg shadow-brand-500/20";
-                  } else if (isAnswered) {
-                    stateClass =
-                      "border-emerald-500/30 bg-emerald-500/10 text-emerald-300";
-                  }
-
-                  return (
-                    <button
-                      type="button"
-                      key={q.id}
-                      onClick={() => scrollToQuestion(q.id)}
-                      className={`flex h-11 w-11 items-center justify-center rounded-full border text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5 sm:h-9 sm:w-9 sm:text-sm ${stateClass}`}
-                      title={`Question ${number}${isAnswered ? " (answered)" : ""}`}
-                      aria-label={`Question ${number}, ${isAnswered ? "answered" : "unanswered"}`}
-                      aria-current={isActive ? "step" : undefined}
-                    >
-                      {isAnswered ? <Check size={14} aria-hidden="true" /> : number}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              {passage.questionGroups.map((group, gi) => (
-                <div
-                  key={gi}
-                  className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.1)] backdrop-blur-sm transition-all duration-300 hover:border-white/20 hover:bg-white/10"
-                >
-                  <HighlightableText
-                    fontSize={fontSize}
-                    containerKey={`instructions-${gi}`}
-                    highlightState={highlightState}
-                    className="block mb-4 text-sm text-slate-400"
-                  >
-                    {renumberInstructions(group.instructions, questionNumbers.get(group.questions[0]?.id))}
-                  </HighlightableText>
-
-                  {group.wordBank?.length > 0 && (
-                    <div className="mb-4 rounded-xl border border-white/10 bg-surface/60 p-4">
-                      <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-accent-400">
-                        List of words
-                      </p>
-                      <ul className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm text-slate-300 sm:grid-cols-3">
-                        {group.wordBank.map((word) => (
-                          <li key={word.id}>
-                            <span className="mr-2 font-semibold text-slate-100">{word.id}</span>
-                            {word.text}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {group.questions[0].type === "matching-headings" &&
-                    passage.headingBank?.length > 0 && (
-                      <div className="mb-4 rounded-xl border border-white/10 bg-surface/60 p-4">
-                        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-accent-400">
-                          List of headings
-                        </p>
-                        <ul className="space-y-2 text-sm text-slate-300">
-                          {passage.headingBank.map((h) => (
-                            <li key={h.id}>
-                              <span className="mr-2 font-semibold text-slate-100">
-                                {h.id}.
-                              </span>
-                              {h.text}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                  <div className="space-y-3">
-                    {group.questions.map((q) => {
-                      const given = answers[q.id];
-                      const localQuestionNumber =
-                        questionNumbers.get(q.id) ?? 1;
-
-                      return (
-                        <div
-                          key={q.id}
-                          ref={(el) => {
-                            if (el) questionRefs.current[q.id] = el;
-                          }}
-                          tabIndex={-1}
-                          onFocus={() => setActiveQ(q.id)}
-                          className={`rounded-2xl border p-4 transition-all duration-300 ${
-                            activeQ === q.id
-                              ? "border-brand-500/40 bg-brand-500/10"
-                              : "border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06]"
-                          }`}
-                        >
-                          <div className="mb-3 flex items-start gap-2.5">
-                            <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-[12px] font-bold text-slate-100">
-                              {localQuestionNumber}
-                            </span>
-
-                            {q.type === "sentence-completion" ? (
-                              <p className="text-sm leading-7 text-slate-200">
-                                <HighlightableText
-                                  fontSize={fontSize}
-                                  containerKey={`${q.id}-before`}
-                                  highlightState={highlightState}
-                                >
-                                  {q.before}
-                                </HighlightableText>{" "}
-                                <input
-                                  value={given || ""}
-                                  onChange={(e) => {
-                                    const value = e.target.value;
-                                    const wordCount = value.trim()
-                                      ? value.trim().split(/\s+/).length
-                                      : 0;
-                                    if (wordCount > (q.maxWords || 1)) {
-                                      setAnswerErrors((previous) => ({
-                                        ...previous,
-                                        [q.id]: `Use no more than ${q.maxWords || 1} word${(q.maxWords || 1) === 1 ? "" : "s"}.`,
-                                      }));
-                                      return;
-                                    }
-                                    setAnswer(q.id, value);
-                                  }}
-                                  aria-label={`Answer to question ${localQuestionNumber}, maximum ${q.maxWords || 1} word${(q.maxWords || 1) === 1 ? "" : "s"}`}
-                                  aria-invalid={Boolean(answerErrors[q.id])}
-                                  aria-describedby={answerErrors[q.id] ? `${q.id}-answer-error` : undefined}
-                                  className="mx-1 w-full max-w-[9rem] rounded-lg border border-white/15 bg-white/10 px-2 py-1 text-sm text-white placeholder:text-slate-300 focus:border-brand-500 focus:outline-none sm:w-36"
-                                  placeholder={group.wordBank?.length ? "letter" : `max ${q.maxWords} word${q.maxWords > 1 ? "s" : ""}`}
-                                />{" "}
-                                <HighlightableText
-                                  fontSize={fontSize}
-                                  containerKey={`${q.id}-after`}
-                                  highlightState={highlightState}
-                                >
-                                  {q.after}
-                                </HighlightableText>
-                              </p>
-                            ) : (
-                              <p className="text-sm leading-7 text-slate-200">
-                                <HighlightableText
-                                  fontSize={fontSize}
-                                  containerKey={`${q.id}-prompt`}
-                                  highlightState={highlightState}
-                                >
-                                  {q.type === "matching-headings" && passage.headingBank?.length > 0
-                                    ? q.paragraphLabel
-                                    : q.prompt}
-                                </HighlightableText>
-                              </p>
-                            )}
-                          </div>
-
-                          {answerErrors[q.id] && (
-                            <p
-                              id={`${q.id}-answer-error`}
-                              className="ml-9 mb-3 text-xs text-amber-200"
-                              role="alert"
-                            >
-                              {answerErrors[q.id]}
-                            </p>
-                          )}
-
-                          {q.type === "true-false-not-given" && (
-                            <div className="ml-9 flex flex-wrap gap-2">
-                              {["TRUE", "FALSE", "NOT GIVEN"].map((opt) => (
-                                <button
-                                  type="button"
-                                  key={opt}
-                                  onClick={() => setAnswer(q.id, opt)}
-                                  aria-pressed={given === opt}
-                                  className={`min-h-11 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-all duration-200 ${
-                                    given === opt
-                                      ? "border-brand-500 bg-brand-500/20 text-brand-300"
-                                      : "border-white/15 text-slate-300 hover:border-white/30 hover:bg-white/10"
-                                  }`}
-                                >
-                                  {opt}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-
-                          {q.type === "yes-no-not-given" && (
-                            <div className="ml-9 flex flex-wrap gap-2">
-                              {["YES", "NO", "NOT GIVEN"].map((opt) => (
-                                <button
-                                  type="button"
-                                  key={opt}
-                                  onClick={() => setAnswer(q.id, opt)}
-                                  aria-pressed={given === opt}
-                                  className={`min-h-11 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-all duration-200 ${
-                                    given === opt
-                                      ? "border-brand-500 bg-brand-500/20 text-brand-300"
-                                      : "border-white/15 text-slate-300 hover:border-white/30 hover:bg-white/10"
-                                  }`}
-                                >
-                                  {opt}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-
-                          {q.type === "matching-headings" && (
-                              <div className="ml-9 flex flex-wrap gap-2">
-                                {matchingChoiceIds.map((choiceId) => (
-                                  <button
-                                    type="button"
-                                    key={choiceId}
-                                    onClick={() => setAnswer(q.id, choiceId)}
-                                    aria-pressed={given === choiceId}
-                                    className={`rounded-full border px-3 py-2 text-[11px] font-semibold transition-all duration-200 min-h-[44px] ${
-                                      given === choiceId
-                                        ? "border-brand-500 bg-brand-500/20 text-brand-300"
-                                        : "border-white/15 text-slate-300 hover:border-white/30 hover:bg-white/10"
-                                    }`}
-                                  >
-                                    {choiceId}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-
-                          {q.type === "multiple-choice" && (
-                            <div className="ml-9 space-y-2">
-                              {q.options.map((opt) => (
-                                <button
-                                  type="button"
-                                  key={opt.key}
-                                  onClick={() => setAnswer(q.id, opt.key)}
-                                  aria-pressed={given === opt.key}
-                                  className={`block w-full rounded-xl border px-3 py-2 text-left text-sm transition-all duration-200 ${
-                                    given === opt.key
-                                      ? "border-brand-500 bg-brand-500/20 text-brand-300"
-                                      : "border-white/15 text-slate-300 hover:border-white/30 hover:bg-white/10"
-                                  }`}
-                                >
-                                  <span className="mr-1 font-semibold">
-                                    {opt.key}.
-                                  </span>
-                                  {opt.text}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.08)] backdrop-blur-sm">
-              <div className="flex items-start gap-3">
-                <MessageCircle
-                  size={18}
-                  className="mt-0.5 text-brand-400"
-                  aria-hidden="true"
-                />
-                <div>
-                  <p className="mb-1 text-sm font-semibold text-slate-200">
-                    Found a bug or have suggestions?
-                  </p>
-                  <p className="mb-3 text-sm leading-6 text-slate-400">
-                    I&apos;d love to hear your feedback.
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <a
-                  href="https://t.me/mukh4mmadov"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-slate-400 transition-colors duration-200 hover:text-brand-400"
-                >
-                  <Send size={14} aria-hidden="true" />
-                  Contact on Telegram
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <AIChatPanel
         isOpen={aiChatOpen}
         onClose={() => setAiChatOpen(false)}
@@ -1247,66 +581,6 @@ export default function ReadingTestPlayer({ passage }) {
         personality={aiPersonality}
         onPersonalityChange={setAiPersonality}
       />
-
-      {showSubmitDialog && (
-        <div
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) setShowSubmitDialog(false);
-          }}
-        >
-          <div
-            ref={submitDialogRef}
-            tabIndex={-1}
-            className="w-full max-w-md rounded-[var(--radius-card)] border border-white/10 bg-surface p-6 shadow-2xl animate-fade-in"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="submit-dialog-title"
-          >
-            <div className="mb-4 flex items-start gap-4">
-              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-amber-500/20">
-                <AlertTriangle
-                  className="text-amber-400"
-                  size={24}
-                  aria-hidden="true"
-                />
-              </div>
-              <div className="flex-1">
-                <h3
-                  id="submit-dialog-title"
-                  className="mb-2 text-lg font-bold text-slate-100"
-                >
-                  Submit with unanswered questions?
-                </h3>
-                <p className="text-slate-300">
-                  You still have{" "}
-                  <span className="font-bold text-amber-400">
-                    {remainingCount}
-                  </span>{" "}
-                  unanswered question{remainingCount !== 1 ? "s" : ""}.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowSubmitDialog(false);
-                  const firstUnanswered = questions.find((question) => !answers[question.id]);
-                  if (firstUnanswered) scrollToQuestion(firstUnanswered.id);
-                }}
-                className="btn-secondary flex-1"
-              >
-                Review unanswered
-              </button>
-              <button type="button" onClick={performSubmit} className="btn-primary flex-1">
-                Submit anyway
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </main>
+    </PracticeExamScreen>
   );
 }
