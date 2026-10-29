@@ -148,7 +148,7 @@ export default function Home() {
       href: "/writing",
       icon: PenLine,
       title: "Writing practice",
-      body: "Task 1 reports and Task 2 essays with AI feedback on the four official criteria.",
+      body: "Task 1 and Task 2 with AI feedback on the four official criteria, or a full 60-minute Writing test.",
     },
   ];
 
