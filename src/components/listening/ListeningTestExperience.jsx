@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, CheckCircle2, Flag, Headphones, LogOut, Volume2, X } from "lucide-react";
 import ExamShell from "@/components/exam/ExamShell";
 import ExamTopBar from "@/components/exam/ExamTopBar";
+import ShareResultButton from "@/components/shared/ShareResultButton";
 import { useExamSettings } from "@/hooks/useExamSettings";
 import { requestHelpDialog } from "@/lib/help-dialog";
 import { useAuth } from "@/contexts/AuthContext";
@@ -202,6 +203,7 @@ export default function ListeningTestExperience({ test, html }) {
                 : "This result could not be saved."}
           </p>
           <Link href="/listening#listening-history" className="font-semibold underline underline-offset-2">View history</Link>
+          <ShareResultButton className="exam-btn" label="Share" card={{ kind: "IELTS Listening", band: savedResult.attempt.band, bandLabel: "Listening band", detail: `${savedResult.attempt.score}/${savedResult.attempt.total} correct · ${test.title}` }} />
           <button type="button" onClick={() => setSavedResult(null)} className="exam-btn" aria-label="Dismiss result message">
             <X size={16} aria-hidden="true" />
           </button>

@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, BookOpen, Check, Clock, Headphones, Lock, PenLine, Share2, Trophy } from "lucide-react";
+import { ArrowRight, BookOpen, Check, Clock, Headphones, Lock, PenLine, Trophy } from "lucide-react";
 import listeningTests, { getListeningTest } from "@/data/listeningTests";
 import writingTasks, { getWritingTask } from "@/data/writingTasks";
 import { useAuth } from "@/contexts/AuthContext";
+import ShareResultButton from "@/components/shared/ShareResultButton";
 import { getAccountUserId } from "@/lib/auth/account";
 import { findFullMockVariants, hasUsedFullMockVariant, MOCK_STORAGE_KEY } from "@/lib/reading/mock-test";
 import { readListeningHistory } from "@/lib/listening/listening-results.mjs";
@@ -54,18 +55,6 @@ function chooseTests() {
 
 function ResultCard({ session, name }) {
   const { overall, count } = fullMockOverall(session);
-  const [shared, setShared] = useState(false);
-  const writing = session.results.writing;
-  const share = async () => {
-    const text = `I scored an estimated overall band ${formatBand(overall)} on a full IELTS mock test (Listening ${formatBand(session.results.listening?.band)}, Reading ${formatBand(session.results.reading?.band)}, Writing ${formatBand(writing?.band)}).`;
-    const url = `${window.location.origin}/full-mock`;
-    try {
-      if (navigator.share) await navigator.share({ title: "My IELTS mock result", text, url });
-      else { await navigator.clipboard.writeText(`${text} ${url}`); setShared(true); }
-    } catch {
-      // Sharing was cancelled.
-    }
-  };
   return (
     <section className="rounded-3xl border border-brand-400/30 bg-gradient-to-br from-brand-500/15 via-white/[0.03] to-transparent p-6 sm:p-8" aria-labelledby={`full-mock-result-${session.id}`}>
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -73,7 +62,7 @@ function ResultCard({ session, name }) {
           <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-brand-300"><Trophy size={14} aria-hidden="true" /> Full mock result</p>
           <h2 id={`full-mock-result-${session.id}`} className="mt-1 text-lg font-bold text-white">{name ? `${name} · ` : ""}{new Date(session.completedAt || session.startedAt).toLocaleDateString()}</h2>
         </div>
-        <button type="button" onClick={() => void share()} className="btn-secondary"><Share2 size={16} aria-hidden="true" /> {shared ? "Copied" : "Share result"}</button>
+        <ShareResultButton card={{ kind: "Full IELTS mock test", band: overall, bandLabel: "Overall band", parts: FULL_MOCK_PARTS.map((part) => ({ label: part.label, value: formatBand(session.results[part.id]?.band) })) }} />
       </div>
       <div className="mt-5 grid gap-4 sm:grid-cols-[auto_1fr] sm:items-center">
         <div className="text-center sm:pr-6">
