@@ -1,3 +1,6 @@
+// Browser storage key for Reading mock drafts and results.
+export const MOCK_STORAGE_KEY = "ielts-reading-full-mock-v1";
+
 // Average IELTS Academic Reading raw-score thresholds published by IDP IELTS.
 // Scores below the published band 4 threshold are intentionally not estimated.
 const ACADEMIC_READING_THRESHOLDS = [
