@@ -1,6 +1,6 @@
 import readingTestsModule from "@/data/readingTests_new";
 
-export const MOCK_STORAGE_KEY = "ielts-reading-full-mock-v1";
+export { MOCK_STORAGE_KEY } from "./mock-scoring.mjs";
 
 function prepareFortyQuestionSet(tests) {
   const questionCount = (test) => test.passages[0].questionGroups

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import DailyInspiration from "@/components/shared/DailyInspiration";
 import DailyMissionsCard from "@/components/shared/DailyMissionsCard";
+import ExamPlanCard from "@/components/progress/ExamPlanCard";
 import { getAllProgress } from "@/lib/progressTracker";
 import { useAuth } from "@/contexts/AuthContext";
 import readingTestsModule from "@/data/readingTests_new";
@@ -255,6 +256,7 @@ export default function Home() {
         </div>
       </section>
 
+      <ExamPlanCard />
       <DailyMissionsCard />
 
       <section className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8" aria-labelledby="practice-modes-title">
