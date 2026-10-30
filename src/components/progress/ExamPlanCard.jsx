@@ -9,6 +9,7 @@ import { useOverallEstimate } from "@/hooks/useOverallEstimate";
 import { getAllProgress } from "@/lib/progressTracker";
 import { getQuestionTypeAccuracy } from "@/lib/reading/practice-summary";
 import { readVocabulary } from "@/lib/vocabulary/vocabulary-notebook.mjs";
+import { dueItems } from "@/lib/vocabulary/spaced-review.mjs";
 import { readFullMock } from "@/lib/mock/full-mock.mjs";
 import { localDayKey } from "@/lib/missions/daily-missions.mjs";
 import { buildExamPlan, daysUntil } from "@/lib/progress/exam-plan.mjs";
@@ -69,16 +70,19 @@ export default function ExamPlanCard() {
     getAllProgress(userId).catch(() => []).then((progress) => {
       if (!active) return;
       let savedWords = 0;
+      let dueWords = 0;
       let daysSinceFullMock = null;
       try {
-        savedWords = readVocabulary(window.localStorage, userId).length;
+        const words = readVocabulary(window.localStorage, userId);
+        savedWords = words.length;
+        dueWords = dueItems(words).length;
         const lastMock = readFullMock(window.localStorage).history[0];
         const finished = Date.parse(lastMock?.completedAt || "");
         if (Number.isFinite(finished)) daysSinceFullMock = Math.floor((Date.now() - finished) / (24 * 60 * 60 * 1000));
       } catch {
         // Without browser data the plan still works.
       }
-      setSignals({ weakestQuestionType: getQuestionTypeAccuracy(progress || [])[0] || null, savedWords, daysSinceFullMock });
+      setSignals({ weakestQuestionType: getQuestionTypeAccuracy(progress || [])[0] || null, savedWords, dueWords, daysSinceFullMock });
     });
     return () => { active = false; };
   }, [userId]);
