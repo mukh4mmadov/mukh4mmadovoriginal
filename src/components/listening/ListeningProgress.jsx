@@ -67,7 +67,7 @@ export function ListeningHistory() {
 
       {history.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-white/10 p-6 text-center text-sm text-slate-400">
-          Finish a test and press the results button inside it — your score and band will appear here.
+          Finish a test and press Submit; your score and band will appear here.
         </p>
       ) : (
         <ul className="space-y-2">
