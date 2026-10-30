@@ -23,6 +23,9 @@ test("plan focuses on the weakest skill and question type, with mocks closer to 
   assert.deepEqual(plan.tasks.map((task) => task.id), ["full-mock", "skill-writing", "drill", "words"]);
   assert.match(plan.tasks[1].why, /Writing is your lowest band \(6\.0\)/);
   assert.equal(plan.tasks[2].href, "/reading/practice/matching-headings");
+  assert.equal(plan.tasks[3].title, "Quiz yourself on your saved words");
+  const due = buildExamPlan({ daysLeft: 60, targetBand: 7, estimate, weakestQuestionType: null, daysSinceFullMock: 1, savedWords: 12, dueWords: 7 });
+  assert.equal(due.tasks.at(-1).title, "Review 7 words due today");
 
   const far = buildExamPlan({ daysLeft: 90, targetBand: 7, estimate, weakestQuestionType: null, daysSinceFullMock: 5, savedWords: 0 });
   assert.deepEqual(far.tasks.map((task) => task.id), ["skill-writing", "words"]);

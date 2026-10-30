@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { BookMarked, BookOpen, Check, Layers, RotateCcw, Search, Trash2 } from "lucide-react";
+import { BookMarked, BookOpen, Brain, Check, Layers, RotateCcw, Search, Trash2 } from "lucide-react";
 import { useVocabulary } from "@/hooks/useVocabulary";
+import { buildQuizQuestion, dueItems, reviewUpdate } from "@/lib/vocabulary/spaced-review.mjs";
 
 const FILTERS = [
   { id: "all", label: "All" },
@@ -65,7 +66,9 @@ function WordCard({ item, onUpdate, onRemove }) {
         />
       </label>
       <div className="mt-3 flex flex-wrap gap-2">
-        <button type="button" onClick={() => onUpdate(item.id, { status: known ? "learning" : "known" })} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-white/10 px-3 text-sm text-slate-200 hover:bg-white/5">
+        <button type="button" onClick={() => onUpdate(item.id, known
+          ? { status: "learning", box: 0, dueAt: new Date().toISOString() }
+          : { status: "known", box: 4, dueAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() })} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-white/10 px-3 text-sm text-slate-200 hover:bg-white/5">
           {known ? <><RotateCcw size={15} aria-hidden="true" /> Learn again</> : <><Check size={15} aria-hidden="true" /> Mark as known</>}
         </button>
         <button type="button" onClick={() => onRemove(item.id)} className="inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm text-slate-400 hover:bg-white/5 hover:text-white">
@@ -76,58 +79,126 @@ function WordCard({ item, onUpdate, onRemove }) {
   );
 }
 
-function Flashcards({ items, onUpdate }) {
-  const [deck, setDeck] = useState(() => {
-    const learning = items.filter((item) => item.status !== "known");
-    return (learning.length > 0 ? learning : items).map((item) => item.id);
-  });
+const NEXT_LABEL = { again: "now", hard: null, easy: null };
+const inDays = (iso) => {
+  const days = Math.round((Date.parse(iso) - Date.now()) / (24 * 60 * 60 * 1000));
+  return days <= 0 ? "today" : days === 1 ? "in 1 day" : `in ${days} days`;
+};
+
+// Spaced repetition: today's due words, graded Again / Hard / Easy.
+function Review({ items, onUpdate, onQuiz }) {
+  const [deck, setDeck] = useState(() => dueItems(items).map((item) => item.id));
   const [revealed, setRevealed] = useState(false);
   const [done, setDone] = useState(0);
-  const total = deck.length + done;
   const current = items.find((item) => item.id === deck[0]);
 
-  const answer = (knowIt) => {
+  const grade = (value) => {
     if (!current) return;
-    onUpdate(current.id, { status: knowIt ? "known" : "learning", reviewCount: (current.reviewCount || 0) + 1, lastReviewedAt: new Date().toISOString() });
+    onUpdate(current.id, reviewUpdate(current, value));
     setRevealed(false);
-    if (knowIt) {
-      setDeck((ids) => ids.slice(1));
-      setDone((count) => count + 1);
-    } else {
-      // Show it again after the other cards.
-      setDeck((ids) => [...ids.slice(1), ids[0]]);
-    }
+    if (value === "again") setDeck((ids) => [...ids.slice(1), ids[0]]);
+    else { setDeck((ids) => ids.slice(1)); setDone((count) => count + 1); }
   };
 
   if (!current) {
+    const upcoming = items.map((item) => item.dueAt).filter(Boolean).sort()[0];
     return (
       <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.06] p-8 text-center">
-        <p className="text-lg font-semibold text-white">Nice work: you went through all {total} {total === 1 ? "word" : "words"}.</p>
-        <p className="mt-1 text-sm text-slate-300">Save new words while you read, then come back to practise them.</p>
+        <p className="text-lg font-semibold text-white">{done > 0 ? `All caught up: you reviewed ${done} ${done === 1 ? "word" : "words"}.` : "No words are due right now."}</p>
+        <p className="mt-1 text-sm text-slate-300">{upcoming ? `Your next words are due ${inDays(upcoming)}.` : "Save new words while you read."}</p>
+        <div className="mt-4 flex flex-wrap justify-center gap-2">
+          <button type="button" onClick={() => { setDeck(items.map((item) => item.id)); setDone(0); }} className="btn-secondary">Practise all words anyway</button>
+          <button type="button" onClick={onQuiz} className="btn-primary">Take a quiz</button>
+        </div>
       </div>
     );
   }
 
+  const preview = (value) => NEXT_LABEL[value] || inDays(reviewUpdate(current, value).dueAt);
   return (
     <div className="mx-auto max-w-xl">
-      <p className="mb-3 text-center text-sm text-slate-400" aria-live="polite">{done} of {total} known · {deck.length} to go</p>
+      <p className="mb-3 text-center text-sm text-slate-400" aria-live="polite">{done} reviewed · {deck.length} to go</p>
       <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 text-center sm:p-10">
         <p className="break-words font-display text-3xl font-bold text-white sm:text-4xl">{current.term}</p>
         {revealed ? (
           <div className="mt-5 space-y-3 text-left">
             {current.sentence && <p className="text-sm italic leading-6 text-slate-300">“<SentenceWithTerm sentence={current.sentence} term={current.term} />”</p>}
-            {current.note ? <p className="rounded-xl bg-white/5 p-3 text-sm text-slate-200">{current.note}</p> : <p className="text-xs text-slate-400">No meaning written yet. Add one in the list view.</p>}
+            {current.note ? <p className="rounded-xl bg-white/5 p-3 text-sm text-slate-200">{current.note}</p> : <p className="text-xs text-slate-400">No meaning written yet. Add one in the word list.</p>}
           </div>
         ) : (
           <button type="button" onClick={() => setRevealed(true)} className="btn-secondary mt-6">Show the sentence and meaning</button>
         )}
       </div>
       {revealed && (
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          <button type="button" onClick={() => answer(false)} className="btn-secondary"><RotateCcw size={18} aria-hidden="true" /> Review again</button>
-          <button type="button" onClick={() => answer(true)} className="btn-primary"><Check size={18} aria-hidden="true" /> I know it</button>
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          {[["again", "Again"], ["hard", "Hard"], ["easy", "Easy"]].map(([value, label]) => (
+            <button key={value} type="button" onClick={() => grade(value)} className={value === "easy" ? "btn-primary flex-col !gap-0" : "btn-secondary flex-col !gap-0"}>
+              <span>{label}</span>
+              <span className="text-xs font-normal opacity-80">{preview(value)}</span>
+            </button>
+          ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// Multiple-choice quiz on saved words: fill the gap or match the meaning.
+function Quiz({ items, onUpdate }) {
+  const [round, setRound] = useState(0);
+  const questions = useMemo(() => {
+    const ordered = [...dueItems(items), ...items.filter((item) => !dueItems(items).includes(item))];
+    return ordered.map((item) => buildQuizQuestion(item, items)).filter(Boolean).slice(0, 10);
+    // A new round reshuffles; the items' own updates don't.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [round]);
+  const [index, setIndex] = useState(0);
+  const [picked, setPicked] = useState(null);
+  const [score, setScore] = useState(0);
+  const question = questions[index];
+
+  if (questions.length === 0) {
+    return <p className="rounded-2xl border border-dashed border-white/10 p-6 text-center text-sm text-slate-300">The quiz needs at least 4 saved words, each with its sentence or your own meaning.</p>;
+  }
+  if (!question) {
+    return (
+      <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.06] p-8 text-center">
+        <p className="text-lg font-semibold text-white">You scored {score} of {questions.length}.</p>
+        <button type="button" onClick={() => { setRound((value) => value + 1); setIndex(0); setScore(0); setPicked(null); }} className="btn-primary mt-4">New quiz</button>
+      </div>
+    );
+  }
+  const choose = (option) => {
+    if (picked) return;
+    setPicked(option);
+    const correct = option === question.answer;
+    if (correct) setScore((value) => value + 1);
+    const item = items.find((entry) => entry.id === question.id);
+    if (item) onUpdate(item.id, reviewUpdate(item, correct ? "easy" : "again"));
+  };
+  return (
+    <div className="mx-auto max-w-xl">
+      <p className="mb-3 text-center text-sm text-slate-400" aria-live="polite">Question {index + 1} of {questions.length} · {score} correct</p>
+      <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 sm:p-8">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-brand-300">{question.kind === "gap" ? "Fill the gap" : "Which word means…"}</p>
+        <p className="text-lg leading-8 text-white">{question.kind === "gap" ? question.prompt : `“${question.prompt}”`}</p>
+        <div className="mt-5 grid gap-2 sm:grid-cols-2" role="group" aria-label="Answers">
+          {question.options.map((option) => {
+            const state = !picked ? "" : option === question.answer ? "border-emerald-400/60 bg-emerald-500/15" : option === picked ? "border-rose-400/60 bg-rose-500/15" : "opacity-60";
+            return (
+              <button key={option} type="button" onClick={() => choose(option)} disabled={Boolean(picked)} className={`min-h-12 rounded-xl border border-white/10 px-4 text-left text-sm font-medium text-slate-100 ${state}`}>
+                {option}
+              </button>
+            );
+          })}
+        </div>
+        {picked && (
+          <div className="mt-4 flex items-center justify-between gap-3">
+            <p role="status" className={`text-sm font-semibold ${picked === question.answer ? "text-emerald-300" : "text-rose-300"}`}>{picked === question.answer ? "Correct!" : `The answer is “${question.answer}”.`}</p>
+            <button type="button" onClick={() => { setIndex((value) => value + 1); setPicked(null); }} className="btn-primary">{index + 1 < questions.length ? "Next" : "See score"}</button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -143,6 +214,7 @@ export default function VocabularyPage() {
     all: items.length,
     learning: items.filter((item) => item.status !== "known").length,
     known: items.filter((item) => item.status === "known").length,
+    due: dueItems(items).length,
   }), [items]);
 
   const visible = useMemo(() => {
@@ -172,12 +244,12 @@ export default function VocabularyPage() {
       ) : (
         <>
           <div className="mb-6 flex flex-wrap items-center gap-2" role="group" aria-label="View">
-            {[{ id: "list", label: "Word list", icon: BookMarked }, { id: "cards", label: "Flashcards", icon: Layers }].map(({ id, label, icon: Icon }) => (
+            {[{ id: "list", label: "Word list", icon: BookMarked }, { id: "cards", label: `Review (${counts.due} due)`, icon: Layers }, { id: "quiz", label: "Quiz", icon: Brain }].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 type="button"
                 aria-pressed={mode === id}
-                onClick={() => { setMode(id); if (id === "cards") setDeckKey((key) => key + 1); }}
+                onClick={() => { setMode(id); if (id !== "list") setDeckKey((key) => key + 1); }}
                 className={`inline-flex min-h-10 items-center gap-2 rounded-full border px-4 text-sm font-medium transition ${mode === id ? "border-brand-500/50 bg-brand-500/15 text-brand-200" : "border-white/10 text-slate-300 hover:bg-white/5"}`}
               >
                 <Icon size={16} aria-hidden="true" /> {label}
@@ -187,7 +259,9 @@ export default function VocabularyPage() {
           </div>
 
           {mode === "cards" ? (
-            <Flashcards key={deckKey} items={items} onUpdate={updateWord} />
+            <Review key={deckKey} items={items} onUpdate={updateWord} onQuiz={() => { setMode("quiz"); setDeckKey((key) => key + 1); }} />
+          ) : mode === "quiz" ? (
+            <Quiz key={deckKey} items={items} onUpdate={updateWord} />
           ) : (
             <>
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">

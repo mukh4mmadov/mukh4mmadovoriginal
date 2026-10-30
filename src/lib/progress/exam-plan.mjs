@@ -34,9 +34,9 @@ const typeLabel = (type) => String(type).replace(/-/g, " ");
 /**
  * input: { daysLeft, targetBand, estimate: { overall, weakest, missing },
  *          weakestQuestionType: { type, accuracy } | null,
- *          daysSinceFullMock: number | null, savedWords: number }
+ *          daysSinceFullMock: number | null, savedWords: number, dueWords: number }
  */
-export function buildExamPlan({ daysLeft, targetBand, estimate, weakestQuestionType, daysSinceFullMock, savedWords = 0 }) {
+export function buildExamPlan({ daysLeft, targetBand, estimate, weakestQuestionType, daysSinceFullMock, savedWords = 0, dueWords = 0 }) {
   const phase = examPhase(daysLeft);
   const overall = estimate?.overall ?? null;
   const gap = overall != null && targetBand != null ? Math.round((Number(targetBand) - overall) * 2) / 2 : null;
@@ -82,8 +82,10 @@ export function buildExamPlan({ daysLeft, targetBand, estimate, weakestQuestionT
     });
   }
 
-  tasks.push(savedWords > 0
-    ? { id: "words", title: "Review your saved words", why: `${savedWords} words in your notebook.`, href: "/vocabulary" }
+  tasks.push(dueWords > 0
+    ? { id: "words", title: `Review ${dueWords} ${dueWords === 1 ? "word" : "words"} due today`, why: "Spaced review fixes words in long-term memory.", href: "/vocabulary" }
+    : savedWords > 0
+    ? { id: "words", title: "Quiz yourself on your saved words", why: `${savedWords} words in your notebook, none due today.`, href: "/vocabulary" }
     : { id: "words", title: "Save 3 new words while reading", why: "A wider vocabulary lifts every skill.", href: "/reading" });
 
   return { phase, gap, tasks: tasks.slice(0, 4) };
