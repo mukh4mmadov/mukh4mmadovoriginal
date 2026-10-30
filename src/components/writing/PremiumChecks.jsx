@@ -2,12 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ChevronDown, ChevronUp, RefreshCw, Sparkles } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, Package, RefreshCw, Sparkles } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAccountUserId } from "@/lib/auth/account";
 import { getWritingTask } from "@/data/writingTasks";
-import { formatUzs, PREMIUM_STATUSES } from "@/lib/writing/premium.mjs";
-import { cancelPremiumRequest, listMyPremiumRequests } from "@/lib/writing/premium-requests";
+import { formatUzs, getPack, packSaving, PREMIUM_PACKS, PREMIUM_STATUSES } from "@/lib/writing/premium.mjs";
+import { cancelCreditOrder, cancelPremiumRequest, createCreditOrder, getCreditBalance, listMyCreditOrders, listMyPremiumRequests } from "@/lib/writing/premium-requests";
 import PremiumPayment from "@/components/writing/PremiumPayment";
 import WritingFeedback from "@/components/writing/WritingFeedback";
 
@@ -34,7 +34,7 @@ function RequestCard({ request, onCancel }) {
           <p className="font-semibold text-white">
             Code <span className="font-mono tracking-widest">{request.code}</span> · {essays.map((item) => `Task ${item.taskNumber}`).join(" + ")}
           </p>
-          <p className="mt-1 text-xs text-slate-400">{new Date(request.created_at).toLocaleString()} · {formatUzs(request.price_uzs)}</p>
+          <p className="mt-1 text-xs text-slate-400">{new Date(request.created_at).toLocaleString()} · {request.credits_used > 0 ? `${request.credits_used} ${request.credits_used === 1 ? "credit" : "credits"}` : formatUzs(request.price_uzs)}</p>
         </div>
         <div className="flex items-center gap-2">
           <PremiumStatus status={request.status} />
@@ -82,17 +82,96 @@ function RequestCard({ request, onCancel }) {
   );
 }
 
+const ORDER_STATUS = {
+  awaiting_payment: { label: "Waiting for payment", tone: "amber" },
+  paid: { label: "Credits added", tone: "emerald" },
+  rejected: { label: "Not accepted", tone: "rose" },
+};
+
+// Bundles: buy several checks at once for less, paid on Telegram once.
+function Bundles({ accountUserId, balance, orders, onChanged, onError }) {
+  const [busy, setBusy] = useState("");
+  const buy = async (pack) => {
+    setBusy(pack.id);
+    try {
+      await createCreditOrder(accountUserId, pack.id);
+      await onChanged();
+    } catch (error) {
+      onError(error.message);
+    } finally {
+      setBusy("");
+    }
+  };
+  const cancel = async (order) => {
+    if (!window.confirm(`Cancel bundle order ${order.code}?`)) return;
+    try {
+      await cancelCreditOrder(order.id);
+      await onChanged();
+    } catch {
+      onError("The order could not be cancelled. It may already be paid.");
+    }
+  };
+  const open = orders.filter((order) => order.status === "awaiting_payment");
+  return (
+    <section className="surface-card mb-6" aria-labelledby="bundles-title">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 id="bundles-title" className="flex items-center gap-2 text-lg font-bold text-slate-100"><Package size={20} className="text-brand-400" aria-hidden="true" /> Bundles</h2>
+        <p className="rounded-full border border-brand-400/30 bg-brand-500/10 px-3 py-1 text-sm text-brand-200">You have <b className="text-white">{balance}</b> {balance === 1 ? "credit" : "credits"}</p>
+      </div>
+      <p className="mb-4 text-sm text-slate-300">Buy several checks at once and save. One credit pays for one task; when you choose AI Premium, your credits are used and no payment is needed.</p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {PREMIUM_PACKS.map((pack) => (
+          <div key={pack.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+            <p className="text-2xl font-bold text-white">{pack.credits} checks</p>
+            <p className="text-sm text-slate-300">{formatUzs(pack.price)} · <span className="text-emerald-300">save {formatUzs(packSaving(pack))}</span></p>
+            <button type="button" disabled={Boolean(busy)} onClick={() => void buy(pack)} className="btn-primary mt-3">{busy === pack.id ? "Saving…" : `Buy ${pack.credits} checks`}</button>
+          </div>
+        ))}
+      </div>
+      {open.map((order) => (
+        <div key={order.id} className="mt-4 rounded-2xl border border-amber-400/25 bg-amber-500/[0.06] p-4">
+          <p className="mb-3 font-semibold text-white">Order {order.code}: {order.credits} checks · {formatUzs(order.price_uzs)}</p>
+          <PremiumPayment
+            compact
+            code={order.code}
+            amount={order.price_uzs}
+            what={`an AI Premium bundle of ${order.credits} checks`}
+            afterPayment={<>When your payment is confirmed, <b className="text-white">{order.credits} credits</b> are added to your account.</>}
+          />
+          <button type="button" onClick={() => void cancel(order)} className="mt-3 text-sm text-slate-400 underline hover:text-white">Cancel this order</button>
+        </div>
+      ))}
+      {orders.some((order) => order.status !== "awaiting_payment") && (
+        <ul className="mt-4 space-y-1 text-sm text-slate-400">
+          {orders.filter((order) => order.status !== "awaiting_payment").map((order) => (
+            <li key={order.id}>{new Date(order.created_at).toLocaleDateString()} · {getPack(order.pack)?.credits ?? order.credits} checks · {formatUzs(order.price_uzs)} · {ORDER_STATUS[order.status]?.label}{order.admin_note ? ` (${order.admin_note})` : ""}</li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 export default function PremiumChecks() {
   const { user, profile, isLoading } = useAuth();
   const accountUserId = getAccountUserId(user, profile, isLoading);
   const [requests, setRequests] = useState(null);
   const [error, setError] = useState("");
+  const [balance, setBalance] = useState(0);
+  const [orders, setOrders] = useState([]);
 
   const load = useCallback(async () => {
     if (!accountUserId) return;
     setError("");
     try {
-      setRequests(await listMyPremiumRequests(accountUserId));
+      const [nextRequests, nextOrders, nextBalance] = await Promise.all([
+        listMyPremiumRequests(accountUserId),
+        listMyCreditOrders(accountUserId).catch(() => []),
+        getCreditBalance(),
+      ]);
+      setRequests(nextRequests);
+      setOrders(nextOrders);
+      setBalance(nextBalance);
     } catch (loadError) {
       console.error("Could not load premium requests:", loadError);
       setError("Your AI Premium checks could not be loaded. Please try again.");
@@ -135,6 +214,8 @@ export default function PremiumChecks() {
             </button>
           </div>
           {error && <p role="alert" className="mb-4 text-sm text-rose-300">{error}</p>}
+          {accountUserId && <Bundles accountUserId={accountUserId} balance={balance} orders={orders} onChanged={load} onError={setError} />}
+          <h2 className="mb-3 text-lg font-bold text-slate-100">Your checks</h2>
           {requests === null ? (
             <p className="text-sm text-slate-400" role="status">Loading…</p>
           ) : requests.length === 0 ? (

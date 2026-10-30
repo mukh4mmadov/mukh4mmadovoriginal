@@ -58,7 +58,7 @@ export default function WritingPage() {
         <div>
           <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-300"><Sparkles size={14} aria-hidden="true" /> AI Premium · {formatUzs(PREMIUM_PRICE_UZS)} per task</p>
           <h2 id="writing-premium-promo" className="mt-1 text-lg font-bold text-white">A deeper check of your writing</h2>
-          <p className="mt-1 text-sm text-slate-300">Line-by-line corrections, a Band 8+ rewrite of your answer, a detailed report on each criterion and a personal study plan. Choose it when you submit; pay on Telegram.</p>
+          <p className="mt-1 text-sm text-slate-300">Line-by-line corrections, a Band 8+ rewrite of your answer, a detailed report on each criterion and a personal study plan. Choose it when you submit; pay on Telegram, or save with a bundle of 5 or 10 checks.</p>
         </div>
         <Link href="/writing/premium" className="btn-secondary shrink-0">My AI Premium checks</Link>
       </section>

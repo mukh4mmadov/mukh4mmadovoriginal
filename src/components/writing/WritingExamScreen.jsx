@@ -14,13 +14,14 @@ import { countWords, WRITING_TASK_RULES } from "@/data/writingTasks";
 import { formatTimeLeft } from "@/lib/exam/exam-settings.mjs";
 import { formatUzs, PREMIUM_MIN_WORDS, premiumPrice } from "@/lib/writing/premium.mjs";
 
-function SubmitDialog({ open, tasks, essays, remainingSeconds, onClose, onSubmit, canSubmit, blockedReason, premium }) {
+function SubmitDialog({ open, tasks, essays, remainingSeconds, onClose, onSubmit, canSubmit, blockedReason, premium, premiumCredits = 0 }) {
   const dialogRef = useModalAccessibility(open, onClose);
   const [mode, setMode] = useState("free");
   if (!open) return null;
   const premiumCount = tasks.filter((task) => countWords(essays[task.slug] || "") >= PREMIUM_MIN_WORDS).length;
   const premiumAmount = premiumPrice(premiumCount);
   const chosePremium = premium && mode === "premium";
+  const payWithCredits = premiumCount > 0 && premiumCredits >= premiumCount;
   return (
     <div className="exam-dialog-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <section ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="writing-submit-title" className="exam-dialog">
@@ -49,8 +50,8 @@ function SubmitDialog({ open, tasks, essays, remainingSeconds, onClose, onSubmit
               <button type="button" role="radio" aria-checked={mode === "premium"} aria-pressed={mode === "premium"} className="exam-option" onClick={() => setMode("premium")} disabled={premiumCount === 0}>
                 <span className="exam-option-key" aria-hidden="true">2</span>
                 <span>
-                  <b>AI Premium · {formatUzs(premiumPrice(Math.max(1, premiumCount)))}</b><br />
-                  Line-by-line corrections, a Band 8+ rewrite of your answer, a deeper report on each criterion and a personal study plan. Pay on Telegram; the result comes after your payment is confirmed.
+                  <b>AI Premium · {payWithCredits ? `uses ${premiumCount} of your ${premiumCredits} credits` : formatUzs(premiumPrice(Math.max(1, premiumCount)))}</b><br />
+                  Line-by-line corrections, a Band 8+ rewrite of your answer, a deeper report on each criterion and a personal study plan. {payWithCredits ? "Paid from your bundle, no Telegram payment needed." : "Pay on Telegram; the result comes after your payment is confirmed."}
                   {premiumCount === 0 && <><br /><i>Write at least {PREMIUM_MIN_WORDS} words first.</i></>}
                   {premiumCount > 0 && premiumCount < tasks.length && <><br /><i>Only parts with at least {PREMIUM_MIN_WORDS} words are included.</i></>}
                 </span>
@@ -62,7 +63,7 @@ function SubmitDialog({ open, tasks, essays, remainingSeconds, onClose, onSubmit
         <div className="mt-5 flex flex-wrap justify-end gap-2">
           <button type="button" className="exam-btn" onClick={onClose}>Keep writing</button>
           <button type="button" className="exam-btn exam-btn-primary" onClick={() => onSubmit(chosePremium ? "premium" : "free")} disabled={!canSubmit || (chosePremium && premiumCount === 0)}>
-            {chosePremium ? `Request AI Premium (${formatUzs(premiumAmount)})` : "Submit for feedback"}
+            {chosePremium ? (payWithCredits ? `Use ${premiumCount} ${premiumCount === 1 ? "credit" : "credits"}` : `Request AI Premium (${formatUzs(premiumAmount)})`) : "Submit for feedback"}
           </button>
         </div>
       </section>
@@ -78,7 +79,7 @@ function SubmitDialog({ open, tasks, essays, remainingSeconds, onClose, onSubmit
  */
 export default function WritingExamScreen({
   tasks, title, durationSeconds, initialEssays = {}, initialElapsed = 0, startOnType = false,
-  onDraftChange, onSubmit, submitting = false, blockedReason, exitHref = "/writing", exitLabel = "Exit", premium = false, children,
+  onDraftChange, onSubmit, submitting = false, blockedReason, exitHref = "/writing", exitLabel = "Exit", premium = false, premiumCredits = 0, children,
 }) {
   const [settings, updateSettings] = useExamSettings();
   const [essays, setEssays] = useState(initialEssays);
@@ -235,6 +236,7 @@ export default function WritingExamScreen({
         canSubmit={anyText && !blockedReason}
         blockedReason={blockedReason || (anyText ? "" : "Write your answer before submitting.")}
         premium={premium}
+        premiumCredits={premiumCredits}
         onSubmit={(mode) => { setSubmitOpen(false); setRunning(false); onSubmit({ essays, elapsed, mode }); }}
       />
       {children}

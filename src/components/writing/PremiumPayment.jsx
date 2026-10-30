@@ -9,9 +9,9 @@ import { formatUzs, PREMIUM_TELEGRAM, telegramLink, telegramMessage } from "@/li
  * How to pay for an AI Premium check: send the amount on Telegram with the
  * request code, then wait for the administrator to confirm the payment.
  */
-export default function PremiumPayment({ code, amount, compact = false }) {
+export default function PremiumPayment({ code, amount, compact = false, what, afterPayment }) {
   const [copied, setCopied] = useState(false);
-  const message = telegramMessage(code, amount);
+  const message = telegramMessage(code, amount, what);
 
   const copy = async () => {
     try {
@@ -29,7 +29,7 @@ export default function PremiumPayment({ code, amount, compact = false }) {
       <ol className="list-decimal space-y-2 pl-5 text-sm leading-6 text-slate-300">
         <li>Open Telegram and message <b className="text-white">@{PREMIUM_TELEGRAM}</b>.</li>
         <li>Send this message, then pay <b className="text-white">{formatUzs(amount)}</b> using the payment details you get in the chat.</li>
-        <li>When your payment is confirmed, your AI Premium result appears on <b className="text-white">My AI Premium checks</b>, usually within 24 hours.</li>
+        <li>{afterPayment || <>When your payment is confirmed, your AI Premium result appears on <b className="text-white">My AI Premium checks</b>, usually within 24 hours.</>}</li>
       </ol>
       <p className="rounded-lg border border-white/10 bg-white/[0.04] p-3 text-sm text-slate-200">
         {message}
@@ -49,6 +49,21 @@ export default function PremiumPayment({ code, amount, compact = false }) {
 
 // Shown right after a learner asks for an AI Premium check.
 export function PremiumRequestSaved({ request }) {
+  if (request.credits_used > 0) {
+    return (
+      <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.28em] text-brand-400">AI Premium</p>
+        <h1 className="section-title mb-3">Paid with your credits</h1>
+        <p className="section-subtitle mb-6">
+          {request.credits_used} {request.credits_used === 1 ? "credit was" : "credits were"} used for request <b className="font-mono text-white">{request.code}</b>. No payment needed. Your AI Premium result appears on <b className="text-white">My AI Premium checks</b>, usually within 24 hours.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <Link href="/writing/premium" className="btn-primary">My AI Premium checks</Link>
+          <Link href="/writing" className="btn-secondary">Back to Writing</Link>
+        </div>
+      </main>
+    );
+  }
   return (
     <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
       <p className="mb-2 text-xs font-semibold uppercase tracking-[0.28em] text-brand-400">AI Premium</p>

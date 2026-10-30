@@ -15,7 +15,7 @@ import WritingFeedback from "@/components/writing/WritingFeedback";
 import ShareResultButton from "@/components/shared/ShareResultButton";
 import { PremiumRequestSaved } from "@/components/writing/PremiumPayment";
 import { premiumEssays } from "@/lib/writing/premium.mjs";
-import { createPremiumRequest } from "@/lib/writing/premium-requests";
+import { createPremiumRequest, createPremiumRequestWithCredits, getCreditBalance } from "@/lib/writing/premium-requests";
 import { fullMockFor, saveFullMockResult } from "@/lib/mock/full-mock.mjs";
 
 const DRAFT_KEY = "ielts-writing-test-draft-v1";
@@ -49,6 +49,12 @@ export default function WritingTest() {
   const [error, setError] = useState("");
   const [results, setResults] = useState([]);
   const [premiumRequest, setPremiumRequest] = useState(null);
+  const [credits, setCredits] = useState(0);
+
+  useEffect(() => {
+    if (!accountUserId) { setCredits(0); return; }
+    getCreditBalance().then(setCredits).catch(() => setCredits(0));
+  }, [accountUserId]);
   // Set when this test was opened as Part 3 of a full mock.
   const [fullMock, setFullMock] = useState(null);
   const [fullMockDone, setFullMockDone] = useState(false);
@@ -101,7 +107,12 @@ export default function WritingTest() {
     setError("");
     if (mode === "premium") {
       try {
-        const request = await createPremiumRequest(accountUserId, premiumEssays(pair, essays, countWords));
+        const request = await (async () => {
+          const chosen = premiumEssays(pair, essays, countWords);
+          return credits >= chosen.length && chosen.length > 0
+            ? createPremiumRequestWithCredits(chosen)
+            : createPremiumRequest(accountUserId, chosen);
+        })();
         setPremiumRequest(request);
         try { window.localStorage.removeItem(DRAFT_KEY); } catch { /* fine */ }
         finishFullMock({ band: null, pending: true, premiumRequestId: request.id });
@@ -193,6 +204,7 @@ export default function WritingTest() {
         exitLabel="Save & exit"
         exitHref={fullMock ? "/full-mock" : "/writing"}
         premium
+        premiumCredits={credits}
       >
         {progress && <p role="status" className="exam-toast">{progress}</p>}
         {error && !progress && <p role="alert" className="exam-toast" style={{ borderColor: "var(--exam-flag)" }}>{error}</p>}

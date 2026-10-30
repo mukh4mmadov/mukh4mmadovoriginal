@@ -13,7 +13,7 @@ import WritingFeedback from "@/components/writing/WritingFeedback";
 import ShareResultButton from "@/components/shared/ShareResultButton";
 import { requestWritingFeedback } from "@/lib/writing/request-feedback";
 import { premiumEssays } from "@/lib/writing/premium.mjs";
-import { createPremiumRequest } from "@/lib/writing/premium-requests";
+import { createPremiumRequest, createPremiumRequestWithCredits, getCreditBalance } from "@/lib/writing/premium-requests";
 import { PremiumRequestSaved } from "@/components/writing/PremiumPayment";
 
 export default function WritingEditor({ task }) {
@@ -26,6 +26,12 @@ export default function WritingEditor({ task }) {
   const [result, setResult] = useState(null);
   const [attempt, setAttempt] = useState(0);
   const [premiumRequest, setPremiumRequest] = useState(null);
+  const [credits, setCredits] = useState(0);
+
+  useEffect(() => {
+    if (!accountUserId) { setCredits(0); return; }
+    getCreditBalance().then(setCredits).catch(() => setCredits(0));
+  }, [accountUserId]);
 
   useEffect(() => {
     let saved = null;
@@ -53,7 +59,12 @@ export default function WritingEditor({ task }) {
     setStatus("loading");
     try {
       if (mode === "premium") {
-        const request = await createPremiumRequest(accountUserId, premiumEssays([task], essays, countWords));
+        const request = await (async () => {
+          const chosen = premiumEssays([task], essays, countWords);
+          return credits >= chosen.length && chosen.length > 0
+            ? createPremiumRequestWithCredits(chosen)
+            : createPremiumRequest(accountUserId, chosen);
+        })();
         window.localStorage.removeItem(writingDraftKey(task.slug));
         setPremiumRequest(request);
         setStatus("premium");
@@ -140,6 +151,7 @@ export default function WritingEditor({ task }) {
       submitting={status === "loading"}
       blockedReason={blockedReason}
       premium
+      premiumCredits={credits}
     >
       {status === "loading" && <p role="status" className="exam-toast">Marking your answer… this takes about 20 seconds.</p>}
       {error && <p role="alert" className="exam-toast" style={{ borderColor: "var(--exam-flag)" }}>{error}</p>}
