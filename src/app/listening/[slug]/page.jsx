@@ -1,10 +1,8 @@
 import { notFound } from "next/navigation";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
-import { gunzipSync } from "node:zlib";
-import ListeningTestExperience from "@/components/listening/ListeningTestExperience";
+import ListeningExam from "@/components/listening/ListeningExam";
 import listeningTests, { getListeningTest } from "@/data/listeningTests";
-import { prepareListeningHtml } from "@/lib/listening/prepare-listening-html.mjs";
+import { extractListeningTest } from "@/lib/listening/extract-listening.mjs";
+import { readListeningHtml } from "@/lib/listening/load-listening";
 
 export function generateStaticParams() {
   return listeningTests.map(({ slug }) => ({ slug }));
@@ -27,13 +25,13 @@ export default async function ListeningTestPage({ params }) {
   const { slug } = await params;
   const test = getListeningTest(slug);
   if (!test) notFound();
-  const compressedPath = path.join(process.cwd(), "public", test.testDataPath.replace(/^\//, ""));
-  let sourceHtml;
+  let data;
   try {
-    sourceHtml = gunzipSync(await readFile(compressedPath)).toString("utf8");
+    data = extractListeningTest(await readListeningHtml(test), { imageSrc: (index) => `/listening/${test.slug}/image/${index}` });
   } catch {
     notFound();
   }
-  const html = prepareListeningHtml(sourceHtml, test);
-  return <ListeningTestExperience test={test} html={html} />;
+  if (!data) notFound();
+  return <ListeningExam test={test} data={data} />;
 }
+
