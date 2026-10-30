@@ -36,14 +36,19 @@ export default function EverythingOverview() {
       const [all, week] = await Promise.all([card.all(), card.week ? card.week(since) : Promise.resolve(null)]);
       return { all: all.error ? null : all.count, week: week && !week.error ? week.count : null };
     })).then((results) => { if (active) setValues(results); });
-    supabase.from("premium_writing_requests").select("status, price_uzs").then(({ data, error }) => {
+    supabase.from("premium_writing_requests").select("status, price_uzs, credits_used").then(({ data, error }) => {
       if (!active || error) return;
       const summary = { awaiting_payment: 0, paid: 0, done: 0, rejected: 0, revenue: 0 };
       for (const row of data || []) {
         summary[row.status] = (summary[row.status] || 0) + 1;
-        if (row.status === "paid" || row.status === "done") summary.revenue += Number(row.price_uzs) || 0;
+        if ((row.status === "paid" || row.status === "done") && !row.credits_used) summary.revenue += Number(row.price_uzs) || 0;
       }
-      setPremium(summary);
+      // Bundle sales count once, when the order is paid; checks paid with
+      // credits are not counted again.
+      supabase.from("premium_credit_orders").select("price_uzs, status").eq("status", "paid").then(({ data: orders }) => {
+        if (!active) return;
+        setPremium({ ...summary, revenue: summary.revenue + (orders || []).reduce((sum, order) => sum + (Number(order.price_uzs) || 0), 0) });
+      });
     });
     return () => { active = false; };
   }, []);

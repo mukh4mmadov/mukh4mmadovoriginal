@@ -30,6 +30,8 @@ const SOURCES = {
   listening: (id) => byUser("listening_attempts")(id).order("completed_at", { ascending: false }),
   writing: (id) => byUser("writing_submissions")(id).order("created_at", { ascending: false }),
   premium: (id) => byUser("premium_writing_requests")(id).order("created_at", { ascending: false }),
+  creditOrders: (id) => byUser("premium_credit_orders")(id).order("created_at", { ascending: false }),
+  credits: (id) => supabase.rpc("premium_credit_balance", { p_user_id: id }),
   review: (id) => byUser("review_queue_items")(id).order("updated_at", { ascending: false }),
   vocabulary: (id) => byUser("vocabulary_items")(id).order("updated_at", { ascending: false }),
   highlights: (id) => byUser("highlights")(id).order("created_at", { ascending: false }).limit(300),
@@ -50,7 +52,7 @@ const TABS = [
   { id: "reading", label: "Reading", keys: ["readingHistory", "readingProgress"] },
   { id: "mocks", label: "Mock tests", keys: ["mockAttempts", "fullMocks"] },
   { id: "listening", label: "Listening", keys: ["listening"] },
-  { id: "writing", label: "Writing", keys: ["writing", "premium"] },
+  { id: "writing", label: "Writing", keys: ["writing", "premium", "creditOrders"] },
   { id: "study", label: "Study tools", keys: ["review", "vocabulary", "highlights", "quotes", "achievements", "missions"] },
   { id: "ai", label: "AI coach", keys: ["aiConversations", "aiMessages"] },
   { id: "support", label: "Support", keys: ["tickets", "feedback", "donations"] },
@@ -347,6 +349,15 @@ export default function AdminUserPage() {
                 { label: "Requested", value: (row) => fmtDate(row.created_at) },
               ]} />
               <Link href="/admin/writing-premium" className="mt-3 inline-block text-sm text-brand-300 underline">Open AI Premium Writing</Link>
+            </Section>
+            <Section title={`Bundle orders · ${data.credits ?? 0} credits left`} count={counts.creditOrders} error={errors.creditOrders}>
+              <Table rows={data.creditOrders} columns={[
+                { label: "Code", value: (row) => <span className="font-mono">{row.code}</span> },
+                { label: "Bundle", value: (row) => `${row.credits} checks` },
+                { label: "Amount", value: (row) => formatUzs(row.price_uzs) },
+                { label: "Status", value: (row) => row.status },
+                { label: "Ordered", value: (row) => fmtDate(row.created_at) },
+              ]} />
             </Section>
           </>
         )}

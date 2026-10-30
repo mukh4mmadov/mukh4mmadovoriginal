@@ -182,6 +182,61 @@ function RequestDetails({ request, onChanged }) {
   );
 }
 
+// Bundle orders: confirm the Telegram payment to add the credits.
+function BundleOrders() {
+  const [orders, setOrders] = useState(null);
+  const [message, setMessage] = useState("");
+  const load = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("premium_credit_orders")
+      .select("id, code, pack, credits, price_uzs, status, admin_note, created_at, approved_at, user:profiles!premium_credit_orders_user_id_fkey(id, full_name, email)")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (error) { setMessage("Bundle orders could not be loaded. Confirm that migration 022 is applied."); setOrders([]); return; }
+    setOrders(data || []);
+  }, []);
+  useEffect(() => { void load(); }, [load]);
+  const update = async (order, changes, label) => {
+    if (!window.confirm(`${label} for order ${order.code}?`)) return;
+    const { data, error } = await supabase.from("premium_credit_orders").update(changes).eq("id", order.id).select("id");
+    setMessage(error || !data?.length ? `${label} failed.` : `${label}: done.`);
+    await load();
+  };
+  if (!orders) return null;
+  const open = orders.filter((order) => order.status === "awaiting_payment");
+  return (
+    <section className="mb-8 rounded-xl border border-white/10 bg-white/[0.03] p-4" aria-labelledby="bundle-orders-title">
+      <h2 id="bundle-orders-title" className="mb-1 text-lg font-bold text-white">Bundle orders {open.length > 0 && <span className="ml-1 rounded-full bg-amber-500/20 px-2 py-0.5 text-xs text-amber-200">{open.length} waiting</span>}</h2>
+      <p className="mb-3 text-sm text-slate-400">Learners buying several checks at once. Confirm only after the amount with the code reached you on Telegram; the credits are added straight away.</p>
+      {message && <p role="status" className="mb-3 text-sm text-slate-300">{message}</p>}
+      {orders.length === 0 ? <p className="text-sm text-slate-400">No bundle orders yet.</p> : (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] text-sm">
+            <thead><tr className="border-b border-white/10 text-left text-xs uppercase tracking-wide text-slate-400"><th className="p-2">Code</th><th className="p-2">Learner</th><th className="p-2">Bundle</th><th className="p-2">Amount</th><th className="p-2">Status</th><th className="p-2 text-right">Actions</th></tr></thead>
+            <tbody>
+              {orders.map((order) => (
+                <tr key={order.id} className="border-b border-white/5 text-slate-200">
+                  <td className="p-2 font-mono font-semibold tracking-widest text-white">{order.code}</td>
+                  <td className="p-2">{order.user?.full_name || "Learner"}<p className="text-xs text-slate-400">{order.user?.email}</p></td>
+                  <td className="p-2">{order.credits} checks</td>
+                  <td className="p-2">{formatUzs(order.price_uzs)}</td>
+                  <td className="p-2">{order.status === "awaiting_payment" ? "Waiting for payment" : order.status === "paid" ? "Credits added" : "Rejected"}</td>
+                  <td className="whitespace-nowrap p-2 text-right">
+                    {order.status === "awaiting_payment" && <>
+                      <button type="button" className={primaryClass} onClick={() => void update(order, { status: "paid", approved_at: new Date().toISOString() }, "Confirm payment")}><Check size={15} aria-hidden="true" />Confirm</button>
+                      <button type="button" className={`${buttonClass} ml-2`} onClick={() => void update(order, { status: "rejected" }, "Reject")}>Reject</button>
+                    </>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function AdminWritingPremiumPage() {
   const [filter, setFilter] = useState("awaiting_payment");
   const [rows, setRows] = useState([]);
@@ -197,7 +252,7 @@ export default function AdminWritingPremiumPage() {
       if (!supabase) throw new Error("Supabase is not configured.");
       let query = supabase
         .from("premium_writing_requests")
-        .select("id, code, essays, price_uzs, status, feedback, admin_note, created_at, approved_at, completed_at, user:profiles!premium_writing_requests_user_id_fkey(id, full_name, username, email)")
+        .select("id, code, essays, price_uzs, status, feedback, admin_note, created_at, approved_at, completed_at, credits_used, user:profiles!premium_writing_requests_user_id_fkey(id, full_name, username, email)")
         .order("created_at", { ascending: filter === "paid" || filter === "awaiting_payment" })
         .limit(100);
       if (filter !== "all") query = query.eq("status", filter);
@@ -229,6 +284,7 @@ export default function AdminWritingPremiumPage() {
         <Sparkles className="text-brand-400" size={28} aria-hidden="true" />
         <h1 className="text-3xl font-bold text-white">AI Premium Writing</h1>
       </div>
+      <BundleOrders />
       <ol className="mb-6 max-w-3xl list-decimal space-y-1 pl-5 text-sm text-slate-400">
         <li>A learner sends you the code and pays on Telegram. Find the code under <b>Waiting for payment</b> and click <b>Confirm payment</b>.</li>
         <li>Under <b>Paid · to check</b>, click <b>Copy for Claude</b> and paste it into Claude (claude.ai or a Claude Code chat).</li>
@@ -268,7 +324,7 @@ export default function AdminWritingPremiumPage() {
                     <td className="p-4 font-mono font-semibold tracking-widest text-white">{row.code}</td>
                     <td className="p-4"><p className="font-medium text-white">{learner.full_name || learner.username || "Unknown learner"}</p><p className="mt-1 text-xs text-slate-400">{learner.email || "No account details"}</p></td>
                     <td className="p-4 text-slate-300">{essays.map((item) => `Task ${item.taskNumber}`).join(" + ")}</td>
-                    <td className="p-4">{formatUzs(row.price_uzs)}</td>
+                    <td className="p-4">{row.credits_used > 0 ? `${row.credits_used} credit${row.credits_used === 1 ? "" : "s"}` : formatUzs(row.price_uzs)}</td>
                     <td className="p-4 text-slate-300">{new Date(row.created_at).toLocaleString()}</td>
                     <td className="p-4"><PremiumStatus status={row.status} /></td>
                     <td className="p-4 text-right">

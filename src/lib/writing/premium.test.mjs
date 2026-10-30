@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { formatUzs, premiumEssays, premiumPrice, telegramLink, telegramMessage } from "./premium.mjs";
+import { formatUzs, getPack, packSaving, PREMIUM_PACKS, premiumEssays, premiumPrice, telegramLink, telegramMessage } from "./premium.mjs";
 import { parsePremiumFeedback, parseWritingFeedback } from "./writing-feedback.mjs";
 
 const criterion = (band) => ({ band, comment: "A detailed comment. ".repeat(60) });
@@ -41,4 +41,11 @@ test("price, Telegram link and the essays sent for a premium check", () => {
   const tasks = [{ slug: "one", task: 1 }, { slug: "two", task: 2 }];
   const essays = premiumEssays(tasks, { one: "short answer", two: "word ".repeat(60) }, countWords);
   assert.deepEqual(essays.map((item) => [item.taskSlug, item.taskNumber, item.wordCount]), [["two", 2, 60]]);
+});
+
+test("bundles cost less than single checks and name themselves in the Telegram message", () => {
+  assert.deepEqual(PREMIUM_PACKS.map((pack) => [pack.id, pack.credits, pack.price, packSaving(pack)]), [["pack5", 5, 20000, 5000], ["pack10", 10, 35000, 15000]]);
+  assert.equal(getPack("pack10").credits, 10);
+  assert.equal(getPack("nope"), null);
+  assert.match(telegramMessage("ABC123", 20000, "an AI Premium bundle of 5 checks"), /bundle of 5 checks.*ABC123.*20,000 UZS/);
 });
