@@ -14,7 +14,11 @@ export function normalizeInviteCode(value) {
   return /^[A-Z0-9]{8}$/.test(code) ? code : null;
 }
 
-export const inviteLink = (origin, code) => `${String(origin).replace(/\/$/, "")}/invite/${code}`;
+// Invite links always point at the public site, also when the page is
+// opened on a preview deployment or a local copy.
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://mukh4mmadovoriginal.vercel.app";
+
+export const inviteLink = (code, origin = SITE_URL) => `${String(origin).replace(/\/$/, "")}/invite/${code}`;
 
 export function inviteShareText(link) {
   return `I'm preparing for IELTS on this free site: real exam-style Listening, Reading and Writing tests with AI feedback. Join with my link: ${link}`;

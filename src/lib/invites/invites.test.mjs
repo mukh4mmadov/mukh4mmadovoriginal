@@ -18,7 +18,8 @@ test("codes are 8 letters or digits, any case", () => {
 });
 
 test("links and share text", () => {
-  assert.equal(inviteLink("https://site.app/", "HXASM2L6"), "https://site.app/invite/HXASM2L6");
+  assert.equal(inviteLink("HXASM2L6", "https://site.app/"), "https://site.app/invite/HXASM2L6");
+  assert.equal(inviteLink("HXASM2L6"), "https://mukh4mmadovoriginal.vercel.app/invite/HXASM2L6");
   assert.match(telegramShareLink("https://site.app/invite/HXASM2L6"), /^https:\/\/t\.me\/share\/url\?url=https%3A%2F%2Fsite\.app%2Finvite%2FHXASM2L6&text=/);
 });
 

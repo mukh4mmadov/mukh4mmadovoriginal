@@ -47,7 +47,7 @@ export default function InviteFriends() {
   useEffect(() => { void load(); }, [load]);
   useEffect(() => { setCanShare(typeof navigator !== "undefined" && typeof navigator.share === "function"); }, []);
 
-  const link = invite?.code && typeof window !== "undefined" ? inviteLink(window.location.origin, invite.code) : "";
+  const link = invite?.code ? inviteLink(invite.code) : "";
   const reward = inviteReward(invite?.approved);
   const friends = Array.isArray(invite?.friends) ? invite.friends : [];
 
