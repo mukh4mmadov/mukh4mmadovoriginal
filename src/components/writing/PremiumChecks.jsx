@@ -118,7 +118,7 @@ function Bundles({ accountUserId, balance, orders, onChanged, onError }) {
         <h2 id="bundles-title" className="flex items-center gap-2 text-lg font-bold text-slate-100"><Package size={20} className="text-brand-400" aria-hidden="true" /> Bundles</h2>
         <p className="rounded-full border border-brand-400/30 bg-brand-500/10 px-3 py-1 text-sm text-brand-200">You have <b className="text-white">{balance}</b> {balance === 1 ? "credit" : "credits"}</p>
       </div>
-      <p className="mb-4 text-sm text-slate-300">Buy several checks at once and save. One credit pays for one task; when you choose AI Premium, your credits are used and no payment is needed.</p>
+      <p className="mb-4 text-sm text-slate-300">Buy several checks at once and save. One credit pays for one task; when you choose AI Premium, your credits are used and no payment is needed. Or <Link href="/invite" className="font-semibold text-brand-300 underline">invite friends</Link> to earn free checks.</p>
       <div className="grid gap-3 sm:grid-cols-2">
         {PREMIUM_PACKS.map((pack) => (
           <div key={pack.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
