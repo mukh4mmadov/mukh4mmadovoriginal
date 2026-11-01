@@ -23,6 +23,7 @@ import {
   Megaphone,
   Moon,
   Sun,
+  Gift,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { isAdmin } from '@/lib/supabase/auth-admin';
@@ -190,6 +191,7 @@ export default function AdminLayout({ children }) {
     { name: 'Writing Submissions', href: '/admin/writing', icon: PenLine },
     { name: 'AI Premium Writing', href: '/admin/writing-premium', icon: Sparkles },
     { name: 'Full Mock Results', href: '/admin/full-mocks', icon: Trophy },
+    { name: 'Invites', href: '/admin/invites', icon: Gift },
     { name: 'Announcements', href: '/admin/announcements', icon: Megaphone },
     { name: 'Support inbox', href: '/admin/support', icon: MessageSquare },
     { name: 'Donation inbox', href: '/admin/donations', icon: HeartHandshake },
